@@ -13,9 +13,33 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave }) => {
   const [customExercise, setCustomExercise] = useState('');
   const [sets, setSets] = useState<WorkoutSet[]>([{ reps: 0 }]);
 
-  const predefinedExercises: ExerciseType[] = [
-    'Shyby', 'Kliky', 'Dipy', 'Dřepy', 'Výpady', 'Plank', 'Muscle-ups', 'Přednosy', 'Angličáky'
+  const exerciseGroups = [
+    {
+      name: 'Statiky',
+      items: ['Planche lean', 'Tuck planche', 'Straddle planche', 'Full planche', 'Frontlever', 'Backlever', 'Victorian', 'Maltese', 'Iron Cross', 'L-Sit', 'V-Sit', 'Hollowback']
+    },
+    {
+      name: 'Tlakové',
+      items: ['Kliky', 'Dipy', 'HSPU', '90° HSPU', 'Pike press', 'Bentarm press', 'Handstand press', 'Hefesto', 'Korean dips', 'Russian dips', 'Archer pushups', 'Typewriters', 'Yguana pushups', 'Tigerbent pushups']
+    },
+    {
+      name: 'Tahové',
+      items: ['Shyby', 'Muscle-ups', 'High pull-ups', 'Pullovers', 'Výmyky', 'Australian pull-ups', 'Pelican']
+    },
+    {
+      name: 'Core & Basics',
+      items: ['Plank', 'Přednosy', 'Dragon flag', 'Scapula pushups', 'Dřepy', 'Výpady', 'Angličáky']
+    }
   ];
+
+  const allPredefined = exerciseGroups.flatMap(g => g.items);
+
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const visibleExercises = (selectedCategory 
+    ? exerciseGroups.find(g => g.name === selectedCategory)?.items || []
+    : allPredefined).filter(ex => ex.toLowerCase().includes(searchQuery.toLowerCase()));
 
   const addSet = () => setSets([...sets, { reps: 0 }]);
   const removeSet = (index: number) => setSets(sets.filter((_, i) => i !== index));
@@ -56,12 +80,50 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave }) => {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-10">
-        <div className="space-y-4">
-          <label className="text-[10px] uppercase tracking-[0.3em] text-cyan-500 font-black flex items-center gap-2">
-            <Target size={12} /> Výběr Modulu Cviků
-          </label>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-            {predefinedExercises.map((ex) => (
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <label className="text-[10px] uppercase tracking-[0.3em] text-cyan-500 font-black flex items-center gap-2">
+              <Target size={12} /> Výběr Modulu Cviků
+            </label>
+            <div className="flex flex-wrap gap-2 justify-center">
+              <button
+                type="button"
+                onClick={() => setSelectedCategory(null)}
+                className={cn(
+                  "px-2 py-1 rounded text-[8px] font-black uppercase tracking-widest transition-all",
+                  selectedCategory === null ? "bg-cyan-500 text-black" : "text-[#94a3b8] hover:text-white"
+                )}
+              >
+                Vše
+              </button>
+              {exerciseGroups.map(g => (
+                <button
+                  key={g.name}
+                  type="button"
+                  onClick={() => setSelectedCategory(g.name)}
+                  className={cn(
+                    "px-2 py-1 rounded text-[8px] font-black uppercase tracking-widest transition-all",
+                    selectedCategory === g.name ? "bg-cyan-500 text-black" : "text-[#94a3b8] hover:text-white"
+                  )}
+                >
+                  {g.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Vyhledat cvik..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-white/40 dark:bg-black/20 border border-black/5 dark:border-white/10 rounded-xl px-4 py-2 text-xs font-bold focus:outline-none focus:border-cyan-500/40 transition-all placeholder:text-slate-400"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+            {visibleExercises.map((ex) => (
               <button
                 key={ex}
                 type="button"
