@@ -9,48 +9,65 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
   const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'log', label: 'Log', icon: PlusCircle },
-    { id: 'stats', label: 'Progres', icon: TrendingUp },
-    { id: 'ai', label: 'AI', icon: BrainCircuit },
-    { id: 'profile', label: 'Profil', icon: User },
+    { id: 'dashboard', label: 'Monitor', icon: LayoutDashboard },
+    { id: 'log', label: 'Vstup', icon: PlusCircle },
+    { id: 'stats', label: 'Data', icon: TrendingUp },
+    { id: 'ai', label: 'Core', icon: BrainCircuit },
+    { id: 'profile', label: 'User', icon: User },
   ];
 
   return (
     <>
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex fixed left-0 top-0 h-full w-64 glass-sidebar flex-col pt-8 z-50 transition-all duration-300">
-        <div className="px-6 mb-8">
-          <h1 id="app-logo" className="text-2xl font-extrabold tracking-tighter bg-gradient-to-r from-cyan-500 to-purple-600 bg-clip-text text-transparent italic">
-            META-CALI
-          </h1>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold mt-1">Frosted Edition</p>
+        <div className="px-8 mb-12">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-cyan-500 flex items-center justify-center text-black font-black italic shadow-[0_0_15px_rgba(34,211,238,0.4)]">
+              M
+            </div>
+            <h1 id="app-logo" className="text-2xl font-black tracking-tighter text-slate-900 dark:text-white italic">
+              META-CALI
+            </h1>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[8px] uppercase tracking-[0.4em] text-slate-500 font-black">Tactical Unit OS</span>
+            <div className="flex gap-0.5">
+              <div className="w-1 h-1 rounded-full bg-cyan-500 animate-pulse"></div>
+              <div className="w-1 h-1 rounded-full bg-slate-400"></div>
+            </div>
+          </div>
         </div>
 
-        <nav className="flex-1 px-4 space-y-1">
+        <nav className="flex-1 px-6 space-y-2">
           {menuItems.map((item) => (
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
               className={cn(
-                "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group text-sm font-medium border border-transparent",
+                "w-full flex items-center gap-4 px-4 py-4 rounded-2xl transition-all duration-300 group text-[10px] font-black uppercase tracking-[0.2em] border border-transparent",
                 activeTab === item.id 
                   ? "nav-active" 
                   : "text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5"
               )}
             >
-              <item.icon size={18} className={cn(
-                "transition-colors",
-                activeTab === item.id ? "text-cyan-500" : "text-slate-400 group-hover:text-slate-600 dark:group-hover:text-white"
+              <item.icon size={16} className={cn(
+                "transition-all duration-300",
+                activeTab === item.id ? "text-cyan-500 scale-110" : "text-slate-400 group-hover:text-slate-600 dark:group-hover:text-white"
               )} />
               {item.label}
             </button>
           ))}
         </nav>
 
-        <div className="p-4 border-t border-glass-border">
-          <div className="text-center">
-            <p className="text-[10px] text-slate-500 font-medium uppercase tracking-widest">by @PEONY_PRODUCTION</p>
+        <div className="p-8 border-t border-glass-border">
+          <div className="flex items-center gap-4 bg-black/5 dark:bg-white/5 p-4 rounded-2xl border border-black/5 dark:border-white/10 hover:border-cyan-500/20 transition-all cursor-pointer group">
+            <div className="w-10 h-10 rounded-xl bg-slate-200 dark:bg-zinc-800 flex items-center justify-center border border-black/5 dark:border-white/10 shadow-inner group-hover:bg-cyan-500/10 transition-colors">
+              <User size={18} className="text-slate-500 group-hover:text-cyan-500" />
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <p className="text-[10px] font-black text-slate-900 dark:text-white truncate uppercase tracking-tight">Karel Operator</p>
+              <p className="text-[8px] text-[#94a3b8] truncate font-black uppercase tracking-widest">Level 24 • ACTIVE</p>
+            </div>
           </div>
         </div>
       </aside>

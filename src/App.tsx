@@ -126,7 +126,12 @@ export default function App() {
     <div className="min-h-screen bg-transparent flex flex-col lg:flex-row font-sans overflow-x-hidden">
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
       
-      <main className="flex-1 lg:ml-64 p-4 md:p-8 lg:p-12 max-w-6xl mx-auto w-full flex flex-col min-h-screen pb-32 lg:pb-12">
+      <main className="flex-1 lg:ml-64 p-4 md:p-8 lg:p-12 max-w-7xl mx-auto w-full flex flex-col min-h-screen pb-32 lg:pb-12 relative overflow-x-hidden">
+        {/* Decorative Grid Overlay */}
+        <div className="fixed inset-0 pointer-events-none opacity-[0.03] dark:opacity-[0.05] z-0">
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px]"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_100%_200px,#22d3ee08,transparent)]"></div>
+        </div>
         <header className="mb-8 lg:mb-12 flex justify-between items-start md:items-end">
           <div className="flex-1">
             <div className="flex items-center gap-3 lg:hidden mb-4">
@@ -175,18 +180,21 @@ export default function App() {
           </AnimatePresence>
         </div>
 
-        <footer className="mt-20 pt-8 border-t border-white/5 pb-10 flex flex-col md:flex-row justify-between items-center gap-6 opacity-60 hover:opacity-100 transition-opacity">
+        <footer className="mt-20 pt-8 border-t border-black/5 dark:border-white/5 pb-10 flex flex-col md:flex-row justify-between items-center gap-6 opacity-40 hover:opacity-100 transition-opacity relative z-10">
           <div className="flex items-center gap-6">
-            <a href="#" className="text-slate-400 hover:text-cyan-400 transition-colors"><Twitter size={18} /></a>
-            <a href="#" className="text-slate-400 hover:text-purple-400 transition-colors"><Instagram size={18} /></a>
-            <a href="#" className="text-slate-400 hover:text-white transition-colors"><Github size={18} /></a>
+            <span className="text-[10px] text-[#94a3b8] font-black uppercase tracking-widest hidden lg:inline">System-Status: Optimal</span>
+            <div className="flex gap-4">
+              <a href="#" className="text-slate-400 hover:text-cyan-400 transition-colors"><Twitter size={18} /></a>
+              <a href="#" className="text-slate-400 hover:text-purple-400 transition-colors"><Instagram size={18} /></a>
+              <a href="#" className="text-slate-400 hover:text-white transition-colors"><Github size={18} /></a>
+            </div>
           </div>
           <div className="text-center md:text-right">
-            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-[0.2em]">
+            <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">
               by @PEONY_PRODUCTION
             </p>
-            <p className="text-[10px] text-slate-700 mt-1 uppercase tracking-tighter font-medium">
-              &copy; 2026 Meta-Cali Platform • v2.4.0-Stable
+            <p className="text-[10px] text-slate-400 dark:text-slate-700 mt-1 uppercase tracking-tighter font-black">
+              &copy; 2026 Meta-Cali Platform • Protocol-X Ready
             </p>
           </div>
         </footer>
