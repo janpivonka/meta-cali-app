@@ -17,7 +17,7 @@ export const Profile: React.FC<ProfileProps> = ({ profile, onSave }) => {
   function formDataWrapper(p: UserProfile): UserProfile {
     return {
       ...p,
-      goals: p.goals || { pullups: 0, pushups: 0, dips: 0 }
+      goals: p.goals || { pullups: 0, pushups: 0, dips: 0, planche: 0, frontlever: 0 }
     };
   }
 
@@ -29,10 +29,10 @@ export const Profile: React.FC<ProfileProps> = ({ profile, onSave }) => {
   };
 
   return (
-    <div id="profile-view" className="space-y-6 md:space-y-10 max-w-4xl mx-auto">
+    <div id="profile-view" className="space-y-6 md:space-y-10 max-w-4xl mx-auto pb-10">
       <div className="glass-card p-6 md:p-10 border-cyan-500/10">
         <div className="flex flex-col md:flex-row md:items-center gap-6 mb-12">
-          <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-cyan-400 to-purple-600 flex items-center justify-center text-white shadow-2xl shadow-cyan-500/20 relative">
+          <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-cyan-400 to-purple-600 flex items-center justify-center text-white shadow-2xl shadow-cyan-500/20 relative animate-float">
             <User size={36} />
             <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-lg border-4 border-[#f8fafc] dark:border-[#020617] flex items-center justify-center">
               <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
@@ -66,6 +66,7 @@ export const Profile: React.FC<ProfileProps> = ({ profile, onSave }) => {
                 </label>
                 <input
                   type="number"
+                  step="0.1"
                   value={formData.weight}
                   onChange={(e) => setFormData({ ...formData, weight: parseFloat(e.target.value) || 0 })}
                   className="w-full bg-white/40 dark:bg-black/20 border border-black/5 dark:border-white/10 rounded-2xl px-5 py-4 text-slate-900 dark:text-white font-mono font-bold focus:outline-none focus:border-cyan-500/40 transition-all shadow-sm"
@@ -90,14 +91,18 @@ export const Profile: React.FC<ProfileProps> = ({ profile, onSave }) => {
               <Target size={20} className="text-purple-500" />
               <h3 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">Strategické Cíle</h3>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
               {[
-                { label: 'Shyby', key: 'pullups', color: 'border-cyan-500/20' },
-                { label: 'Kliky', key: 'pushups', color: 'border-purple-500/20' },
-                { label: 'Dipy', key: 'dips', color: 'border-pink-500/20' }
+                { label: 'Shyby', key: 'pullups', unit: 'REPS', color: 'border-cyan-500/20' },
+                { label: 'Kliky', key: 'pushups', unit: 'REPS', color: 'border-purple-500/20' },
+                { label: 'Dipy', key: 'dips', unit: 'REPS', color: 'border-pink-500/20' },
+                { label: 'Planche', key: 'planche', unit: 'SEC', color: 'border-orange-500/20' },
+                { label: 'Frontlever', key: 'frontlever', unit: 'SEC', color: 'border-emerald-500/20' }
               ].map((goal) => (
-                <div key={goal.key} className={cn("glass-card p-6 bg-white/20 dark:bg-black/10 transition-all hover:scale-105", goal.color)}>
-                  <label className="text-[10px] font-black text-[#94a3b8] uppercase tracking-[0.2em] mb-4 block">{goal.label} (MAX)</label>
+                <div key={goal.key} className={cn("glass-card p-4 bg-white/20 dark:bg-black/10 transition-all hover:scale-105", goal.color)}>
+                  <label className="text-[9px] font-black text-[#94a3b8] uppercase tracking-[0.2em] mb-3 block">
+                    {goal.label} <span className="text-[8px] opacity-40">({goal.unit})</span>
+                  </label>
                   <input
                     type="number"
                     value={formData.goals[goal.key as keyof typeof formData.goals]}
@@ -105,7 +110,7 @@ export const Profile: React.FC<ProfileProps> = ({ profile, onSave }) => {
                       ...formData, 
                       goals: { ...formData.goals, [goal.key]: parseInt(e.target.value) || 0 } 
                     })}
-                    className="bg-transparent text-4xl font-black text-slate-900 dark:text-white w-full focus:outline-none font-mono"
+                    className="bg-transparent text-3xl font-black text-slate-900 dark:text-white w-full focus:outline-none font-mono"
                   />
                 </div>
               ))}

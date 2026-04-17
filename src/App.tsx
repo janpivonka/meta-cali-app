@@ -15,7 +15,9 @@ const DEFAULT_PROFILE: UserProfile = {
   goals: {
     pullups: 15,
     pushups: 40,
-    dips: 20
+    dips: 20,
+    planche: 5,
+    frontlever: 5
   }
 };
 
@@ -95,13 +97,21 @@ export default function App() {
                 [...logs].reverse().map((log) => (
                   <div key={log.id} className="glass-card p-4 flex items-center justify-between border-white/5 bg-white/5">
                     <div>
-                      <p className="text-sm font-bold text-white">{log.type}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-bold text-white">{log.type}</p>
+                        {log.block && (
+                          <span className="text-[8px] font-black bg-cyan-500/10 text-cyan-500 px-1.5 py-0.5 rounded border border-cyan-500/20 uppercase tracking-tighter">
+                            {log.block}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-[10px] text-[#94a3b8] uppercase tracking-widest">{new Date(log.timestamp).toLocaleString()}</p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2 justify-end">
                       {log.sets.map((s, i) => (
-                        <div key={i} className="px-2 py-1 bg-black/20 rounded text-xs font-mono text-cyan-400 border border-white/5">
-                          {s.reps}
+                        <div key={i} className="flex flex-col items-center px-3 py-1 bg-black/20 rounded border border-white/5 min-w-[40px]">
+                          <span className="text-xs font-black text-cyan-400 font-mono leading-none">{s.reps}</span>
+                          {s.weight ? <span className="text-[7px] text-purple-400 font-black mt-1">+{s.weight}KG</span> : null}
                         </div>
                       ))}
                     </div>

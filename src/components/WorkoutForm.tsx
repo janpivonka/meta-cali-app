@@ -11,24 +11,47 @@ interface WorkoutFormProps {
 export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave }) => {
   const [type, setType] = useState<ExerciseType>('Shyby');
   const [customExercise, setCustomExercise] = useState('');
-  const [sets, setSets] = useState<WorkoutSet[]>([{ reps: 0 }]);
+  const [block, setBlock] = useState('');
+  const [sets, setSets] = useState<WorkoutSet[]>([{ reps: 0, weight: 0 }]);
 
   const exerciseGroups = [
     {
       name: 'Statiky',
-      items: ['Planche lean', 'Tuck planche', 'Straddle planche', 'Full planche', 'Frontlever', 'Backlever', 'Victorian', 'Maltese', 'Iron Cross', 'L-Sit', 'V-Sit', 'Hollowback']
+      items: [
+        'Planche lean', 'Tuck planche', 'Advtuck planche', 'Straddle planche', 'Full planche', 'Maltese', 'Iron Cross',
+        'Frontlever', 'Frontlever hold', 'Backlever', 'Victorian', 'L-Sit', 'V-Sit', 'Hollowback', 'Planche hold', 'Human flag'
+      ]
     },
     {
       name: 'Tlakové',
-      items: ['Kliky', 'Dipy', 'HSPU', '90° HSPU', 'Pike press', 'Bentarm press', 'Handstand press', 'Hefesto', 'Korean dips', 'Russian dips', 'Archer pushups', 'Typewriters', 'Yguana pushups', 'Tigerbent pushups']
+      items: [
+        'Kliky', 'Dipy', 'HSPU', '90° HSPU', 'Deep HSPU', 'Pike press', 'Bentarm press', 'Handstand press', 'Stojka', 'Hefesto',
+        'Korean dips', 'Russian dips', 'Archer pushups', 'Typewriters', 'Yguana pushups', 'Tigerbent pushups', 'Scapula pushups', 'Pike float pushups', 'Impossible dip'
+      ]
     },
     {
       name: 'Tahové',
-      items: ['Shyby', 'Muscle-ups', 'High pull-ups', 'Pullovers', 'Výmyky', 'Australian pull-ups', 'Pelican']
+      items: [
+        'Shyby', 'Muscleups', 'Muscle-ups', 'High pull-ups', 'Pullovers', 'Výmyky', 'Pelican', 'Australian pull-ups', 'Australian rows', 'Chin ups', 'Scapula pull-ups', 'Shoulder shrugs', 'Backlever pull-ups'
+      ]
+    },
+    {
+      name: 'Prvky & Drilly',
+      items: [
+        'Tuck frontlever raises', 'Halflay frontlever raises', 'Frontlever raises', 'Ice cream makers', 'Upside down deadlift', 'Hefesto negatives', 'Entrada deadhang', 'Handstand walkthrough'
+      ]
+    },
+    {
+      name: 'Dynamika',
+      items: [
+        'Tornado 360', '540 try', '360 pull-up', 'Shrimpflip', 'Alleyhoop', 'Swing', 'Giant', 'Salto'
+      ]
     },
     {
       name: 'Core & Basics',
-      items: ['Plank', 'Přednosy', 'Dragon flag', 'Scapula pushups', 'Dřepy', 'Výpady', 'Angličáky']
+      items: [
+        'Plank', 'Přednosy', 'Stall bars leg raises', 'Dragon flag', 'Dřepy', 'Výpady', 'Pistol squats', 'Deadlift', 'Sit ups', 'Angličáky', 'Heavily weighted dips', 'Weighted pull-ups'
+      ]
     }
   ];
 
@@ -59,12 +82,14 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave }) => {
     onSave({
       id: crypto.randomUUID(),
       type: finalType,
-      sets: sets.filter(s => s.reps > 0),
+      block: block || undefined,
+      sets: sets.filter(s => s.reps > 0 || (s.weight && s.weight > 0)),
       timestamp: Date.now(),
     });
 
-    setSets([{ reps: 0 }]);
+    setSets([{ reps: 0, weight: 0 }]);
     setCustomExercise('');
+    setBlock('');
   };
 
   return (
@@ -80,6 +105,45 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave }) => {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <label className="text-[10px] uppercase tracking-[0.3em] text-cyan-500 font-black flex items-center gap-2">
+              Tréninkový Blok
+            </label>
+            <input 
+              type="text"
+              list="block-suggestions"
+              value={block}
+              onChange={(e) => setBlock(e.target.value)}
+              placeholder="Např. PLANCHE, PULL BASICS..."
+              className="w-full bg-white/40 dark:bg-black/20 border border-black/5 dark:border-white/10 rounded-xl px-4 py-3 text-xs font-bold focus:outline-none focus:border-cyan-500/40 transition-all placeholder:text-slate-400"
+            />
+            <datalist id="block-suggestions">
+              <option value="PLANCHE" />
+              <option value="FRONTLEVER" />
+              <option value="PULL BASICS" />
+              <option value="PUSH BASICS" />
+              <option value="HANDSTAND" />
+              <option value="CORE" />
+              <option value="REST" />
+            </datalist>
+          </div>
+
+          <div className="space-y-4">
+            <label className="text-[10px] uppercase tracking-[0.3em] text-cyan-500 font-black flex items-center gap-2">
+              Manuální Identifikátor
+            </label>
+            <input
+              type="text"
+              value={customExercise}
+              onChange={(e) => setCustomExercise(e.target.value)}
+              disabled={type !== 'Vlastní'}
+              className="w-full bg-white/40 dark:bg-black/20 border border-black/5 dark:border-white/10 rounded-xl px-4 py-3 text-xs font-bold focus:outline-none focus:border-purple-500/40 transition-all placeholder:text-slate-400 disabled:opacity-30"
+              placeholder="Pouze pro 'Vlastní'..."
+            />
+          </div>
+        </div>
+
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <label className="text-[10px] uppercase tracking-[0.3em] text-cyan-500 font-black flex items-center gap-2">
@@ -153,24 +217,6 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave }) => {
           </div>
         </div>
 
-        {type === 'Vlastní' && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-2 p-4 bg-purple-600/5 border border-purple-600/20 rounded-2xl"
-          >
-            <label className="text-[10px] uppercase tracking-widest text-purple-500 font-black block">Manuální identifikátor</label>
-            <input
-              type="text"
-              value={customExercise}
-              onChange={(e) => setCustomExercise(e.target.value)}
-              className="w-full bg-transparent border-b-2 border-purple-600/30 py-2 text-xl font-black text-slate-900 dark:text-white focus:outline-none focus:border-purple-500 transition-colors uppercase italic"
-              placeholder="Zadejte název..."
-              required
-            />
-          </motion.div>
-        )}
-
         <div className="space-y-6">
           <label className="text-[10px] uppercase tracking-[0.3em] text-cyan-500 font-black flex items-center gap-2">
             <Zap size={12} /> Konfigurace Sérií
@@ -201,9 +247,23 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave }) => {
                         type="number"
                         value={set.reps}
                         onChange={(e) => updateReps(index, parseInt(e.target.value) || 0)}
-                        className="bg-transparent text-4xl font-black text-slate-900 dark:text-white w-20 text-center focus:outline-none font-mono"
+                        className="bg-transparent text-4xl font-black text-slate-900 dark:text-white w-16 text-center focus:outline-none font-mono"
                       />
-                      <span className="text-[8px] font-black uppercase tracking-widest text-[#94a3b8]">OPAKOVÁNÍ</span>
+                      <span className="text-[8px] font-black uppercase tracking-widest text-[#94a3b8]">OPAK</span>
+                    </div>
+                    <div className="h-10 w-[1px] bg-black/5 dark:bg-white/10 mx-2" />
+                    <div className="flex flex-col items-center">
+                      <input
+                        type="number"
+                        value={set.weight || 0}
+                        onChange={(e) => {
+                          const newSets = [...sets];
+                          newSets[index].weight = parseInt(e.target.value) || 0;
+                          setSets(newSets);
+                        }}
+                        className="bg-transparent text-2xl font-black text-purple-500 w-12 text-center focus:outline-none font-mono"
+                      />
+                      <span className="text-[8px] font-black uppercase tracking-widest text-[#94a3b8]">KG</span>
                     </div>
                     <button
                       type="button" 
