@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  /* Frosted Glass Palette */
+  --color-glass: rgba(255, 255, 255, 0.03);
+  --color-glass-border: rgba(255, 255, 255, 0.08);
+  --color-accent-cyan: #22d3ee;
+  --color-accent-purple: #a855f7;
+}
+
+@layer base {
+  body {
+    @apply bg-[#020617] text-[#f8fafc] antialiased min-h-screen;
+    background-image: 
+      radial-gradient(circle at 0% 0%, rgba(34, 211, 238, 0.1) 0%, transparent 40%),
+      radial-gradient(circle at 100% 100%, rgba(168, 85, 247, 0.1) 0%, transparent 40%);
+    font-feature-settings: "cv02", "cv03", "cv04", "ss01";
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-[var(--color-glass)] backdrop-blur-[10px] border border-[var(--color-glass-border)] rounded-[20px];
+  }
+  
+  .glass-sidebar {
+    @apply bg-[rgba(15,23,42,0.6)] backdrop-blur-[20px] border-r border-[var(--color-glass-border)];
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-zinc-800 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-zinc-700;
+}
