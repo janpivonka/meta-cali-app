@@ -43,8 +43,8 @@ const THUMBS: { val: ThumbPosition; label: string }[] = [
   { val: 'bottom', label: 'Standard (Palec dole)' },
   { val: 'top', label: 'Suicide (Palec nahoře)' }
 ];
-const EQUIPMENTS: EquipmentType[] = ['pull-up bar', 'dip bars', 'rings', 'floor', 'parallelettes', 'stall bars'];
-const EXECUTIONS: ExecutionType[] = ['standard', 'one arm', 'archer', 'typewriter', 'commando', 'high', 'negatives', 'partials', 'explosive', 'controlled', 'scapula', 'korean'];
+const EQUIPMENTS: EquipmentType[] = ['pull-up bar', 'low bar', 'dip bars', 'rings', 'floor', 'parallelettes', 'stall bars'];
+const EXECUTIONS: ExecutionType[] = ['standard', 'one arm', 'archer', 'typewriter', 'commando', 'high', 'negatives', 'partials', 'explosive', 'controlled', 'scapula', 'korean', 'australian'];
 const POSITIONS: BodyPosition[] = ['hollow body', 'arch back', 'L-sit', 'tuck', 'adv tuck', 'halflay', 'one leg', 'straddle', 'full', 'australian (bent legs)', 'australian (straight legs)'];
 const BAND_PLACEMENTS: BandPlacement[] = ['both legs', 'one leg', 'waist', 'knees', 'back'];
 const LOOP_TYPES: { val: BandLoopType; label: string }[] = [
@@ -107,8 +107,15 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave }) => {
   };
 
   const availableEquipment = EQUIPMENTS.filter(eq => {
-    if (currentExercise?.category === 'Pull' && !execution.toString().includes('australian')) {
-      return eq !== 'floor' && eq !== 'parallelettes' && eq !== 'dip bars';
+    if (currentExercise?.category === 'Pull') {
+      // For pullups, exclude floor and parallelettes always
+      if (eq === 'floor' || eq === 'parallelettes') return false;
+      
+      // If NOT australian, also exclude low bar and dip bars
+      if (!execution.toString().includes('australian') && !position.toString().includes('australian')) {
+        return eq !== 'low bar' && eq !== 'dip bars';
+      }
+      return true;
     }
     return true;
   });
