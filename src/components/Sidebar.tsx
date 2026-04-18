@@ -79,9 +79,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
         {/* Main Nav Capsule */}
         <nav className="glass-card flex items-center justify-around gap-2 px-3 py-2 pointer-events-auto h-16 w-[70%] max-w-[280px] shadow-[0_20px_50px_rgba(0,0,0,0.3)] border-cyan-500/10">
           {[
-            { id: 'explorer', icon: Compass },
-            { id: 'dashboard', icon: Zap },
-            { id: 'stats', icon: Activity },
+            { id: 'dashboard', icon: LayoutDashboard },
+            { id: 'explorer', icon: Search },
+            { id: 'profile', icon: User },
           ].map((item) => (
             <button
               key={item.id}

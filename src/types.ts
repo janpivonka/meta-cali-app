@@ -34,6 +34,10 @@ export interface UserProfile {
   name: string;
   weight: number;
   height: number;
+  bio: string;
+  posts: number;
+  followers: number;
+  following: number;
   goals: {
     pullups: number;
     pushups: number;
@@ -41,6 +45,7 @@ export interface UserProfile {
     planche: number; // in seconds
     frontlever: number; // in seconds
   };
+  trophies: string[];
 }
 
 export interface UserStats {

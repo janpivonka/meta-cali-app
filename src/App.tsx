@@ -13,13 +13,18 @@ const DEFAULT_PROFILE: UserProfile = {
   name: 'Karel',
   weight: 75,
   height: 180,
+  bio: 'Kalisthenický operativec se zaměřením na statické prvky a progresivní telemetrii.',
+  posts: 124,
+  followers: 1204,
+  following: 85,
   goals: {
     pullups: 15,
     pushups: 40,
     dips: 20,
     planche: 5,
     frontlever: 5
-  }
+  },
+  trophies: ['🥇 SHYBY PRO', '🎖️ PLANCHE SURVIVOR', '⚡ MUSCLEUP ELITE', '🛡️ IRON CORE']
 };
 
 export default function App() {
