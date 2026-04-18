@@ -123,7 +123,7 @@ export default function App() {
                           )}
                           {log.grip && (
                             <span className="text-[8px] font-black bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded border border-purple-500/20 uppercase tracking-tighter shadow-sm">
-                              {log.grip} {log.thumb && `(${log.thumb})`}
+                              {log.gripWidth && `${log.gripWidth} `}{log.grip} {log.thumb && `(${log.thumb})`}
                             </span>
                           )}
                         </div>

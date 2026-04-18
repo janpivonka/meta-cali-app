@@ -20,6 +20,7 @@ import {
   WorkoutSet, 
   ExerciseLog, 
   GripType, 
+  GripWidth,
   ThumbPosition,
   EquipmentType, 
   ExecutionType, 
@@ -37,12 +38,13 @@ interface WorkoutFormProps {
 }
 
 const GRIPS: GripType[] = ['pronated', 'supinated', 'neutral', 'false', 'mixed'];
+const GRIP_WIDTHS: GripWidth[] = ['narrow', 'shoulder-width', 'wide'];
 const THUMBS: { val: ThumbPosition; label: string }[] = [
   { val: 'bottom', label: 'Standard (Palec dole)' },
   { val: 'top', label: 'Suicide (Palec nahoře)' }
 ];
 const EQUIPMENTS: EquipmentType[] = ['pull-up bar', 'dip bars', 'rings', 'floor', 'parallelettes', 'stall bars'];
-const EXECUTIONS: ExecutionType[] = ['standard', 'wide', 'shoulder-width', 'narrow', 'commando', 'one arm', 'archer', 'typewriter', 'high', 'negatives', 'partials', 'explosive', 'controlled', 'scapula', 'korean'];
+const EXECUTIONS: ExecutionType[] = ['standard', 'one arm', 'archer', 'typewriter', 'commando', 'high', 'negatives', 'partials', 'explosive', 'controlled', 'scapula', 'korean'];
 const POSITIONS: BodyPosition[] = ['hollow body', 'arch back', 'L-sit', 'tuck', 'adv tuck', 'halflay', 'one leg', 'straddle', 'full', 'australian (bent legs)', 'australian (straight legs)'];
 const BAND_PLACEMENTS: BandPlacement[] = ['both legs', 'one leg', 'waist', 'knees', 'back'];
 const LOOP_TYPES: { val: BandLoopType; label: string }[] = [
@@ -62,6 +64,7 @@ const ONE_ARM_POSITIONS: { val: OneArmHandPosition; label: string }[] = [
 export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave }) => {
   const [exerciseId, setExerciseId] = useState<string>(EXERCISE_LIBRARY[0].id);
   const [grip, setGrip] = useState<GripType>('pronated');
+  const [gripWidth, setGripWidth] = useState<GripWidth>('shoulder-width');
   const [thumb, setThumb] = useState<ThumbPosition>('bottom');
   const [equipment, setEquipment] = useState<EquipmentType>('pull-up bar');
   const [execution, setExecution] = useState<ExecutionType | string>('standard');
@@ -105,10 +108,21 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave }) => {
 
   const availableEquipment = EQUIPMENTS.filter(eq => {
     if (currentExercise?.category === 'Pull' && !execution.toString().includes('australian')) {
-      return eq !== 'floor' && eq !== 'parallelettes';
+      return eq !== 'floor' && eq !== 'parallelettes' && eq !== 'dip bars';
     }
     return true;
   });
+
+  const handleExecutionChange = (ex: ExecutionType) => {
+    setExecution(ex);
+    // Logic as requested
+    if (ex === 'archer' || ex === 'typewriter') {
+      setGripWidth('wide');
+    } else if (ex === 'commando') {
+      setGripWidth('narrow');
+      setGrip('neutral');
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,6 +134,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave }) => {
       exerciseId,
       type: currentExercise?.name || 'Unknown',
       grip,
+      gripWidth,
       thumb,
       equipment,
       execution,
@@ -203,6 +218,25 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave }) => {
            <div className="space-y-8 p-8 bg-white/5 rounded-[32px] border border-white/5">
               <div className="space-y-6">
                  <div>
+                   <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-500/60 block mb-3">Šířka Úchopu (Width)</label>
+                   <div className="flex flex-wrap gap-2">
+                      {GRIP_WIDTHS.map(w => (
+                        <button
+                          key={w}
+                          type="button"
+                          onClick={() => setGripWidth(w)}
+                          className={cn(
+                            "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all",
+                            gripWidth === w ? "bg-white text-black border-white shadow-lg" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
+                          )}
+                        >
+                          {w === 'shoulder-width' ? 'Šířka ramen' : w === 'narrow' ? 'Úzký' : 'Široký'}
+                        </button>
+                      ))}
+                   </div>
+                 </div>
+
+                 <div>
                    <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-500/60 block mb-3">Úchop (Grip)</label>
                    <div className="flex flex-wrap gap-2">
                       {GRIPS.map(g => (
@@ -270,7 +304,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave }) => {
                         <button
                           key={ex}
                           type="button"
-                          onClick={() => setExecution(ex)}
+                          onClick={() => handleExecutionChange(ex)}
                           className={cn(
                             "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all",
                             execution === ex ? "bg-purple-500 text-white border-purple-400 shadow-lg shadow-purple-500/20" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
