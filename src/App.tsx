@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
+import { Explorer } from './components/Explorer';
 import { WorkoutForm } from './components/WorkoutForm';
 import { AiInsights } from './components/AiInsights';
 import { Profile } from './components/Profile';
@@ -86,6 +87,8 @@ export default function App() {
     switch (activeTab) {
       case 'dashboard':
         return <Dashboard logs={logs} />;
+      case 'explorer':
+        return <Explorer />;
       case 'log':
         return <WorkoutForm onSave={handleSaveLog} />;
       case 'stats':
@@ -153,6 +156,7 @@ export default function App() {
             <h2 className="text-cyan-500 text-[10px] font-extrabold uppercase tracking-[0.3em] mb-2 px-2 py-1 bg-cyan-500/10 border border-cyan-500/20 w-fit rounded-md">Meta-Tactical OS</h2>
             <h1 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tighter leading-none">
               {activeTab === 'dashboard' ? 'Monitor' : 
+               activeTab === 'explorer' ? 'Explorer' :
                activeTab === 'log' ? 'Operační log' : 
                activeTab === 'stats' ? 'Analýza dat' : 
                activeTab === 'profile' ? 'Konfigurace' : 'Meta-Processing'}

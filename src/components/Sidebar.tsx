@@ -1,6 +1,7 @@
 import React from 'react';
-import { LayoutDashboard, PlusCircle, TrendingUp, BrainCircuit, User } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, TrendingUp, BrainCircuit, User, Search, Plus, Compass, Zap, Activity } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { motion } from 'motion/react';
 
 interface SidebarProps {
   activeTab: string;
@@ -10,6 +11,7 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
   const menuItems = [
     { id: 'dashboard', label: 'Monitor', icon: LayoutDashboard },
+    { id: 'explorer', label: 'Explorer', icon: Search },
     { id: 'log', label: 'Vstup', icon: PlusCircle },
     { id: 'stats', label: 'Data', icon: TrendingUp },
     { id: 'ai', label: 'Core', icon: BrainCircuit },
@@ -73,27 +75,49 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
       </aside>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-sm glass-card h-16 flex items-center justify-around px-2 z-[60] shadow-2xl">
-        {menuItems.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => setActiveTab(item.id)}
-            className={cn(
-              "flex flex-col items-center justify-center gap-1 transition-all duration-300 relative px-3 py-1 rounded-xl",
-              activeTab === item.id ? "text-cyan-500" : "text-slate-400"
-            )}
-          >
-            <item.icon size={20} className={cn(
-              "transition-transform",
-              activeTab === item.id ? "scale-110" : "scale-90"
-            )} />
-            <span className="text-[9px] font-bold uppercase tracking-tighter">{item.label}</span>
-            {activeTab === item.id && (
-              <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-cyan-500 rounded-full shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
-            )}
-          </button>
-        ))}
-      </nav>
+      <div className="lg:hidden fixed bottom-8 left-0 right-0 px-6 z-[100] flex items-center justify-between pointer-events-none">
+        {/* Main Nav Capsule */}
+        <nav className="glass-card flex items-center justify-around gap-2 px-3 py-2 pointer-events-auto h-16 w-[70%] max-w-[280px] shadow-[0_20px_50px_rgba(0,0,0,0.3)] border-cyan-500/10">
+          {[
+            { id: 'explorer', icon: Compass },
+            { id: 'dashboard', icon: Zap },
+            { id: 'stats', icon: Activity },
+          ].map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={cn(
+                "relative p-3 rounded-2xl transition-all duration-300 group",
+                activeTab === item.id ? "bg-cyan-500/10 text-cyan-500 shadow-[0_0_20px_rgba(34,211,238,0.1)]" : "text-slate-500"
+              )}
+            >
+              <item.icon 
+                size={22} 
+                className={cn(
+                  "transition-transform",
+                  activeTab === item.id ? "scale-110" : "scale-90"
+                )} 
+              />
+              {activeTab === item.id && (
+                <motion.div 
+                  layoutId="mobile-nav-indicator"
+                  className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-cyan-500 rounded-full shadow-[0_0_10px_rgba(34,211,238,0.8)]" 
+                />
+              )}
+            </button>
+          ))}
+        </nav>
+
+        {/* Floating Action Button (Log) */}
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => setActiveTab('log')}
+          className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-400 to-purple-600 text-black flex items-center justify-center shadow-lg shadow-cyan-500/20 pointer-events-auto border border-white/20"
+        >
+          <Plus size={32} />
+        </motion.button>
+      </div>
     </>
   );
 };

@@ -63,6 +63,14 @@
   .nav-active {
     @apply bg-cyan-500 text-black shadow-[0_0_20px_rgba(34,211,238,0.4)] border-cyan-400 font-black;
   }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
 
 /* Chrome, Safari, Edge, Opera */

@@ -137,15 +137,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ logs }) => {
         </div>
       </div>
 
-      {/* Floating Instagram-style Plus Button */}
-      <motion.button
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-        className="fixed bottom-24 right-6 sm:right-10 w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500 to-purple-600 text-black shadow-lg shadow-cyan-500/20 flex items-center justify-center z-[70] border border-white/20"
-      >
-        <Plus size={28} />
-      </motion.button>
-
       {/* Top Tabs Navigation */}
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-center sm:justify-start gap-4 md:gap-8 px-2">
@@ -419,19 +410,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ logs }) => {
           ))}
         </div>
       </section>
-
-      {/* Interactive Bottom Bar (Miniature Simulation of the sketch's bottom nav) */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-sm glass-card p-4 flex items-center justify-around md:hidden border-cyan-500/20 shadow-2xl py-5 rounded-3xl z-[60]">
-        <div className="p-2 bg-cyan-500/10 rounded-2xl text-cyan-500 shadow-lg shadow-cyan-500/20">
-          <Compass size={24} />
-        </div>
-        <div className="p-2 text-slate-400">
-           <Zap size={24} />
-        </div>
-        <div className="p-2 text-slate-400">
-           <Activity size={24} />
-        </div>
-      </div>
 
       {/* Calendar History Modal */}
       <AnimatePresence>
