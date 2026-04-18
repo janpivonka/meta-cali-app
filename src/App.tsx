@@ -152,7 +152,7 @@ export default function App() {
             </div>
             <h2 className="text-cyan-500 text-[10px] font-extrabold uppercase tracking-[0.3em] mb-2 px-2 py-1 bg-cyan-500/10 border border-cyan-500/20 w-fit rounded-md">Meta-Tactical OS</h2>
             <h1 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tighter leading-none">
-              {activeTab === 'dashboard' ? `Ahoj, ${profile.name}` : 
+              {activeTab === 'dashboard' ? 'Monitor' : 
                activeTab === 'log' ? 'Operační log' : 
                activeTab === 'stats' ? 'Analýza dat' : 
                activeTab === 'profile' ? 'Konfigurace' : 'Meta-Processing'}
