@@ -25,6 +25,7 @@ import {
   ExecutionType, 
   OneArmHandPosition,
   BandPlacement,
+  BandLoopType,
   BodyPosition 
 } from '../types';
 import { cn } from '../lib/utils';
@@ -34,6 +35,29 @@ import { EXERCISE_LIBRARY } from '../data/exerciseLibrary';
 interface WorkoutFormProps {
   onSave: (log: ExerciseLog) => void;
 }
+
+const GRIPS: GripType[] = ['pronated', 'supinated', 'neutral', 'false', 'mixed'];
+const THUMBS: { val: ThumbPosition; label: string }[] = [
+  { val: 'bottom', label: 'Standard (Palec dole)' },
+  { val: 'top', label: 'Suicide (Palec nahoře)' }
+];
+const EQUIPMENTS: EquipmentType[] = ['pull-up bar', 'dip bars', 'rings', 'floor', 'parallelettes', 'stall bars'];
+const EXECUTIONS: ExecutionType[] = ['standard', 'wide', 'shoulder-width', 'narrow', 'commando', 'one arm', 'archer', 'typewriter', 'high', 'negatives', 'partials', 'explosive', 'controlled', 'scapula'];
+const POSITIONS: BodyPosition[] = ['hollow body', 'arch back', 'L-sit', 'tuck', 'adv tuck', 'halflay', 'one leg', 'straddle', 'full', 'australian (bent legs)', 'australian (straight legs)'];
+const BAND_PLACEMENTS: BandPlacement[] = ['both legs', 'one leg', 'waist', 'knees', 'back'];
+const LOOP_TYPES: { val: BandLoopType; label: string }[] = [
+  { val: 'single', label: 'Jednoduché' },
+  { val: 'double', label: 'Dvojité (omotané)' }
+];
+const ONE_ARM_POSITIONS: { val: OneArmHandPosition; label: string }[] = [
+  { val: 'wrist', label: 'Zápěstí' },
+  { val: 'forearm', label: 'Předloktí' },
+  { val: 'elbow', label: 'Loket' },
+  { val: 'biceps', label: 'Biceps/Triceps' },
+  { val: 'shoulder', label: 'Rameno' },
+  { val: 'horizontal', label: 'Vodorovně/Prsa' },
+  { val: 'free', label: 'Volně podél těla' }
+];
 
 export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave }) => {
   const [exerciseId, setExerciseId] = useState<string>(EXERCISE_LIBRARY[0].id);
@@ -45,7 +69,8 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave }) => {
   const [position, setPosition] = useState<BodyPosition | string>('standard');
   const [assistanceType, setAssistanceType] = useState<'None' | 'Band' | 'Weight'>('None');
   const [assistanceValue, setAssistanceValue] = useState('');
-  const [bandPlacement, setBandPlacement] = useState<BandPlacement | string>('both legs');
+  const [bandPlacements, setBandPlacements] = useState<BandPlacement[]>(['both legs']);
+  const [bandLoopType, setBandLoopType] = useState<BandLoopType>('single');
   const [sets, setSets] = useState<WorkoutSet[]>([{ reps: 0, weight: 0, rpe: 7 }]);
   const [notes, setNotes] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -72,6 +97,19 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave }) => {
     setSets(newSets);
   };
 
+  const toggleBandPlacement = (p: BandPlacement) => {
+    setBandPlacements(prev => 
+      prev.includes(p) ? prev.filter(item => item !== p) : [...prev, p]
+    );
+  };
+
+  const availableEquipment = EQUIPMENTS.filter(eq => {
+    if (currentExercise?.category === 'Pull' && !execution.toString().includes('australian')) {
+      return eq !== 'floor' && eq !== 'parallelettes';
+    }
+    return true;
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const validSets = sets.filter(s => (s.reps && s.reps > 0) || (s.time && s.time > 0));
@@ -90,7 +128,8 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave }) => {
       assistance: assistanceType !== 'None' ? {
         type: assistanceType,
         value: assistanceValue,
-        placement: assistanceType === 'Band' ? bandPlacement : undefined,
+        placement: assistanceType === 'Band' ? bandPlacements : undefined,
+        loopType: assistanceType === 'Band' ? bandLoopType : undefined,
       } : undefined,
       sets: validSets,
       notes,
@@ -102,25 +141,6 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave }) => {
     setSets([{ reps: 0, weight: 0, rpe: 7 }]);
     setNotes('');
   };
-
-  const GRIPS: GripType[] = ['pronated', 'supinated', 'neutral', 'false', 'mixed'];
-  const THUMBS: { val: ThumbPosition; label: string }[] = [
-    { val: 'bottom', label: 'Standard (Palec dole)' },
-    { val: 'top', label: 'Suicide (Palec nahoře)' }
-  ];
-  const EQUIPMENTS: EquipmentType[] = ['pull-up bar', 'dip bars', 'rings', 'floor', 'parallelettes', 'stall bars'];
-  const EXECUTIONS: ExecutionType[] = ['standard', 'wide', 'shoulder-width', 'narrow', 'commando', 'one arm', 'archer', 'typewriter', 'high', 'negatives', 'partials', 'explosive', 'scapula'];
-  const POSITIONS: BodyPosition[] = ['hollow body', 'arch back', 'L-sit', 'tuck', 'adv tuck', 'straddle', 'full', 'australian (bent legs)', 'australian (straight legs)'];
-  const BAND_PLACEMENTS: BandPlacement[] = ['both legs', 'one leg', 'waist', 'knees'];
-  const ONE_ARM_POSITIONS: { val: OneArmHandPosition; label: string }[] = [
-    { val: 'wrist', label: 'Zápěstí' },
-    { val: 'forearm', label: 'Předloktí' },
-    { val: 'elbow', label: 'Loket' },
-    { val: 'biceps', label: 'Biceps/Triceps' },
-    { val: 'shoulder', label: 'Rameno' },
-    { val: 'horizontal', label: 'Vodorovně/Prsa' },
-    { val: 'free', label: 'Volně podél těla' }
-  ];
 
   return (
     <div id="workout-form-container" className="glass-card p-6 md:p-10 max-w-5xl mx-auto border-cyan-500/10 bg-black/40 rounded-[40px]">
@@ -223,7 +243,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave }) => {
                  <div>
                    <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-500/60 block mb-3">Vybavení (Equipment)</label>
                    <div className="flex flex-wrap gap-2">
-                      {EQUIPMENTS.map(eq => (
+                      {availableEquipment.map(eq => (
                         <button
                           key={eq}
                           type="button"
@@ -336,26 +356,43 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave }) => {
                 <div className="flex flex-col sm:flex-row gap-8 w-full">
                   <div className="flex-1 space-y-4">
                      <label className="text-[10px] font-black uppercase tracking-[0.4em] text-orange-500/60 block">Odpor & Pozice</label>
-                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <input 
-                           type="text"
-                           placeholder="Barva/Odpor..."
-                           value={assistanceValue}
-                           onChange={(e) => setAssistanceValue(e.target.value)}
-                           className="w-full bg-black/40 border border-orange-500/20 rounded-2xl p-4 text-sm font-bold text-white focus:outline-none focus:border-orange-500 italic"
-                        />
+                     <div className="grid grid-cols-1 gap-4">
+                        <div className="flex gap-4">
+                          <input 
+                              type="text"
+                              placeholder="Barva/Odpor..."
+                              value={assistanceValue}
+                              onChange={(e) => setAssistanceValue(e.target.value)}
+                              className="flex-1 bg-black/40 border border-orange-500/20 rounded-2xl p-4 text-sm font-bold text-white focus:outline-none focus:border-orange-500 italic"
+                          />
+                          <div className="flex gap-1.5 bg-black/20 p-2 rounded-2xl border border-white/5">
+                            {LOOP_TYPES.map(l => (
+                              <button
+                                key={l.val}
+                                type="button"
+                                onClick={() => setBandLoopType(l.val)}
+                                className={cn(
+                                  "px-3 py-2 rounded-xl text-[7px] font-black uppercase tracking-widest transition-all",
+                                  bandLoopType === l.val ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" : "text-slate-600 hover:text-slate-400"
+                                )}
+                              >
+                                {l.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
                         <div className="flex flex-wrap gap-1.5">
                            {BAND_PLACEMENTS.map(p => (
                              <button
                                key={p}
                                type="button"
-                               onClick={() => setBandPlacement(p)}
+                               onClick={() => toggleBandPlacement(p)}
                                className={cn(
                                  "px-2 py-2 rounded-lg text-[7px] font-black uppercase tracking-widest border transition-all flex-1 text-center",
-                                 bandPlacement === p ? "bg-orange-500 text-black border-orange-400" : "bg-black/40 text-slate-500 border-white/5"
+                                 bandPlacements.includes(p) ? "bg-orange-500 text-black border-orange-400 shadow-md shadow-orange-500/10" : "bg-black/40 text-slate-500 border-white/5"
                                )}
                              >
-                               {p === 'one leg' ? 'Jedna noha' : p === 'both legs' ? 'Obě nohy' : p === 'waist' ? 'Pas' : 'Kolena'}
+                               {p === 'one leg' ? 'Jedna noha' : p === 'both legs' ? 'Obě nohy' : p === 'waist' ? 'Pas' : p === 'back' ? 'Záda' : 'Kolena'}
                              </button>
                            ))}
                         </div>

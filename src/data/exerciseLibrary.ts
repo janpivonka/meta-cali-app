@@ -98,5 +98,19 @@ export const EXERCISE_LIBRARY: ExerciseDefinition[] = [
       'Silná aktivace zádových svalů a jádra.'
     ],
     commonVariations: ['Tuck', 'Adv Tuck', 'Straddle', 'Full']
+  },
+  {
+    id: 'koreanpullups',
+    name: 'Korean Shyby',
+    category: 'Pull',
+    description: 'Náročný variant shybů prováděný s hrazdou za zády, vyžadující vysokou mobilitu ramen a sílu zad.',
+    videoUrl: 'https://www.youtube.com/embed/fD_fV8jS9Y8',
+    technicalPoints: [
+      'Úchop za zády v šíři ramen.',
+      'Aktivní lopatková protiakce.',
+      'Tah směřující k bedrům.',
+      'Udržení vertikální polohy těla bez nadměrného prohnutí.'
+    ],
+    commonVariations: ['Standard', 'L-Sit', 'Weighted']
   }
 ];

@@ -1,10 +1,11 @@
 export type GripType = 'pronated' | 'supinated' | 'neutral' | 'false' | 'mixed';
 export type ThumbPosition = 'top' | 'bottom';
 export type EquipmentType = 'pull-up bar' | 'dip bars' | 'rings' | 'floor' | 'parallelettes' | 'stall bars';
-export type ExecutionType = 'standard' | 'wide' | 'shoulder-width' | 'narrow' | 'commando' | 'one arm' | 'archer' | 'typewriter' | 'high' | 'negatives' | 'partials' | 'explosive' | 'scapula';
-export type BodyPosition = 'hollow body' | 'arch back' | 'L-sit' | 'tuck' | 'adv tuck' | 'straddle' | 'full' | 'australian (bent legs)' | 'australian (straight legs)';
+export type ExecutionType = 'standard' | 'wide' | 'shoulder-width' | 'narrow' | 'commando' | 'one arm' | 'archer' | 'typewriter' | 'high' | 'negatives' | 'partials' | 'explosive' | 'controlled' | 'scapula';
+export type BodyPosition = 'hollow body' | 'arch back' | 'L-sit' | 'tuck' | 'adv tuck' | 'halflay' | 'one leg' | 'straddle' | 'full' | 'australian (bent legs)' | 'australian (straight legs)';
 export type OneArmHandPosition = 'wrist' | 'forearm' | 'elbow' | 'biceps' | 'shoulder' | 'horizontal' | 'free';
-export type BandPlacement = 'both legs' | 'one leg' | 'waist' | 'knees';
+export type BandPlacement = 'both legs' | 'one leg' | 'waist' | 'knees' | 'back';
+export type BandLoopType = 'single' | 'double';
 
 export interface WorkoutSet {
   reps?: number;
@@ -32,7 +33,8 @@ export interface ExerciseLog {
   assistance?: {
     type: 'Band' | 'Weight' | 'None';
     value?: string | number; // e.g. "Red", 10 (kg)
-    placement?: BandPlacement | string;
+    placement?: BandPlacement[] | string;
+    loopType?: BandLoopType;
     notes?: string;
   };
   sets: WorkoutSet[];
