@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ExerciseLog } from '../types';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Activity, 
   Flame, 
@@ -14,9 +14,16 @@ import {
   Zap,
   Target,
   Plus,
-  Compass
+  Compass,
+  Bell,
+  MessageSquare,
+  Check,
+  Circle,
+  Square,
+  Calendar as CalendarIcon,
+  X
 } from 'lucide-react';
-import { cn } from '../lib/utils';
+import { cn, formatDate } from '../lib/utils';
 
 interface DashboardProps {
   logs: ExerciseLog[];
@@ -24,6 +31,8 @@ interface DashboardProps {
 
 export const Dashboard: React.FC<DashboardProps> = ({ logs }) => {
   const [activeTab, setActiveTab] = useState<'zaklad' | 'osobni' | 'verejne'>('zaklad');
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
+  const [selectedDayDetail, setSelectedDayDetail] = useState<number | null>(null);
 
   // Dummy data for visual representation based on sketch
   const dailyChallenges = [
@@ -39,22 +48,58 @@ export const Dashboard: React.FC<DashboardProps> = ({ logs }) => {
     { id: 1, title: 'Muscle-Up Mastery', author: 'By Meta-Cali Specialist', image: 'https://picsum.photos/seed/muscleup/400/200' },
   ];
 
+  // Calendar logic: Last 7 days
+  const days = ['PO', 'ÚT', 'ST', 'ČT', 'PÁ', 'SO', 'NE'];
+  const today = new Date();
+  const calendarDays = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setDate(today.getDate() - (6 - i));
+    return d;
+  });
+
+  const getStatus = (date: Date) => {
+    const dateStr = formatDate(date.getTime());
+    const hasLog = logs.some(l => formatDate(l.timestamp) === dateStr);
+    
+    if (hasLog) return 'trained';
+    // Logic for Rest/Planned could be more complex, using dummy for now based on day of week
+    if (date.getDay() === 0) return 'rest'; // Sunday as Rest
+    if (date > today) return 'planned';
+    return 'nothing';
+  };
+
   return (
-    <div id="monitor-view" className="space-y-8 max-w-5xl mx-auto pb-20">
+    <div id="monitor-view" className="space-y-8 max-w-5xl mx-auto pb-20 relative">
       {/* Sketch Header Simulation */}
       <div className="flex items-center justify-between px-2 mb-4">
-        <div className="w-10 h-10 rounded-full bg-cyan-500/10 flex items-center justify-center text-cyan-500 border border-cyan-500/20">
-          <Activity size={20} />
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-cyan-500 flex items-center justify-center text-black font-black italic shadow-[0_0_15px_rgba(34,211,238,0.4)]">
+            M
+          </div>
+          <div className="hidden sm:block">
+            <h1 className="text-xl font-black tracking-tighter text-slate-900 dark:text-white italic">META-CALI</h1>
+            <span className="text-[8px] uppercase tracking-[0.4em] text-slate-500 font-black block leading-none">Tactical Unit OS</span>
+          </div>
         </div>
         <div className="flex gap-4">
-          <button className="w-10 h-10 ring-1 ring-white/10 rounded-full flex items-center justify-center hover:bg-white/5 transition-all">
-            <Share2 size={18} className="text-slate-400" />
+          <button className="relative w-10 h-10 ring-1 ring-white/10 rounded-full flex items-center justify-center hover:bg-white/5 transition-all text-slate-400 dark:text-slate-500 hover:text-cyan-500">
+            <Bell size={18} />
+            <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-slate-900"></span>
           </button>
-          <button className="w-10 h-10 ring-1 ring-white/10 rounded-full flex items-center justify-center hover:bg-white/5 transition-all">
-            <MoreHorizontal size={18} className="text-slate-400" />
+          <button className="w-10 h-10 ring-1 ring-white/10 rounded-full flex items-center justify-center hover:bg-white/5 transition-all text-slate-400 dark:text-slate-500 hover:text-cyan-500">
+            <MessageSquare size={18} />
           </button>
         </div>
       </div>
+
+      {/* Floating Instagram-style Plus Button */}
+      <motion.button
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        className="fixed bottom-24 right-6 sm:right-10 w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500 to-purple-600 text-black shadow-lg shadow-cyan-500/20 flex items-center justify-center z-[70] border border-white/20"
+      >
+        <Plus size={28} />
+      </motion.button>
 
       {/* Top Tabs Navigation */}
       <div className="flex flex-col gap-4">
@@ -166,24 +211,46 @@ export const Dashboard: React.FC<DashboardProps> = ({ logs }) => {
 
       {/* Weekly Calendar View */}
       <div className="space-y-4">
-        <div className="flex items-center gap-2 px-2">
+        <div className="flex items-center justify-between px-2">
           <span className="text-[10px] font-black text-cyan-500 uppercase tracking-[0.3em]">Týdenní Scan</span>
+          <button 
+            onClick={() => setShowCalendarModal(true)}
+            className="text-[10px] text-slate-400 hover:text-cyan-500 font-black uppercase tracking-widest flex items-center gap-2"
+          >
+            <CalendarIcon size={12} /> Historie
+          </button>
         </div>
         <div className="grid grid-cols-7 gap-2">
-          {[1, 2, 3, 4, 5, 6, 7].map((day) => (
-            <motion.div
-              whileHover={{ y: -5 }}
-              key={day}
-              className={cn(
-                "glass-card p-3 flex flex-col items-center justify-center gap-1 border-white/5 bg-white/30 dark:bg-white/5",
-                day === 4 ? "border-cyan-500/40 bg-cyan-500/10" : ""
-              )}
-            >
-              <span className="text-lg font-black text-slate-900 dark:text-white leading-none">{day}</span>
-              <div className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-white/20" />
-              <span className="text-[8px] font-black text-[#94a3b8] uppercase tracking-tighter">0-Log</span>
-            </motion.div>
-          ))}
+          {calendarDays.map((date, index) => {
+            const status = getStatus(date);
+            const dayLabel = days[date.getDay() === 0 ? 6 : date.getDay() - 1];
+            const isToday = formatDate(date.getTime()) === formatDate(today.getTime());
+
+            return (
+              <motion.div
+                key={index}
+                whileHover={{ y: -5 }}
+                onClick={() => setSelectedDayDetail(date.getTime())}
+                className={cn(
+                  "glass-card p-3 flex flex-col items-center justify-center gap-2 border-white/5 bg-white/30 dark:bg-white/5 relative cursor-pointer",
+                  isToday ? "border-cyan-500/40 bg-cyan-500/10 shadow-[0_0_15px_rgba(34,211,238,0.1)]" : ""
+                )}
+              >
+                <div className="flex flex-col items-center">
+                  <span className="text-[9px] font-black text-[#94a3b8] uppercase tracking-tighter mb-0.5">{dayLabel}</span>
+                  <span className="text-lg font-black text-slate-900 dark:text-white leading-none">{date.getDate()}</span>
+                </div>
+                
+                {/* Status Indicators */}
+                <div className="w-6 h-6 flex items-center justify-center">
+                  {status === 'trained' && <Check size={18} className="text-green-500 drop-shadow-[0_0_5px_rgba(34,197,94,0.4)]" />}
+                  {status === 'planned' && <Square size={14} className="text-orange-500 fill-orange-500/20" />}
+                  {status === 'nothing' && <Circle size={14} className="text-red-500 opacity-40 hover:opacity-100 transition-opacity" />}
+                  {status === 'rest' && <Circle size={14} className="text-green-500 fill-green-500/20" />}
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
       </div>
 
@@ -320,6 +387,86 @@ export const Dashboard: React.FC<DashboardProps> = ({ logs }) => {
            <Activity size={24} />
         </div>
       </div>
+
+      {/* Calendar History Modal */}
+      <AnimatePresence>
+        {showCalendarModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="glass-card w-full max-w-2xl p-8 relative max-h-[90vh] overflow-y-auto"
+            >
+              <button 
+                onClick={() => setShowCalendarModal(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-white"
+              >
+                <X size={24} />
+              </button>
+              <h2 className="text-2xl font-black text-white mb-6 uppercase tracking-tighter">Kompletní Operační Historie</h2>
+              <div className="grid grid-cols-7 gap-4 mb-8">
+                {/* Simplified Month View Simulation */}
+                {Array.from({ length: 31 }, (_, i) => (
+                  <div key={i} className="aspect-square glass-card flex items-center justify-center text-xs font-black border-white/5 hover:border-cyan-500/30 cursor-pointer">
+                    {i + 1}
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Day Detail Modal */}
+      <AnimatePresence>
+        {selectedDayDetail && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl"
+          >
+            <motion.div
+              initial={{ scale: 0.9, x: 50 }}
+              animate={{ scale: 1, x: 0 }}
+              className="glass-card w-full max-w-lg p-10 relative"
+            >
+               <button 
+                onClick={() => setSelectedDayDetail(null)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-white"
+              >
+                <X size={24} />
+              </button>
+              <div className="space-y-6">
+                <span className="text-[10px] font-black text-cyan-500 uppercase tracking-[0.4em]">Detail dne</span>
+                <h3 className="text-4xl font-black text-white italic">{formatDate(selectedDayDetail)}</h3>
+                
+                <div className="p-6 bg-white/5 border border-white/10 rounded-3xl space-y-4">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-slate-400 font-bold uppercase tracking-widest">Stav tréninku</span>
+                    <span className="text-green-500 font-black uppercase">DOKONČENO</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-slate-400 font-bold uppercase tracking-widest">Objem logu</span>
+                    <span className="text-white font-black italic">140 OPAKOVÁNÍ</span>
+                  </div>
+                </div>
+
+                <div className="pt-6 border-t border-white/5">
+                   <button className="w-full py-4 bg-cyan-500 text-black font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-cyan-400 transition-all shadow-[0_0_20px_rgba(34,211,238,0.3)]">
+                      Upravit data
+                   </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
