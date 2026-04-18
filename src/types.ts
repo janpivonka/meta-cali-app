@@ -18,7 +18,8 @@ export type PredefinedExercise =
 export type ExerciseType = PredefinedExercise | string;
 
 export interface WorkoutSet {
-  reps: number;
+  reps?: number;
+  time?: number; // duration in seconds
   weight?: number; // extra weight in kg
 }
 
@@ -26,6 +27,12 @@ export interface ExerciseLog {
   id: string;
   type: ExerciseType;
   block?: string; // e.g. PLANCHE, PULL BASICS
+  variation?: string; // e.g. "High", "Chest-to-bar"
+  form?: 'Hollowbody' | 'Archy' | 'Standard' | string;
+  assistance?: {
+    type: 'Band' | 'Weight' | 'None';
+    value?: string | number; // e.g. "Red", 10 (kg)
+  };
   sets: WorkoutSet[];
   timestamp: number;
 }

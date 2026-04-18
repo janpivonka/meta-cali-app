@@ -103,23 +103,49 @@ export default function App() {
             <div className="grid gap-4">
               {logs.length > 0 ? (
                 [...logs].reverse().map((log) => (
-                  <div key={log.id} className="glass-card p-4 flex items-center justify-between border-white/5 bg-white/5">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-bold text-white">{log.type}</p>
+                  <div key={log.id} className="glass-card p-5 flex items-center justify-between border-white/5 bg-white/5 group hover:border-cyan-500/20 transition-all">
+                    <div className="flex-1">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <p className="text-sm font-black text-white uppercase tracking-tight italic">{log.type}</p>
+                        {log.variation && (
+                          <span className="text-[9px] font-black text-white/50 bg-white/5 px-2 py-0.5 rounded border border-white/10 uppercase tracking-widest">
+                            {log.variation}
+                          </span>
+                        )}
                         {log.block && (
-                          <span className="text-[8px] font-black bg-cyan-500/10 text-cyan-500 px-1.5 py-0.5 rounded border border-cyan-500/20 uppercase tracking-tighter">
+                          <span className="text-[8px] font-black bg-cyan-500/10 text-cyan-400 px-2 py-0.5 rounded border border-cyan-500/20 uppercase tracking-tighter shadow-[0_0_10px_rgba(34,211,238,0.1)]">
                             {log.block}
                           </span>
                         )}
                       </div>
-                      <p className="text-[10px] text-[#94a3b8] uppercase tracking-widest">{new Date(log.timestamp).toLocaleString()}</p>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <p className="text-[9px] text-slate-500 font-bold uppercase tracking-[0.2em]">{new Date(log.timestamp).toLocaleString()}</p>
+                        {log.form && (
+                          <div className="flex items-center gap-1">
+                             <div className="w-1 h-1 rounded-full bg-purple-500" />
+                             <span className="text-[8px] font-black text-purple-400 uppercase tracking-widest">{log.form}</span>
+                          </div>
+                        )}
+                        {log.assistance && (
+                          <div className="flex items-center gap-1">
+                             <div className="w-1 h-1 rounded-full bg-orange-500" />
+                             <span className="text-[8px] font-black text-orange-400 uppercase tracking-widest">{log.assistance.type}: {log.assistance.value}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex flex-wrap gap-2 justify-end">
+                    <div className="flex flex-wrap gap-2 justify-end max-w-[50%]">
                       {log.sets.map((s, i) => (
-                        <div key={i} className="flex flex-col items-center px-3 py-1 bg-black/20 rounded border border-white/5 min-w-[40px]">
-                          <span className="text-xs font-black text-cyan-400 font-mono leading-none">{s.reps}</span>
-                          {s.weight ? <span className="text-[7px] text-purple-400 font-black mt-1">+{s.weight}KG</span> : null}
+                        <div key={i} className="flex flex-col items-center px-3 py-1 bg-black/40 rounded-xl border border-white/5 min-w-[50px] shadow-inner">
+                          <div className="flex items-baseline gap-0.5">
+                            <span className="text-xs font-black text-cyan-400 font-mono leading-none">
+                              {s.reps || s.time}
+                            </span>
+                            <span className="text-[7px] font-black text-cyan-800 uppercase">
+                              {s.reps ? 'R' : 'S'}
+                            </span>
+                          </div>
+                          {s.weight ? <span className="text-[8px] text-purple-400 font-black mt-1 leading-none">+{s.weight}KG</span> : null}
                         </div>
                       ))}
                     </div>
