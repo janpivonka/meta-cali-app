@@ -51,21 +51,66 @@ export const Dashboard: React.FC<DashboardProps> = ({ logs }) => {
   // Calendar logic: Last 7 days
   const days = ['PO', 'ÚT', 'ST', 'ČT', 'PÁ', 'SO', 'NE'];
   const today = new Date();
+  
+  // Calculate Monday of the current week
+  const getMonday = (date: Date) => {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(d.setDate(diff));
+    monday.setHours(0, 0, 0, 0);
+    return monday;
+  };
+
+  const monday = getMonday(today);
   const calendarDays = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date();
-    d.setDate(today.getDate() - (6 - i));
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
     return d;
   });
 
+  const isSameDay = (d1: Date, d2: Date) => 
+    d1.getFullYear() === d2.getFullYear() && 
+    d1.getMonth() === d2.getMonth() && 
+    d1.getDate() === d2.getDate();
+
   const getStatus = (date: Date) => {
-    const dateStr = formatDate(date.getTime());
-    const hasLog = logs.some(l => formatDate(l.timestamp) === dateStr);
+    const hasLog = logs.some(l => isSameDay(new Date(l.timestamp), date));
     
     if (hasLog) return 'trained';
-    // Logic for Rest/Planned could be more complex, using dummy for now based on day of week
     if (date.getDay() === 0) return 'rest'; // Sunday as Rest
-    if (date > today) return 'planned';
+    if (date.getTime() > today.getTime()) return 'planned';
     return 'nothing';
+  };
+
+  // History Calendar State
+  const [historyYear, setHistoryYear] = useState(today.getFullYear());
+  const [historyMonth, setHistoryMonth] = useState(today.getMonth());
+
+  const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
+  const getFirstDayOfMonth = (year: number, month: number) => {
+    const firstDay = new Date(year, month, 1).getDay();
+    return firstDay === 0 ? 6 : firstDay - 1; // Map Sunday (0) to 6, Monday (1) to 0
+  };
+
+  const monthNames = ['Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen', 'Červenec', 'Srpen', 'Září', 'Říjen', 'Listopad', 'Prosinec'];
+  
+  const handlePrevMonth = () => {
+    if (historyMonth === 0) {
+      setHistoryMonth(11);
+      setHistoryYear(prev => prev - 1);
+    } else {
+      setHistoryMonth(prev => prev - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (historyMonth === 11) {
+      setHistoryMonth(0);
+      setHistoryYear(prev => prev + 1);
+    } else {
+      setHistoryMonth(prev => prev + 1);
+    }
   };
 
   return (
@@ -408,14 +453,93 @@ export const Dashboard: React.FC<DashboardProps> = ({ logs }) => {
               >
                 <X size={24} />
               </button>
-              <h2 className="text-2xl font-black text-white mb-6 uppercase tracking-tighter">Kompletní Operační Historie</h2>
-              <div className="grid grid-cols-7 gap-4 mb-8">
-                {/* Simplified Month View Simulation */}
-                {Array.from({ length: 31 }, (_, i) => (
-                  <div key={i} className="aspect-square glass-card flex items-center justify-center text-xs font-black border-white/5 hover:border-cyan-500/30 cursor-pointer">
-                    {i + 1}
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="text-2xl font-black text-white uppercase tracking-tighter">Operační Historie</h2>
+                <div className="flex items-center gap-4 bg-white/5 p-2 rounded-2xl border border-white/10">
+                  <button onClick={handlePrevMonth} className="p-2 hover:bg-white/10 rounded-xl transition-colors text-slate-400 hover:text-cyan-500">
+                    <ArrowRight size={20} className="rotate-180" />
+                  </button>
+                  <div className="flex gap-2">
+                    <select 
+                      value={historyMonth} 
+                      onChange={(e) => setHistoryMonth(parseInt(e.target.value))}
+                      className="bg-transparent text-white font-black uppercase text-xs outline-none cursor-pointer hover:text-cyan-500 appearance-none text-center"
+                    >
+                      {monthNames.map((m, i) => (
+                        <option key={m} value={i} className="bg-slate-900 text-white">{m}</option>
+                      ))}
+                    </select>
+                    <select 
+                      value={historyYear}
+                      onChange={(e) => setHistoryYear(parseInt(e.target.value))}
+                      className="bg-transparent text-white font-black uppercase text-xs outline-none cursor-pointer hover:text-cyan-500 appearance-none text-center"
+                    >
+                      {Array.from({ length: 10 }, (_, i) => today.getFullYear() - 5 + i).map(y => (
+                        <option key={y} value={y} className="bg-slate-900 text-white">{y}</option>
+                      ))}
+                    </select>
                   </div>
+                  <button onClick={handleNextMonth} className="p-2 hover:bg-white/10 rounded-xl transition-colors text-slate-400 hover:text-cyan-500">
+                    <ArrowRight size={20} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-7 gap-2 mb-4">
+                {days.map(d => (
+                  <div key={d} className="text-[10px] font-black text-[#94a3b8] text-center uppercase py-2">{d}</div>
                 ))}
+                {Array.from({ length: getFirstDayOfMonth(historyYear, historyMonth) }).map((_, i) => (
+                  <div key={`empty-${i}`} className="aspect-square opacity-0" />
+                ))}
+                {Array.from({ length: getDaysInMonth(historyYear, historyMonth) }).map((_, i) => {
+                  const day = i + 1;
+                  const date = new Date(historyYear, historyMonth, day);
+                  const status = getStatus(date);
+                  const isDayToday = isSameDay(date, today);
+
+                  return (
+                    <motion.div
+                      key={day}
+                      whileHover={{ scale: 1.05 }}
+                      onClick={() => {
+                        setSelectedDayDetail(date.getTime());
+                        setShowCalendarModal(false);
+                      }}
+                      className={cn(
+                        "aspect-square glass-card flex flex-col items-center justify-center gap-1 text-xs font-black border-white/5 cursor-pointer relative",
+                        isDayToday ? "border-cyan-500/40 bg-cyan-500/10" : "hover:border-white/20"
+                      )}
+                    >
+                      <span className={cn(isDayToday ? "text-cyan-400" : "text-white")}>{day}</span>
+                      <div className="flex items-center justify-center">
+                        {status === 'trained' && <div className="w-1 h-1 rounded-full bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.8)]" />}
+                        {status === 'planned' && <div className="w-1 h-1 bg-orange-500" />}
+                        {status === 'rest' && <div className="w-1 h-1 rounded-full border border-green-500" />}
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+
+              {/* Legend */}
+              <div className="flex flex-wrap gap-4 pt-6 border-t border-white/5">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-green-500" />
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Odcvičeno</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-orange-500" />
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Plánováno</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full border border-green-500" />
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Rest Day</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-slate-700" />
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bez záznamu</span>
+                </div>
               </div>
             </motion.div>
           </motion.div>
