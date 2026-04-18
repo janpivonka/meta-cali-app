@@ -161,7 +161,7 @@ export const Profile: React.FC<ProfileProps> = ({ profile, onSave }) => {
           <button className="text-[8px] font-black text-slate-500 uppercase tracking-widest hover:text-cyan-400 transtion-colors">Spravovat</button>
         </div>
         <div className="space-y-3 px-4">
-          {formData.goals.map((goal, idx) => (
+          {(Array.isArray(formData.goals) ? formData.goals : []).map((goal, idx) => (
             <div key={idx} className="glass-card p-5 border-white/5 bg-white/5 flex flex-col gap-4 group hover:border-cyan-500/20 transition-all">
               <div className="flex items-center justify-between">
                  <div className="flex items-center gap-4">
@@ -199,7 +199,7 @@ export const Profile: React.FC<ProfileProps> = ({ profile, onSave }) => {
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3 px-4">
-          {formData.favoriteExercises.length > 0 ? (
+          {Array.isArray(formData.favoriteExercises) && formData.favoriteExercises.length > 0 ? (
             formData.favoriteExercises.map((exId, idx) => {
               const ex = EXERCISE_LIBRARY.find(e => e.id === exId);
               return (
@@ -229,7 +229,7 @@ export const Profile: React.FC<ProfileProps> = ({ profile, onSave }) => {
           <ChevronRight size={14} className="text-slate-600" />
         </div>
         <div className="overflow-x-auto no-scrollbar flex gap-4 px-4 pb-2">
-          {formData.trophies.map((trophy, idx) => (
+          {(Array.isArray(formData.trophies) ? formData.trophies : []).map((trophy, idx) => (
             <div key={idx} className="flex flex-col items-center min-w-[80px]">
               <div className="w-16 h-16 rounded-full bg-gradient-to-br from-yellow-500/20 to-orange-600/20 border border-yellow-500/30 flex items-center justify-center text-2xl shadow-lg mb-2 group cursor-pointer hover:border-yellow-400 transition-all">
                 <Trophy size={24} className="text-yellow-500 group-hover:scale-110 transition-transform" />

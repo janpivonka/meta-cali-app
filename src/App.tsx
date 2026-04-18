@@ -19,13 +19,13 @@ const DEFAULT_PROFILE: UserProfile = {
   followers: 1204,
   following: 85,
   favoriteExercises: ['pullups', 'planche'],
-  goals: {
-    pullups: 15,
-    pushups: 40,
-    dips: 20,
-    planche: 5,
-    frontlever: 5
-  },
+  goals: [
+    { exercise: 'Shyby', targetValue: 15, currentValue: 12, progress: 80, metric: 'opak' },
+    { exercise: 'Kliky', targetValue: 40, currentValue: 35, progress: 87, metric: 'opak' },
+    { exercise: 'Dipy', targetValue: 20, currentValue: 18, progress: 90, metric: 'opak' },
+    { exercise: 'Planche', targetValue: 5, currentValue: 2, progress: 40, metric: 'sec' },
+    { exercise: 'Front Lever', targetValue: 5, currentValue: 3, progress: 60, metric: 'sec' }
+  ],
   trophies: ['🥇 SHYBY PRO', '🎖️ PLANCHE SURVIVOR', '⚡ MUSCLEUP ELITE', '🛡️ IRON CORE']
 };
 
@@ -51,7 +51,12 @@ export default function App() {
 
     if (savedProfile) {
       try {
-        setProfile(JSON.parse(savedProfile));
+        const parsedProfile = JSON.parse(savedProfile);
+        // Migrace cílů z objektu na pole, pokud je potřeba
+        if (parsedProfile && parsedProfile.goals && !Array.isArray(parsedProfile.goals)) {
+          parsedProfile.goals = DEFAULT_PROFILE.goals;
+        }
+        setProfile(parsedProfile);
       } catch (e) {
         console.error("Failed to parse profile", e);
       }
@@ -118,7 +123,7 @@ export default function App() {
                           )}
                           {log.grip && (
                             <span className="text-[8px] font-black bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded border border-purple-500/20 uppercase tracking-tighter shadow-sm">
-                              {log.grip}
+                              {log.grip} {log.thumb && `(${log.thumb})`}
                             </span>
                           )}
                         </div>

@@ -1,4 +1,5 @@
 export type GripType = 'pronated' | 'supinated' | 'neutral' | 'false' | 'mixed';
+export type ThumbPosition = 'top' | 'bottom';
 export type EquipmentType = 'pull-up bar' | 'dip bars' | 'rings' | 'floor' | 'parallelettes' | 'stall bars';
 export type ExecutionType = 'standard' | 'wide' | 'shoulder-width' | 'narrow' | 'commando' | 'one arm' | 'archer' | 'typewriter' | 'high' | 'negatives' | 'partials' | 'explosive' | 'scapula';
 export type BodyPosition = 'hollow body' | 'arch back' | 'L-sit' | 'tuck' | 'adv tuck' | 'straddle' | 'full' | 'australian (bent legs)' | 'australian (straight legs)';
@@ -23,6 +24,7 @@ export interface ExerciseLog {
   exerciseId: string; // reference to Library item
   type: string; // Keep string for UI display or custom ones
   grip?: GripType;
+  thumb?: ThumbPosition;
   equipment?: EquipmentType;
   execution?: ExecutionType | string;
   oneArmHandPosition?: OneArmHandPosition | string;
@@ -51,6 +53,14 @@ export interface ExerciseDefinition {
   isFavorite?: boolean;
 }
 
+export interface Goal {
+  exercise: string;
+  targetValue: number;
+  currentValue: number;
+  progress: number;
+  metric: string;
+}
+
 export interface UserProfile {
   name: string;
   weight: number;
@@ -60,13 +70,7 @@ export interface UserProfile {
   followers: number;
   following: number;
   favoriteExercises: string[]; // List of IDs
-  goals: {
-    pullups: number;
-    pushups: number;
-    dips: number;
-    planche: number; // in seconds
-    frontlever: number; // in seconds
-  };
+  goals: Goal[];
   trophies: string[];
 }
 

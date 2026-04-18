@@ -20,6 +20,7 @@ import {
   WorkoutSet, 
   ExerciseLog, 
   GripType, 
+  ThumbPosition,
   EquipmentType, 
   ExecutionType, 
   OneArmHandPosition,
@@ -37,6 +38,7 @@ interface WorkoutFormProps {
 export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave }) => {
   const [exerciseId, setExerciseId] = useState<string>(EXERCISE_LIBRARY[0].id);
   const [grip, setGrip] = useState<GripType>('pronated');
+  const [thumb, setThumb] = useState<ThumbPosition>('bottom');
   const [equipment, setEquipment] = useState<EquipmentType>('pull-up bar');
   const [execution, setExecution] = useState<ExecutionType | string>('standard');
   const [oneArmHandPosition, setOneArmHandPosition] = useState<OneArmHandPosition | string>('free');
@@ -80,6 +82,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave }) => {
       exerciseId,
       type: currentExercise?.name || 'Unknown',
       grip,
+      thumb,
       equipment,
       execution,
       oneArmHandPosition: execution === 'one arm' ? oneArmHandPosition : undefined,
@@ -101,6 +104,10 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave }) => {
   };
 
   const GRIPS: GripType[] = ['pronated', 'supinated', 'neutral', 'false', 'mixed'];
+  const THUMBS: { val: ThumbPosition; label: string }[] = [
+    { val: 'bottom', label: 'Standard (Palec dole)' },
+    { val: 'top', label: 'Suicide (Palec nahoře)' }
+  ];
   const EQUIPMENTS: EquipmentType[] = ['pull-up bar', 'dip bars', 'rings', 'floor', 'parallelettes', 'stall bars'];
   const EXECUTIONS: ExecutionType[] = ['standard', 'wide', 'shoulder-width', 'narrow', 'commando', 'one arm', 'archer', 'typewriter', 'high', 'negatives', 'partials', 'explosive', 'scapula'];
   const POSITIONS: BodyPosition[] = ['hollow body', 'arch back', 'L-sit', 'tuck', 'adv tuck', 'straddle', 'full', 'australian (bent legs)', 'australian (straight legs)'];
@@ -189,6 +196,25 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave }) => {
                           )}
                         >
                           {g}
+                        </button>
+                      ))}
+                   </div>
+                 </div>
+
+                 <div>
+                   <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-500/60 block mb-3">Pozice palce (Thumb)</label>
+                   <div className="flex flex-wrap gap-2">
+                      {THUMBS.map(t => (
+                        <button
+                          key={t.val}
+                          type="button"
+                          onClick={() => setThumb(t.val)}
+                          className={cn(
+                            "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all",
+                            thumb === t.val ? "bg-white text-black border-white shadow-lg" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
+                          )}
+                        >
+                          {t.label}
                         </button>
                       ))}
                    </div>
