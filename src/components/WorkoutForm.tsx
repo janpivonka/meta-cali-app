@@ -1,476 +1,492 @@
 import React, { useState } from 'react';
-import { Plus, Minus, Check, PlusCircle, Target, Zap, Activity, Edit3, Search } from 'lucide-react';
-import { ExerciseType, WorkoutSet, ExerciseLog } from '../types';
+import { 
+  Plus, 
+  Minus, 
+  Check, 
+  PlusCircle, 
+  Target, 
+  Zap, 
+  Activity, 
+  Edit3, 
+  Search,
+  Camera,
+  MessageSquare,
+  ChevronDown,
+  ChevronUp,
+  Boxes,
+  Waves
+} from 'lucide-react';
+import { 
+  WorkoutSet, 
+  ExerciseLog, 
+  GripType, 
+  EquipmentType, 
+  ExecutionType, 
+  OneArmHandPosition,
+  BandPlacement,
+  BodyPosition 
+} from '../types';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
+import { EXERCISE_LIBRARY } from '../data/exerciseLibrary';
 
 interface WorkoutFormProps {
   onSave: (log: ExerciseLog) => void;
 }
 
 export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave }) => {
-  const [type, setType] = useState<ExerciseType>('Shyby');
-  const [customExercise, setCustomExercise] = useState('');
-  const [block, setBlock] = useState('');
-  const [sets, setSets] = useState<WorkoutSet[]>([{ reps: 0, weight: 0 }]);
-
-  const exerciseGroups = [
-    {
-      name: 'Statiky',
-      items: [
-        'Planche lean', 'Tuck planche', 'Advtuck planche', 'Straddle planche', 'Full planche', 'Maltese', 'Iron Cross',
-        'Frontlever', 'Frontlever hold', 'Backlever', 'Victorian', 'L-Sit', 'V-Sit', 'Hollowback', 'Planche hold', 'Human flag'
-      ]
-    },
-    {
-      name: 'Tlakové',
-      items: [
-        'Kliky', 'Dipy', 'HSPU', '90° HSPU', 'Deep HSPU', 'Pike press', 'Bentarm press', 'Handstand press', 'Stojka', 'Hefesto',
-        'Korean dips', 'Russian dips', 'Archer pushups', 'Typewriters', 'Yguana pushups', 'Tigerbent pushups', 'Scapula pushups', 'Pike float pushups', 'Impossible dip'
-      ]
-    },
-    {
-      name: 'Tahové',
-      items: [
-        'Shyby', 'Muscleups', 'Muscle-ups', 'High pull-ups', 'Pullovers', 'Výmyky', 'Pelican', 'Australian pull-ups', 'Australian rows', 'Chin ups', 'Scapula pull-ups', 'Shoulder shrugs', 'Backlever pull-ups'
-      ]
-    },
-    {
-      name: 'Prvky & Drilly',
-      items: [
-        'Tuck frontlever raises', 'Halflay frontlever raises', 'Frontlever raises', 'Ice cream makers', 'Upside down deadlift', 'Hefesto negatives', 'Entrada deadhang', 'Handstand walkthrough'
-      ]
-    },
-    {
-      name: 'Dynamika',
-      items: [
-        'Tornado 360', '540 try', '360 pull-up', 'Shrimpflip', 'Alleyhoop', 'Swing', 'Giant', 'Salto'
-      ]
-    },
-    {
-      name: 'Core & Basics',
-      items: [
-        'Plank', 'Přednosy', 'Stall bars leg raises', 'Dragon flag', 'Dřepy', 'Výpady', 'Pistol squats', 'Deadlift', 'Sit ups', 'Angličáky', 'Heavily weighted dips', 'Weighted pull-ups'
-      ]
-    }
-  ];
-
-  const allPredefined = exerciseGroups.flatMap(g => g.items);
-
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-
-  const visibleExercises = (selectedCategory 
-    ? exerciseGroups.find(g => g.name === selectedCategory)?.items || []
-    : allPredefined).filter(ex => ex.toLowerCase().includes(searchQuery.toLowerCase()));
-
-  const addSet = () => setSets([...sets, { reps: 0 }]);
-  const removeSet = (index: number) => setSets(sets.filter((_, i) => i !== index));
-  const updateReps = (index: number, reps: number) => {
-    const newSets = [...sets];
-    newSets[index].reps = Math.max(0, reps);
-    setSets(newSets);
-  };
-
-  const [variation, setVariation] = useState('');
-  const [form, setForm] = useState<'Hollowbody' | 'Archy' | 'Standard'>('Standard');
+  const [exerciseId, setExerciseId] = useState<string>(EXERCISE_LIBRARY[0].id);
+  const [grip, setGrip] = useState<GripType>('pronated');
+  const [equipment, setEquipment] = useState<EquipmentType>('pull-up bar');
+  const [execution, setExecution] = useState<ExecutionType | string>('standard');
+  const [oneArmHandPosition, setOneArmHandPosition] = useState<OneArmHandPosition | string>('free');
+  const [position, setPosition] = useState<BodyPosition | string>('standard');
   const [assistanceType, setAssistanceType] = useState<'None' | 'Band' | 'Weight'>('None');
   const [assistanceValue, setAssistanceValue] = useState('');
+  const [bandPlacement, setBandPlacement] = useState<BandPlacement | string>('both legs');
+  const [sets, setSets] = useState<WorkoutSet[]>([{ reps: 0, weight: 0, rpe: 7 }]);
+  const [notes, setNotes] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [shared, setShared] = useState(false);
 
-  const isHoldExercise = (ex: string) => {
-    const holds = ['hold', 'Planche', 'Frontlever', 'Backlever', 'Plank', 'L-Sit', 'V-Sit', 'Hollowback', 'Victorian', 'Iron Cross', 'Maltese'];
-    return holds.some(h => ex.includes(h));
+  // Filtered exercises for selection
+  const filteredExercises = EXERCISE_LIBRARY.filter(ex => 
+    ex.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    ex.id.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const currentExercise = EXERCISE_LIBRARY.find(e => e.id === exerciseId);
+
+  const isHoldExercise = (id: string) => {
+    return ['planche', 'frontlever', 'statics'].some(k => id.toLowerCase().includes(k));
   };
 
-  const getCommonVariations = (ex: string) => {
-    if (ex.includes('Shyby')) return ['Standard', 'High', 'Chest-to-Bar', 'Australian', 'Scapula', 'Muscle-up Transition'];
-    if (ex.includes('Kliky')) return ['Standard', 'Diamond', 'Archer', 'Pseudo-Planche', 'Tigerbend', 'Scapula'];
-    if (ex.includes('Dipy')) return ['Standard', 'Deep', 'Straight-Bar', 'Korean', 'Russian'];
-    return [];
+  const addSet = () => setSets([...sets, { ...sets[sets.length - 1] }]);
+  const removeSet = (index: number) => setSets(sets.filter((_, i) => i !== index));
+
+  const updateSet = (index: number, field: keyof WorkoutSet, value: any) => {
+    const newSets = [...sets];
+    newSets[index] = { ...newSets[index], [field]: value };
+    setSets(newSets);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (sets.every(s => !(s.reps && s.reps > 0) && !(s.time && s.time > 0))) return;
-
-    const finalType = type === 'Vlastní' ? customExercise : type;
-    if (!finalType) return;
+    const validSets = sets.filter(s => (s.reps && s.reps > 0) || (s.time && s.time > 0));
+    if (validSets.length === 0) return;
 
     onSave({
       id: crypto.randomUUID(),
-      type: finalType,
-      block: block || undefined,
-      variation: variation || undefined,
-      form: form !== 'Standard' ? form : undefined,
+      exerciseId,
+      type: currentExercise?.name || 'Unknown',
+      grip,
+      equipment,
+      execution,
+      oneArmHandPosition: execution === 'one arm' ? oneArmHandPosition : undefined,
+      position,
       assistance: assistanceType !== 'None' ? {
         type: assistanceType,
-        value: assistanceType === 'Band' ? assistanceValue : parseFloat(assistanceValue) || undefined
+        value: assistanceValue,
+        placement: assistanceType === 'Band' ? bandPlacement : undefined,
       } : undefined,
-      sets: sets.filter(s => (s.reps && s.reps > 0) || (s.time && s.time > 0)),
+      sets: validSets,
+      notes,
+      shared,
       timestamp: Date.now(),
     });
 
-    setSets([{ reps: 0, weight: 0 }]);
-    setCustomExercise('');
-    setBlock('');
-    setVariation('');
-    setForm('Standard');
-    setAssistanceType('None');
-    setAssistanceValue('');
+    // Reset some fields but keep core context for consecutive logs if needed
+    setSets([{ reps: 0, weight: 0, rpe: 7 }]);
+    setNotes('');
   };
 
+  const GRIPS: GripType[] = ['pronated', 'supinated', 'neutral', 'false', 'mixed'];
+  const EQUIPMENTS: EquipmentType[] = ['pull-up bar', 'dip bars', 'rings', 'floor', 'parallelettes', 'stall bars'];
+  const EXECUTIONS: ExecutionType[] = ['standard', 'wide', 'shoulder-width', 'narrow', 'commando', 'one arm', 'archer', 'typewriter', 'high', 'negatives', 'partials', 'explosive', 'scapula'];
+  const POSITIONS: BodyPosition[] = ['hollow body', 'arch back', 'L-sit', 'tuck', 'adv tuck', 'straddle', 'full', 'australian (bent legs)', 'australian (straight legs)'];
+  const BAND_PLACEMENTS: BandPlacement[] = ['both legs', 'one leg', 'waist', 'knees'];
+  const ONE_ARM_POSITIONS: { val: OneArmHandPosition; label: string }[] = [
+    { val: 'wrist', label: 'Zápěstí' },
+    { val: 'forearm', label: 'Předloktí' },
+    { val: 'elbow', label: 'Loket' },
+    { val: 'biceps', label: 'Biceps/Triceps' },
+    { val: 'shoulder', label: 'Rameno' },
+    { val: 'horizontal', label: 'Vodorovně/Prsa' },
+    { val: 'free', label: 'Volně podél těla' }
+  ];
+
   return (
-    <div id="workout-form-container" className="glass-card p-6 md:p-10 max-w-4xl mx-auto border-cyan-500/10">
-      <div className="flex items-center gap-4 mb-10">
-        <div className="w-12 h-12 rounded-2xl bg-cyan-500 flex items-center justify-center text-black shadow-lg shadow-cyan-500/20">
-          <PlusCircle size={24} />
+    <div id="workout-form-container" className="glass-card p-6 md:p-10 max-w-5xl mx-auto border-cyan-500/10 bg-black/40 rounded-[40px]">
+      <div className="flex flex-col sm:flex-row items-center gap-6 mb-12">
+        <div className="w-16 h-16 rounded-[24px] bg-gradient-to-br from-cyan-500 to-cyan-600 flex items-center justify-center text-black shadow-2xl shadow-cyan-500/20 rotate-3 group-hover:rotate-0 transition-transform">
+          <PlusCircle size={32} />
         </div>
-        <div>
-          <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight font-serif italic">Operační Protokol</h2>
-          <p className="text-xs text-[#94a3b8] font-bold uppercase tracking-widest">Sekvenční záznam parametrů výkonu</p>
+        <div className="text-center sm:text-left">
+          <h2 className="text-3xl font-black text-white tracking-tighter italic uppercase">Operační Protokol</h2>
+          <p className="text-[10px] text-cyan-500 font-black uppercase tracking-[0.4em]">Sekvenční záznam parametrů výkonu • v3.0</p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-12">
-        {/* HEADER SECTION */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-6 bg-white/5 rounded-3xl border border-white/5">
-          <div className="space-y-4">
-            <label className="text-[10px] uppercase tracking-[0.3em] text-cyan-500 font-black flex items-center gap-2">
-              <Activity size={12} /> Tréninkový Blok
-            </label>
-            <input 
-              type="text"
-              list="block-suggestions"
-              value={block}
-              onChange={(e) => setBlock(e.target.value)}
-              placeholder="Např. PLANCHE, PULL BASICS..."
-              className="w-full bg-black/20 border border-white/10 rounded-2xl px-5 py-4 text-xs font-bold focus:outline-none focus:border-cyan-500/40 transition-all placeholder:text-slate-600"
-            />
-          </div>
-
-          <div className="space-y-4">
-            <label className="text-[10px] uppercase tracking-[0.3em] text-purple-500 font-black flex items-center gap-2">
-              <Edit3 size={12} /> Manuální Identifikátor
-            </label>
-            <input
-              type="text"
-              value={customExercise}
-              onChange={(e) => setCustomExercise(e.target.value)}
-              disabled={type !== 'Vlastní'}
-              className="w-full bg-black/10 border border-white/10 rounded-2xl px-5 py-4 text-xs font-bold focus:outline-none focus:border-purple-500/40 transition-all placeholder:text-slate-600 disabled:opacity-20 italic"
-              placeholder="Pouze pro 'Vlastní'..."
-            />
-          </div>
-        </div>
-
-        {/* EXERCISE SELECTION */}
+        {/* EXERCISE SELECTION GRID */}
         <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2">
-            <label className="text-[10px] uppercase tracking-[0.3em] text-cyan-500 font-black flex items-center gap-2">
-              <Target size={12} /> Modul Cviků
-            </label>
-            <div className="flex flex-wrap gap-2 justify-center bg-white/5 p-1 rounded-xl border border-white/5">
-              <button
-                type="button"
-                onClick={() => setSelectedCategory(null)}
-                className={cn(
-                  "px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all",
-                  selectedCategory === null ? "bg-cyan-500 text-black shadow-lg shadow-cyan-500/20" : "text-[#94a3b8] hover:text-white"
-                )}
-              >
-                Vše
-              </button>
-              {exerciseGroups.map(g => (
-                <button
-                  key={g.name}
-                  type="button"
-                  onClick={() => setSelectedCategory(g.name)}
-                  className={cn(
-                    "px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all",
-                    selectedCategory === g.name ? "bg-cyan-500 text-black shadow-lg shadow-cyan-500/20" : "text-[#94a3b8] hover:text-white"
-                  )}
-                >
-                  {g.name}
-                </button>
-              ))}
+          <div className="flex items-center justify-between px-2">
+            <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 flex items-center gap-2">
+              <Boxes size={14} className="text-cyan-500" /> Identifikace Cviků
+            </h3>
+            <div className="relative w-48">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" />
+              <input 
+                type="text"
+                placeholder="Hledat..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-white/5 border border-white/5 rounded-full py-2 pl-9 pr-4 text-[10px] font-bold text-white focus:outline-none focus:border-cyan-500/30"
+              />
             </div>
           </div>
-
-          <div className="relative px-2">
-            <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none">
-              <Search size={14} className="text-slate-500" />
-            </div>
-            <input
-              type="text"
-              placeholder="Vyhledat v databázi..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-12 pr-4 text-[10px] font-black uppercase tracking-widest text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 transition-all"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 max-h-[280px] overflow-y-auto pr-2 custom-scrollbar px-2">
-            {visibleExercises.map((ex) => (
+          
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            {filteredExercises.map(ex => (
               <button
-                key={ex}
+                key={ex.id}
                 type="button"
-                onClick={() => {
-                  setType(ex);
-                  setVariation(''); // Reset variation when base changes
-                }}
+                onClick={() => setExerciseId(ex.id)}
                 className={cn(
-                  "px-3 py-4 rounded-2xl border text-[9px] font-black uppercase tracking-tighter transition-all duration-300 relative overflow-hidden group",
-                  type === ex 
+                  "p-4 rounded-[24px] border transition-all flex flex-col items-center gap-2 relative overflow-hidden group/item",
+                  exerciseId === ex.id 
                     ? "bg-cyan-500 border-cyan-400 text-black shadow-xl shadow-cyan-500/10 scale-105" 
-                    : "bg-white/5 border-white/5 text-slate-500 hover:border-cyan-500/20 hover:text-slate-300"
+                    : "bg-white/5 border-white/5 text-slate-500 hover:border-cyan-500/20 hover:text-slate-200"
                 )}
               >
-                {type === ex && (
-                  <motion.div layoutId="active-bg" className="absolute inset-0 bg-cyan-500 -z-1" />
-                )}
-                <span className="relative z-10">{ex}</span>
+                <div className={cn(
+                  "w-8 h-8 rounded-lg flex items-center justify-center transition-colors mb-1",
+                  exerciseId === ex.id ? "bg-black/10" : "bg-white/5 group-hover/item:bg-white/10"
+                )}>
+                  <Activity size={16} />
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-tighter leading-none text-center">{ex.name}</span>
               </button>
             ))}
-            <button
-              type="button"
-              onClick={() => setType('Vlastní')}
-              className={cn(
-                "px-3 py-4 rounded-2xl border text-[9px] font-black uppercase tracking-tighter transition-all duration-300",
-                type === 'Vlastní' 
-                  ? "bg-purple-600 border-purple-500 text-white shadow-xl shadow-purple-600/10 scale-105" 
-                  : "bg-white/5 border-white/5 text-slate-500 hover:border-purple-500/20"
-              )}
-            >
-              Vlastní
-            </button>
           </div>
         </div>
 
-        {/* VARIATION & TAXONOMY SECTION */}
-        <AnimatePresence mode="wait">
-          {type && (
-            <motion.div 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="space-y-8 p-8 bg-gradient-to-br from-cyan-500/5 to-purple-500/5 rounded-[40px] border border-white/5 shadow-inner"
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-1 h-4 bg-cyan-500 rounded-full animate-pulse" />
-                <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">Konfigurace Varianty: <span className="text-white">{type}</span></h3>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {/* Variant */}
-                <div className="space-y-4">
-                  <span className="text-[8px] font-black text-[#94a3b8] uppercase tracking-widest block">Specifická Varianta</span>
-                  <div className="flex flex-wrap gap-2">
-                    {getCommonVariations(type).map(v => (
-                      <button
-                        key={v}
-                        type="button"
-                        onClick={() => setVariation(v)}
-                        className={cn(
-                          "px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest border transition-all",
-                          variation === v ? "bg-white text-black border-white" : "text-slate-500 border-white/5 hover:border-white/20"
-                        )}
-                      >
-                        {v}
-                      </button>
-                    ))}
-                    <input 
-                      type="text" 
-                      placeholder="Jiné..."
-                      value={variation}
-                      onChange={(e) => setVariation(e.target.value)}
-                      className="bg-transparent border-b border-white/10 text-[10px] font-bold text-white focus:outline-none focus:border-cyan-500/50 px-2 py-1 w-20"
-                    />
-                  </div>
-                </div>
-
-                {/* Form */}
-                <div className="space-y-4">
-                  <span className="text-[8px] font-black text-[#94a3b8] uppercase tracking-widest block">Technické Provedení</span>
-                  <div className="flex gap-2">
-                    {['Standard', 'Hollowbody', 'Archy'].map(f => (
-                      <button
-                        key={f}
-                        type="button"
-                        onClick={() => setForm(f as any)}
-                        className={cn(
-                          "flex-1 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest border transition-all",
-                          form === f ? "bg-white text-black border-white" : "text-slate-500 border-white/5 hover:border-white/20"
-                        )}
-                      >
-                        {f}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Assistance */}
-                <div className="space-y-4">
-                  <span className="text-[8px] font-black text-[#94a3b8] uppercase tracking-widest block">Mechanická Asistence</span>
-                  <div className="flex gap-2 items-center">
-                    <div className="flex gap-1 overflow-hidden rounded-lg border border-white/5 p-0.5 bg-black/20">
-                      {['None', 'Band', 'Weight'].map(a => (
+        {/* TAXONOMY: GRIP / EQUIPMENT / EXECUTION */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+           <div className="space-y-8 p-8 bg-white/5 rounded-[32px] border border-white/5">
+              <div className="space-y-6">
+                 <div>
+                   <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-500/60 block mb-3">Úchop (Grip)</label>
+                   <div className="flex flex-wrap gap-2">
+                      {GRIPS.map(g => (
                         <button
-                          key={a}
+                          key={g}
                           type="button"
-                          onClick={() => setAssistanceType(a as any)}
+                          onClick={() => setGrip(g)}
                           className={cn(
-                            "px-2 py-1 text-[7px] font-black uppercase tracking-widest transition-all rounded-md",
-                            assistanceType === a ? "bg-white/10 text-white" : "text-slate-600 hover:text-slate-400"
+                            "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all",
+                            grip === g ? "bg-white text-black border-white shadow-lg" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
                           )}
                         >
-                          {a}
+                          {g}
                         </button>
                       ))}
-                    </div>
-                    {assistanceType !== 'None' && (
-                      <input 
-                        type="text" 
-                        placeholder={assistanceType === 'Band' ? "Barva..." : "KG..."}
-                        value={assistanceValue}
-                        onChange={(e) => setAssistanceValue(e.target.value)}
-                        className="bg-transparent border-b border-white/10 text-[10px] font-bold text-white focus:outline-none focus:border-cyan-500/50 px-2 py-1 w-16"
-                      />
-                    )}
-                  </div>
+                   </div>
+                 </div>
+
+                 <div>
+                   <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-500/60 block mb-3">Vybavení (Equipment)</label>
+                   <div className="flex flex-wrap gap-2">
+                      {EQUIPMENTS.map(eq => (
+                        <button
+                          key={eq}
+                          type="button"
+                          onClick={() => setEquipment(eq)}
+                          className={cn(
+                            "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all",
+                            equipment === eq ? "bg-white text-black border-white shadow-lg" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
+                          )}
+                        >
+                          {eq}
+                        </button>
+                      ))}
+                   </div>
+                 </div>
+              </div>
+           </div>
+
+           <div className="space-y-8 p-8 bg-white/5 rounded-[32px] border border-white/5">
+              <div className="space-y-6">
+                 <div>
+                   <label className="text-[8px] font-black uppercase tracking-[0.3em] text-purple-500/60 block mb-3">Provedení (Execution)</label>
+                   <div className="flex flex-wrap gap-2">
+                      {EXECUTIONS.map(ex => (
+                        <button
+                          key={ex}
+                          type="button"
+                          onClick={() => setExecution(ex)}
+                          className={cn(
+                            "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all",
+                            execution === ex ? "bg-purple-500 text-white border-purple-400 shadow-lg shadow-purple-500/20" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
+                          )}
+                        >
+                          {ex}
+                        </button>
+                      ))}
+                   </div>
+                 </div>
+
+                 {execution === 'one arm' && (
+                    <motion.div 
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="space-y-3 pt-4 border-t border-white/5 pb-4"
+                    >
+                      <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-400 block mb-2">Pozice volné ruky (One-Arm Progress)</label>
+                      <div className="flex flex-wrap gap-2">
+                         {ONE_ARM_POSITIONS.map(pos => (
+                           <button
+                             key={pos.val}
+                             type="button"
+                             onClick={() => setOneArmHandPosition(pos.val)}
+                             className={cn(
+                               "px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest border transition-all flex-1 text-center min-w-[80px]",
+                               oneArmHandPosition === pos.val ? "bg-cyan-500 text-black border-cyan-400" : "bg-black/40 text-slate-500 border-white/5"
+                             )}
+                           >
+                             {pos.label}
+                           </button>
+                         ))}
+                      </div>
+                    </motion.div>
+                  )}
+
+                 <div>
+                   <label className="text-[8px] font-black uppercase tracking-[0.3em] text-purple-500/60 block mb-3">Tělesná Pozice (Position)</label>
+                   <div className="flex flex-wrap gap-2">
+                      {POSITIONS.map(pos => (
+                        <button
+                          key={pos}
+                          type="button"
+                          onClick={() => setPosition(pos)}
+                          className={cn(
+                            "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all",
+                            position === pos ? "bg-purple-500 text-white border-purple-400 shadow-lg shadow-purple-500/20" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
+                          )}
+                        >
+                          {pos}
+                        </button>
+                      ))}
+                   </div>
+                 </div>
+              </div>
+           </div>
+        </div>
+
+        {/* ASSISTANCE & EXTRA LOAD */}
+        <div className="p-8 bg-orange-500/5 rounded-[32px] border border-orange-500/10">
+           <div className="flex flex-col md:flex-row items-center gap-8">
+              <div className="flex-1 space-y-4">
+                <label className="text-[10px] font-black uppercase tracking-[0.4em] text-orange-500 flex items-center gap-2">
+                   <Target size={14} /> Mechanická Asistence
+                </label>
+                <div className="flex gap-2">
+                   {['None', 'Band', 'Weight'].map(a => (
+                     <button
+                        key={a}
+                        type="button"
+                        onClick={() => setAssistanceType(a as any)}
+                        className={cn(
+                          "flex-1 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all",
+                          assistanceType === a ? "bg-orange-500 text-black border-orange-400 shadow-lg" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
+                        )}
+                     >
+                        {a === 'Band' ? 'Odporová Guma' : a === 'Weight' ? 'Závaží' : 'Žádná'}
+                     </button>
+                   ))}
                 </div>
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              {assistanceType === 'Band' && (
+                <div className="flex flex-col sm:flex-row gap-8 w-full">
+                  <div className="flex-1 space-y-4">
+                     <label className="text-[10px] font-black uppercase tracking-[0.4em] text-orange-500/60 block">Odpor & Pozice</label>
+                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <input 
+                           type="text"
+                           placeholder="Barva/Odpor..."
+                           value={assistanceValue}
+                           onChange={(e) => setAssistanceValue(e.target.value)}
+                           className="w-full bg-black/40 border border-orange-500/20 rounded-2xl p-4 text-sm font-bold text-white focus:outline-none focus:border-orange-500 italic"
+                        />
+                        <div className="flex flex-wrap gap-1.5">
+                           {BAND_PLACEMENTS.map(p => (
+                             <button
+                               key={p}
+                               type="button"
+                               onClick={() => setBandPlacement(p)}
+                               className={cn(
+                                 "px-2 py-2 rounded-lg text-[7px] font-black uppercase tracking-widest border transition-all flex-1 text-center",
+                                 bandPlacement === p ? "bg-orange-500 text-black border-orange-400" : "bg-black/40 text-slate-500 border-white/5"
+                               )}
+                             >
+                               {p === 'one leg' ? 'Jedna noha' : p === 'both legs' ? 'Obě nohy' : p === 'waist' ? 'Pas' : 'Kolena'}
+                             </button>
+                           ))}
+                        </div>
+                     </div>
+                  </div>
+                </div>
+              )}
+
+              {assistanceType === 'Weight' && (
+                <div className="w-full md:w-64 space-y-4">
+                   <label className="text-[10px] font-black uppercase tracking-[0.4em] text-orange-500/60 block">Závaží</label>
+                   <input 
+                      type="text"
+                      placeholder="Kilogramy..."
+                      value={assistanceValue}
+                      onChange={(e) => setAssistanceValue(e.target.value)}
+                      className="w-full bg-black/40 border border-orange-500/20 rounded-2xl p-4 text-sm font-bold text-white focus:outline-none focus:border-orange-500 italic"
+                   />
+                </div>
+              )}
+           </div>
+        </div>
 
         {/* SETS CONFIGURATION */}
         <div className="space-y-8">
-          <div className="flex items-center justify-between px-2">
-            <label className="text-[10px] uppercase tracking-[0.3em] text-cyan-500 font-black flex items-center gap-2">
-              <Zap size={12} /> Konfigurace Sérií
-            </label>
-            <div className="text-[8px] font-black text-[#94a3b8] uppercase tracking-widest bg-white/5 px-3 py-1 rounded-full border border-white/5">
-              Režim: {isHoldExercise(type) ? 'STATICKÝ HOLD' : 'DYNAMICKÁ OPAKOVÁNÍ'}
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <AnimatePresence mode="popLayout">
-              {sets.map((set, index) => (
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.95 }} 
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  key={index} 
-                  className="flex items-center gap-4 bg-gradient-to-r from-white/5 to-transparent p-6 rounded-[32px] border border-white/5 group hover:border-cyan-500/20 transition-all shadow-lg"
-                >
-                  <div className="w-12 h-12 rounded-2xl bg-orange-500/10 flex flex-col items-center justify-center border border-orange-500/20">
-                    <span className="text-[7px] font-black text-orange-500/40 uppercase">SET</span>
-                    <span className="text-sm font-black text-orange-500">{index + 1}</span>
-                  </div>
-                  
-                  <div className="flex-1 flex items-center justify-around">
-                    {/* VALUE (REPS OR TIME) */}
-                    <div className="flex flex-col items-center gap-1 group/control">
-                      <div className="flex items-center gap-4">
-                        <button 
-                          type="button"
-                          onClick={() => {
-                            const newSets = [...sets];
-                            if (isHoldExercise(type)) {
-                              newSets[index].time = Math.max(0, (newSets[index].time || 0) - 1);
-                            } else {
-                              newSets[index].reps = Math.max(0, (newSets[index].reps || 0) - 1);
-                            }
-                            setSets(newSets);
-                          }}
-                          className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 text-slate-600 hover:text-cyan-500 hover:border-cyan-500/30 border border-transparent transition-all"
-                        >
-                          <Minus size={16} />
-                        </button>
-                        <input
-                          type="number"
-                          value={isHoldExercise(type) ? (set.time || 0) : (set.reps || 0)}
-                          onChange={(e) => {
-                            const newSets = [...sets];
-                            const val = parseInt(e.target.value) || 0;
-                            if (isHoldExercise(type)) newSets[index].time = val;
-                            else newSets[index].reps = val;
-                            setSets(newSets);
-                          }}
-                          className="bg-transparent text-4xl font-black text-white w-20 text-center focus:outline-none font-mono tracking-tighter"
-                        />
-                        <button
-                          type="button" 
-                          onClick={() => {
-                            const newSets = [...sets];
-                            if (isHoldExercise(type)) {
-                              newSets[index].time = (newSets[index].time || 0) + 1;
-                            } else {
-                              newSets[index].reps = (newSets[index].reps || 0) + 1;
-                            }
-                            setSets(newSets);
-                          }}
-                          className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 text-slate-600 hover:text-cyan-500 hover:border-cyan-500/30 border border-transparent transition-all"
-                        >
-                          <Plus size={16} />
-                        </button>
-                      </div>
-                      <span className="text-[8px] font-black uppercase tracking-[0.3em] text-[#94a3b8] group-hover/control:text-cyan-500/60 transition-colors">
-                        {isHoldExercise(type) ? 'Sekundy' : 'Opakování'}
-                      </span>
-                    </div>
-
-                    <div className="w-[1px] h-12 bg-white/5" />
-
-                    {/* WEIGHT (Optional/Contextual Override) */}
-                    <div className="flex flex-col items-center gap-1">
-                      <div className="flex items-center">
-                         <input
-                          type="number"
-                          value={set.weight || 0}
-                          onChange={(e) => {
-                            const newSets = [...sets];
-                            newSets[index].weight = parseFloat(e.target.value) || 0;
-                            setSets(newSets);
-                          }}
-                          className="bg-transparent text-2xl font-black text-purple-500 w-16 text-center focus:outline-none font-mono"
-                        />
-                         <span className="text-[10px] font-black text-purple-500/40 font-mono">KG</span>
-                      </div>
-                      <span className="text-[8px] font-black uppercase tracking-[0.3em] text-[#94a3b8]">Zátěž</span>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => removeSet(index)}
-                    className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-500/5 transition-all"
+           <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-cyan-500 flex items-center gap-2 px-2">
+              <Zap size={14} className="text-cyan-500" /> Konfigurace Výkonových Bloků
+           </h3>
+           <div className="space-y-4">
+              <AnimatePresence mode="popLayout">
+                {sets.map((set, index) => (
+                  <motion.div 
+                    layout
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    key={index}
+                    className="glass-card grid grid-cols-1 md:grid-cols-4 items-center gap-6 p-8 border-white/5 bg-white/5 rounded-[32px] group hover:border-cyan-500/30 transition-all shadow-xl"
                   >
-                    <Minus size={16} className="opacity-40" />
-                  </button>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
-          
-          <button
-            type="button"
-            onClick={addSet}
-            className="w-full py-6 border-2 border-dashed border-white/5 rounded-[32px] text-slate-600 hover:text-cyan-500 hover:border-cyan-500/20 hover:bg-cyan-500/5 transition-all text-[10px] font-black uppercase tracking-[0.4em] flex items-center justify-center gap-3 active:scale-[0.99]"
-          >
-            <Plus size={18} /> Přidat Další Sekvenci
-          </button>
+                    <div className="flex items-center gap-4">
+                       <div className="w-12 h-12 rounded-2xl bg-black/40 flex items-center justify-center border border-white/10 group-hover:border-cyan-500/40 transition-colors">
+                          <span className="text-xl font-black text-white italic">{index + 1}</span>
+                       </div>
+                       <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Sekvence</span>
+                    </div>
+
+                    <div className="flex flex-col items-center gap-2">
+                       <div className="flex items-center gap-4">
+                          <button 
+                            type="button" 
+                            onClick={() => updateSet(index, isHoldExercise(exerciseId) ? 'time' : 'reps', Math.max(0, (isHoldExercise(exerciseId) ? (set.time || 0) : (set.reps || 0)) - 1))}
+                            className="text-slate-600 hover:text-white transition-colors p-1"
+                          ><Minus size={18} /></button>
+                          <input 
+                             type="number"
+                             value={isHoldExercise(exerciseId) ? (set.time || 0) : (set.reps || 0)}
+                             onChange={(e) => updateSet(index, isHoldExercise(exerciseId) ? 'time' : 'reps', parseInt(e.target.value) || 0)}
+                             className="bg-transparent text-4xl font-black text-white w-16 text-center focus:outline-none font-mono tracking-tighter"
+                          />
+                          <button 
+                            type="button" 
+                            onClick={() => updateSet(index, isHoldExercise(exerciseId) ? 'time' : 'reps', (isHoldExercise(exerciseId) ? (set.time || 0) : (set.reps || 0)) + 1)}
+                            className="text-slate-600 hover:text-white transition-colors p-1"
+                          ><Plus size={18} /></button>
+                       </div>
+                       <span className="text-[8px] font-black uppercase tracking-widest text-slate-600">{isHoldExercise(exerciseId) ? 'Sekund' : 'Opakování'}</span>
+                    </div>
+
+                    <div className="flex flex-col items-center gap-2">
+                       <div className="flex items-center gap-2 bg-black/20 px-4 py-2 rounded-xl border border-white/5 group-hover:border-purple-500/20 transition-all">
+                          <span className="text-[9px] font-black text-purple-500">RPE:</span>
+                          <input 
+                             type="number"
+                             min="1"
+                             max="10"
+                             value={set.rpe || 7}
+                             onChange={(e) => updateSet(index, 'rpe', parseInt(e.target.value) || 0)}
+                             className="bg-transparent text-xl font-black text-white w-8 text-center focus:outline-none font-mono"
+                          />
+                       </div>
+                       <span className="text-[8px] font-black uppercase tracking-widest text-slate-600">Intenzita (1-10)</span>
+                    </div>
+
+                    <div className="flex justify-end pr-4">
+                       <button 
+                        type="button" 
+                        onClick={() => removeSet(index)}
+                        className="text-slate-700 hover:text-red-500 transition-colors p-2"
+                       ><Minus size={20} /></button>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+           </div>
+           
+           <button
+             type="button"
+             onClick={addSet}
+             className="w-full py-6 border-2 border-dashed border-white/5 rounded-[32px] text-slate-600 hover:text-cyan-500 hover:border-cyan-500/20 hover:bg-cyan-500/5 transition-all text-xs font-black uppercase tracking-[0.4em] flex items-center justify-center gap-3 active:scale-[0.99] group shadow-inner"
+           >
+             <PlusCircle size={20} className="group-hover:rotate-90 transition-transform" /> Duplikovat Sekvenci
+           </button>
         </div>
 
-        <div className="pt-6">
-          <button
-            type="submit"
-            className="w-full py-6 bg-white text-black text-xs font-black uppercase tracking-[0.4em] rounded-[32px] hover:bg-cyan-500 transition-all flex items-center justify-center gap-4 shadow-2xl shadow-white/5 active:scale-95 group overflow-hidden relative"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-            <Check size={20} className="relative z-10" /> 
-            <span className="relative z-10">Uložit do Národního Archivu</span>
-          </button>
+        {/* NOTES & MEDIA */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+           <div className="space-y-4">
+              <label className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 flex items-center gap-2 px-2">
+                 <MessageSquare size={14} /> Taktické Poznámky
+              </label>
+              <textarea 
+                 value={notes}
+                 onChange={(e) => setNotes(e.target.value)}
+                 placeholder="Pocity, technické nedostatky, progresivní postřehy..."
+                 className="w-full h-32 bg-white/5 border border-white/5 rounded-[32px] p-6 text-sm font-medium text-slate-300 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/30 transition-all resize-none italic"
+              />
+           </div>
+
+           <div className="space-y-4">
+              <label className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 flex items-center gap-2 px-2">
+                 <Camera size={14} /> Vizuální Telemetrie
+              </label>
+              <div className="w-full h-32 border-2 border-dashed border-white/5 rounded-[32px] flex flex-col items-center justify-center gap-2 group hover:border-cyan-500/20 transition-all cursor-pointer">
+                 <Camera size={24} className="text-slate-700 group-hover:text-cyan-500 transition-colors" />
+                 <span className="text-[8px] font-black text-slate-700 group-hover:text-slate-500 uppercase tracking-widest">Připojit záznam (Foto/Video)</span>
+              </div>
+              <div className="flex items-center justify-between px-6 py-4 bg-white/5 rounded-2xl border border-white/5">
+                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Sdílet s komunitou</span>
+                 <button 
+                  type="button"
+                  onClick={() => setShared(!shared)}
+                  className={cn(
+                    "w-12 h-6 rounded-full relative transition-colors duration-300",
+                    shared ? "bg-cyan-500" : "bg-white/10"
+                  )}
+                 >
+                   <div className={cn(
+                     "absolute top-1 w-4 h-4 rounded-full bg-white transition-all duration-300",
+                     shared ? "left-7" : "left-1"
+                   )} />
+                 </button>
+              </div>
+           </div>
+        </div>
+
+        {/* SUBMIT */}
+        <div className="pt-8">
+           <button
+             type="submit"
+             className="w-full py-7 bg-white text-black text-sm font-black uppercase tracking-[0.5em] rounded-[32px] hover:bg-cyan-500 active:scale-95 transition-all shadow-2xl shadow-cyan-500/10 group relative overflow-hidden"
+           >
+             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+             <div className="flex items-center justify-center gap-4 relative z-10">
+               <Check size={24} />
+               Synchronizovat do Archivu
+             </div>
+           </button>
         </div>
       </form>
     </div>

@@ -10,11 +10,13 @@ import {
   TrendingUp,
   Save,
   CheckCircle,
-  ChevronRight
+  ChevronRight,
+  Heart
 } from 'lucide-react';
 import { UserProfile } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
+import { EXERCISE_LIBRARY } from '../data/exerciseLibrary';
 import { 
   AreaChart, 
   Area, 
@@ -154,28 +156,66 @@ export const Profile: React.FC<ProfileProps> = ({ profile, onSave }) => {
         <div className="flex items-center justify-between px-4">
           <div className="flex items-center gap-2">
             <Target size={14} className="text-cyan-500" />
-            <span className="text-[10px] font-black text-cyan-500 uppercase tracking-[0.3em]">Moje Cíle</span>
+            <span className="text-[10px] font-black text-cyan-500 uppercase tracking-[0.3em]">Operační Cíle</span>
           </div>
-          <ChevronRight size={14} className="text-slate-600" />
+          <button className="text-[8px] font-black text-slate-500 uppercase tracking-widest hover:text-cyan-400 transtion-colors">Spravovat</button>
         </div>
-        <div className="overflow-x-auto no-scrollbar flex gap-4 px-4 pb-2">
-          {Object.entries(formData.goals).map(([key, val], idx) => (
-            <div key={key} className="glass-card min-w-[140px] p-4 border-white/5 bg-white/5 flex flex-col items-center text-center">
-              <div className="w-12 h-12 rounded-xl bg-black/40 flex items-center justify-center text-cyan-500 mb-3 border border-white/5 shadow-inner">
-                <span className="text-xs font-black uppercase">{key.substring(0, 2)}</span>
+        <div className="space-y-3 px-4">
+          {formData.goals.map((goal, idx) => (
+            <div key={idx} className="glass-card p-5 border-white/5 bg-white/5 flex flex-col gap-4 group hover:border-cyan-500/20 transition-all">
+              <div className="flex items-center justify-between">
+                 <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-black/40 flex items-center justify-center text-cyan-500 border border-white/5">
+                       <Target size={18} />
+                    </div>
+                    <div>
+                       <h4 className="text-[11px] font-black text-white uppercase tracking-widest">{goal.exercise}</h4>
+                       <p className="text-[9px] font-bold text-slate-500 uppercase">Cíl: {goal.targetValue} {goal.metric}</p>
+                    </div>
+                 </div>
+                 <span className="text-xs font-black text-cyan-500 italic">{goal.progress}%</span>
               </div>
-              <h4 className="text-[10px] font-black text-white uppercase tracking-widest mb-1">{key}</h4>
-              <p className="text-[9px] font-bold text-slate-500 uppercase mb-3">Cíl: {val} {key === 'planche' || key === 'frontlever' ? 'sec' : 'reps'}</p>
-              <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+              <div className="w-full h-1.5 bg-black/40 rounded-full overflow-hidden border border-white/5">
                 <motion.div 
                   initial={{ width: 0 }}
-                  animate={{ width: `${30 + idx * 10}%` }}
-                  className="h-full bg-cyan-500 shadow-[0_0_10px_rgba(34,211,238,0.5)]"
+                  animate={{ width: `${goal.progress}%` }}
+                  className="h-full bg-gradient-to-r from-cyan-600 to-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.4)]"
                 />
               </div>
-              <span className="text-[8px] font-black text-cyan-500 mt-2">{30 + idx * 10}%</span>
             </div>
           ))}
+          <button className="w-full py-4 border-2 border-dashed border-white/5 rounded-2xl text-slate-700 hover:text-cyan-500 hover:border-cyan-500/20 transition-all text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2">
+             <Plus size={14} /> Přidat Nový Cíl
+          </button>
+        </div>
+      </div>
+
+      {/* Favorite Exercises Section */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between px-4">
+          <div className="flex items-center gap-2">
+            <Heart size={14} className="text-pink-500" />
+            <span className="text-[10px] font-black text-[#94a3b8] uppercase tracking-[0.3em]">Oblíbené Moduly</span>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3 px-4">
+          {formData.favoriteExercises.length > 0 ? (
+            formData.favoriteExercises.map((exId, idx) => {
+              const ex = EXERCISE_LIBRARY.find(e => e.id === exId);
+              return (
+                <div key={idx} className="glass-card p-4 border-white/5 bg-white/5 flex items-center gap-3 hover:border-pink-500/20 transition-all">
+                  <div className="w-8 h-8 rounded-lg bg-pink-500/10 flex items-center justify-center text-pink-500">
+                    <Activity size={16} />
+                  </div>
+                  <span className="text-[9px] font-black text-slate-300 uppercase tracking-tighter truncate">{ex?.name || exId}</span>
+                </div>
+              );
+            })
+          ) : (
+             <div className="col-span-2 py-8 text-center glass-card border-dashed border-white/5 opacity-30">
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Žádné oblíbené cviky</p>
+             </div>
+          )}
         </div>
       </div>
 

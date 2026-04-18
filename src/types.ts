@@ -1,40 +1,54 @@
-export type PredefinedExercise = 
-  | 'Shyby' | 'Kliky' | 'Dipy' | 'Dřepy' | 'Výpady' | 'Plank' | 'Muscleups' | 'Přednosy' | 'Angličáky'
-  | 'Planche lean' | 'Tuck planche' | 'Advtuck planche' | 'Straddle planche' | 'Full planche'
-  | 'Frontlever' | 'Backlever' | 'Victorian' | 'Dragon flag' | 'L-Sit' | 'V-Sit'
-  | 'HSPU' | '90° HSPU' | 'Pike press' | 'Bentarm press' | 'Handstand press' | 'Deep HSPU'
-  | 'Hollowback' | 'Iron Cross' | 'Maltese' | 'Hefesto' | 'Pelican' | 'Muscle-ups'
-  | 'Pullovers' | 'Výmyky' | 'Korean dips' | 'Russian dips' | 'Archer pushups'
-  | 'Typewriters' | 'Yguana pushups' | 'Tigerbent pushups' | 'High pull-ups'
-  | 'Australian pull-ups' | 'Scapula pushups' | 'Scapula pull-ups' | 'Shoulder shrugs'
-  | 'Tuck frontlever raises' | 'Halflay frontlever raises' | 'Frontlever raises'
-  | 'Ice cream makers' | 'Upside down deadlift' | 'Pike float pushups'
-  | 'Tornado 360' | '540 try' | '360 pull-up' | 'Shrimpflip' | 'Alleyhoop'
-  | 'Hefesto negatives' | 'Entrada deadhang' | 'Backlever pull-ups'
-  | 'Heavily weighted dips' | 'Weighted pull-ups' | 'Impossible dip' | 'Human flag'
-  | 'Chin ups' | 'Australian rows' | 'Pistol squats' | 'Deadlift' | 'Sit ups'
-  | 'Swing' | 'Giant' | 'Salto' | 'Stojka' | 'Handstand walkthrough'
-  | 'Stall bars leg raises' | 'Frontlever hold' | 'Planche hold';
-export type ExerciseType = PredefinedExercise | string;
+export type GripType = 'pronated' | 'supinated' | 'neutral' | 'false' | 'mixed';
+export type EquipmentType = 'pull-up bar' | 'dip bars' | 'rings' | 'floor' | 'parallelettes' | 'stall bars';
+export type ExecutionType = 'standard' | 'wide' | 'shoulder-width' | 'narrow' | 'commando' | 'one arm' | 'archer' | 'typewriter' | 'high' | 'negatives' | 'partials' | 'explosive' | 'scapula';
+export type BodyPosition = 'hollow body' | 'arch back' | 'L-sit' | 'tuck' | 'adv tuck' | 'straddle' | 'full' | 'australian (bent legs)' | 'australian (straight legs)';
+export type OneArmHandPosition = 'wrist' | 'forearm' | 'elbow' | 'biceps' | 'shoulder' | 'horizontal' | 'free';
+export type BandPlacement = 'both legs' | 'one leg' | 'waist' | 'knees';
 
 export interface WorkoutSet {
   reps?: number;
   time?: number; // duration in seconds
   weight?: number; // extra weight in kg
+  rpe?: number; // Rate of Perceived Exertion 1-10
+}
+
+export interface ExerciseMedia {
+  type: 'image' | 'video';
+  url: string;
+  thumbnail?: string;
 }
 
 export interface ExerciseLog {
   id: string;
-  type: ExerciseType;
-  block?: string; // e.g. PLANCHE, PULL BASICS
-  variation?: string; // e.g. "High", "Chest-to-bar"
-  form?: 'Hollowbody' | 'Archy' | 'Standard' | string;
+  exerciseId: string; // reference to Library item
+  type: string; // Keep string for UI display or custom ones
+  grip?: GripType;
+  equipment?: EquipmentType;
+  execution?: ExecutionType | string;
+  oneArmHandPosition?: OneArmHandPosition | string;
+  position?: BodyPosition | string;
   assistance?: {
     type: 'Band' | 'Weight' | 'None';
     value?: string | number; // e.g. "Red", 10 (kg)
+    placement?: BandPlacement | string;
+    notes?: string;
   };
   sets: WorkoutSet[];
+  notes?: string;
+  media?: ExerciseMedia[];
+  shared?: boolean;
   timestamp: number;
+}
+
+export interface ExerciseDefinition {
+  id: string;
+  name: string;
+  category: 'Pull' | 'Push' | 'Statics' | 'Legs' | 'Core' | 'Dynamic';
+  description: string;
+  videoUrl?: string;
+  technicalPoints: string[];
+  commonVariations: string[];
+  isFavorite?: boolean;
 }
 
 export interface UserProfile {
@@ -45,6 +59,7 @@ export interface UserProfile {
   posts: number;
   followers: number;
   following: number;
+  favoriteExercises: string[]; // List of IDs
   goals: {
     pullups: number;
     pushups: number;

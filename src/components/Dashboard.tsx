@@ -34,25 +34,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ logs }) => {
   const [showCalendarModal, setShowCalendarModal] = useState(false);
   const [selectedDayDetail, setSelectedDayDetail] = useState<number | null>(null);
 
-  // Dummy data for visual representation based on sketch
-  const dailyChallenges = [
-    { id: 1, title: 'Planche Flow', difficulty: 'EXTRÉMNÍ', time: '12 min', image: 'https://picsum.photos/seed/planche/400/200' },
-    { id: 2, title: 'Explosive Power', difficulty: 'POKROČILÉ', time: '45 min', image: 'https://picsum.photos/seed/explosive/400/200' },
-  ];
+  // Helper functions
+  const isSameDay = (d1: Date, d2: Date) => 
+    d1.getFullYear() === d2.getFullYear() && 
+    d1.getMonth() === d2.getMonth() && 
+    d1.getDate() === d2.getDate();
 
-  const todayPlans = [
-    { id: 1, title: 'Basics Strength', difficulty: 'STŘEDNÍ', sets: '5 Sérií', image: 'https://picsum.photos/seed/strength/400/200' },
-  ];
-
-  const recommended = [
-    { id: 1, title: 'Muscle-Up Mastery', author: 'By Meta-Cali Specialist', image: 'https://picsum.photos/seed/muscleup/400/200' },
-  ];
-
-  // Calendar logic: Last 7 days
   const days = ['PO', 'ÚT', 'ST', 'ČT', 'PÁ', 'SO', 'NE'];
   const today = new Date();
-  
-  // Calculate Monday of the current week
+
   const getMonday = (date: Date) => {
     const d = new Date(date);
     const day = d.getDay();
@@ -69,16 +59,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ logs }) => {
     return d;
   });
 
-  const isSameDay = (d1: Date, d2: Date) => 
-    d1.getFullYear() === d2.getFullYear() && 
-    d1.getMonth() === d2.getMonth() && 
-    d1.getDate() === d2.getDate();
-
   const getStatus = (date: Date) => {
     const hasLog = logs.some(l => isSameDay(new Date(l.timestamp), date));
-    
     if (hasLog) return 'trained';
-    if (date.getDay() === 0) return 'rest'; // Sunday as Rest
+    if (date.getDay() === 0) return 'rest';
     if (date.getTime() > today.getTime()) return 'planned';
     return 'nothing';
   };
@@ -90,7 +74,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ logs }) => {
   const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
   const getFirstDayOfMonth = (year: number, month: number) => {
     const firstDay = new Date(year, month, 1).getDay();
-    return firstDay === 0 ? 6 : firstDay - 1; // Map Sunday (0) to 6, Monday (1) to 0
+    return firstDay === 0 ? 6 : firstDay - 1;
   };
 
   const monthNames = ['Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen', 'Červenec', 'Srpen', 'Září', 'Říjen', 'Listopad', 'Prosinec'];
@@ -113,56 +97,109 @@ export const Dashboard: React.FC<DashboardProps> = ({ logs }) => {
     }
   };
 
+  // Mock data for display
+  const dailyChallenges = [
+    { id: 1, title: 'Planche Flow', difficulty: 'EXTRÉMNÍ', time: '12 min', image: 'https://picsum.photos/seed/planche/400/200' },
+    { id: 2, title: 'Explosive Power', difficulty: 'POKROČILÉ', time: '45 min', image: 'https://picsum.photos/seed/explosive/400/200' },
+  ];
+
+  const todayPlans = [
+    { id: 1, title: 'Basics Strength', difficulty: 'STŘEDNÍ', sets: '5 Sérií', image: 'https://picsum.photos/seed/strength/400/200' },
+  ];
+
+  const recommended = [
+    { id: 1, title: 'Muscle-Up Mastery', author: 'By Meta-Cali Specialist', image: 'https://picsum.photos/seed/muscleup/400/200' },
+  ];
+
+  // LIVE STATS CALCULATION
+  const totalSets = logs.reduce((acc, log) => acc + log.sets.length, 0);
+  
+  // Basic streak calculation
+  const calculateStreak = () => {
+    if (logs.length === 0) return 0;
+    const sortedLogs = [...logs].sort((a, b) => b.timestamp - a.timestamp);
+    let streak = 0;
+    let currentDate = new Date();
+    currentDate.setHours(0,0,0,0);
+
+    // Check if there's a log from today or yesterday to start
+    const hasLogToday = logs.some(l => isSameDay(new Date(l.timestamp), today));
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const hasLogYesterday = logs.some(l => isSameDay(new Date(l.timestamp), yesterday));
+
+    if (!hasLogToday && !hasLogYesterday) return 0;
+
+    // Simplified streak: count consecutive days with at least one log
+    let checkDate = hasLogToday ? today : yesterday;
+    while (true) {
+      const dayLogs = logs.filter(l => isSameDay(new Date(l.timestamp), checkDate));
+      if (dayLogs.length > 0) {
+        streak++;
+        checkDate = new Date(checkDate);
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+    return streak;
+  };
+
+  const streak = calculateStreak();
+
+  // Legend
+  const legend = [
+    { label: 'Trained', color: 'bg-green-500', icon: Check },
+    { label: 'Planned', color: 'bg-orange-500', icon: Square },
+    { label: 'Rest', color: 'bg-white/10', icon: Circle },
+  ];
+
   return (
     <div id="monitor-view" className="space-y-8 max-w-5xl mx-auto pb-20 relative">
       {/* Sketch Header Simulation */}
       <div className="flex items-center justify-between px-2 mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-cyan-500 flex items-center justify-center text-black font-black italic shadow-[0_0_15px_rgba(34,211,238,0.4)]">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500 to-cyan-600 flex items-center justify-center text-black font-black italic shadow-[0_0_20px_rgba(34,211,238,0.4)] relative">
             M
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse"></div>
           </div>
           <div className="hidden sm:block">
-            <h1 className="text-xl font-black tracking-tighter text-slate-900 dark:text-white italic">META-CALI</h1>
-            <span className="text-[8px] uppercase tracking-[0.4em] text-slate-500 font-black block leading-none">Tactical Unit OS</span>
+            <h1 className="text-2xl font-black tracking-tighter text-slate-900 dark:text-white italic leading-none">META-CALI</h1>
+            <span className="text-[10px] uppercase tracking-[0.4em] text-cyan-500 font-black block mt-1">Tactical Unit OS Terminal</span>
           </div>
         </div>
         <div className="flex gap-4">
-          <button className="relative w-10 h-10 ring-1 ring-white/10 rounded-full flex items-center justify-center hover:bg-white/5 transition-all text-slate-400 dark:text-slate-500 hover:text-cyan-500">
-            <Bell size={18} />
-            <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-slate-900"></span>
+          <button className="relative w-12 h-12 ring-1 ring-white/10 rounded-2xl flex items-center justify-center hover:bg-white/5 transition-all text-slate-400 dark:text-slate-500 hover:text-cyan-500 bg-black/20">
+            <Bell size={20} />
+            <span className="absolute top-3 right-3 w-2 h-2 bg-cyan-500 rounded-full"></span>
           </button>
-          <button className="w-10 h-10 ring-1 ring-white/10 rounded-full flex items-center justify-center hover:bg-white/5 transition-all text-slate-400 dark:text-slate-500 hover:text-cyan-500">
-            <MessageSquare size={18} />
+          <button className="w-12 h-12 ring-1 ring-white/10 rounded-2xl flex items-center justify-center hover:bg-white/5 transition-all text-slate-400 dark:text-slate-500 hover:text-cyan-500 bg-black/20">
+            <MessageSquare size={20} />
           </button>
         </div>
       </div>
 
       {/* Top Tabs Navigation */}
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-center sm:justify-start gap-4 md:gap-8 px-2">
+      <div className="flex flex-col gap-6">
+        <div className="flex items-center justify-center sm:justify-start gap-8 px-2 overflow-x-auto no-scrollbar">
           {[
-            { id: 'zaklad', label: 'Základ' },
-            { id: 'osobni', label: 'Osobní' },
-            { id: 'verejne', label: 'Veřejné' },
+            { id: 'zaklad', label: 'Dashboard' },
+            { id: 'osobni', label: 'Operace' },
+            { id: 'verejne', label: 'Zpravodajství' },
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
               className={cn(
-                "text-xs font-black uppercase tracking-[0.2em] pb-2 transition-all relative",
+                "text-[10px] font-black uppercase tracking-[0.3em] pb-3 transition-all relative whitespace-nowrap",
                 activeTab === tab.id 
-                  ? "text-cyan-500 after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-cyan-500 after:shadow-[0_0_8px_rgba(34,211,238,0.5)]" 
-                  : "text-slate-400 dark:text-slate-600 hover:text-slate-900 dark:hover:text-white"
+                  ? "text-cyan-500 after:absolute after:bottom-0 after:left-0 after:w-full after:h-[3px] after:bg-cyan-500 after:shadow-[0_0_12px_rgba(34,211,238,0.6)]" 
+                  : "text-slate-600 hover:text-white"
               )}
             >
               {tab.label}
             </button>
           ))}
-        </div>
-        <div className="flex justify-center sm:justify-start px-2">
-          <button className="text-[10px] font-black uppercase text-purple-400 hover:text-purple-300 transition-colors tracking-widest border border-purple-400/20 px-3 py-1 rounded-full">
-            Upravit Selekci
-          </button>
         </div>
       </div>
 
@@ -170,78 +207,115 @@ export const Dashboard: React.FC<DashboardProps> = ({ logs }) => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative group"
+        className="relative group cursor-pointer"
       >
-        <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-3xl blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
-        <div className="relative glass-card overflow-hidden h-64 md:h-80 flex flex-col justify-end p-6 md:p-10 border-white/10">
+        <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500 via-purple-600 to-cyan-500 rounded-[40px] blur-xl opacity-20 group-hover:opacity-40 transition duration-1000 animate-gradient-x"></div>
+        <div className="relative glass-card overflow-hidden h-[400px] flex flex-col justify-end p-8 md:p-14 border-white/10 bg-black/40 rounded-[40px]">
           {/* Simulated Video/Image Background */}
           <div className="absolute inset-0 z-0">
             <img 
-              src="https://picsum.photos/seed/motivation/1200/600?blur=4" 
-              className="w-full h-full object-cover opacity-40 mix-blend-overlay"
+              src="https://picsum.photos/seed/training/1600/900?grayscale" 
+              className="w-full h-full object-cover opacity-30 group-hover:opacity-50 transition-all duration-1000 scale-105 group-hover:scale-100" 
               alt="Motivace"
               referrerPolicy="no-referrer"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
           </div>
           
-          <div className="relative z-10 space-y-2">
-            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-cyan-400">Dnešní Axiom</span>
-            <h2 className="text-2xl md:text-4xl font-black text-white leading-tight max-w-2xl italic tracking-tight">
-              "Limity existují pouze tam, kde končí tvoje <span className="text-cyan-400">představivost</span>. Tělo je jen nástroj."
+          <div className="relative z-10 space-y-4">
+            <div className="flex items-center gap-3">
+               <div className="w-1.5 h-6 bg-cyan-500 rounded-full"></div>
+               <span className="text-[12px] font-black uppercase tracking-[0.5em] text-cyan-400">Tactical Wisdom</span>
+            </div>
+            <h2 className="text-3xl md:text-5xl font-black text-white leading-tight max-w-3xl italic tracking-tighter uppercase">
+              "Disciplína není nic jiného než <span className="text-cyan-400 underline decoration-cyan-500/30 underline-offset-8">vítězství</span> nad vlastním pohodlím."
             </h2>
           </div>
 
-          <div className="relative z-10 mt-8 flex items-center justify-between border-t border-white/10 pt-4">
-            <div className="flex gap-4">
-              <Heart size={18} className="text-white/60 hover:text-pink-500 cursor-pointer transition-colors" />
-              <Share2 size={18} className="text-white/60 hover:text-cyan-500 cursor-pointer transition-colors" />
-              <ArrowRight size={18} className="text-white/60 hover:text-purple-500 cursor-pointer transition-colors" />
-              <MoreHorizontal size={18} className="text-white/60 hover:text-white cursor-pointer transition-colors" />
+          <div className="relative z-10 mt-12 flex items-center justify-between border-t border-white/5 pt-8">
+            <div className="flex gap-6 items-center">
+              <div className="flex items-center gap-2 group/icon">
+                 <Heart size={20} className="text-slate-500 group-hover/icon:text-pink-500 transition-colors" />
+                 <span className="text-[10px] font-black text-slate-500 group-hover/icon:text-slate-300">1.2K</span>
+              </div>
+              <div className="flex items-center gap-2 group/icon">
+                <MessageSquare size={20} className="text-slate-500 group-hover/icon:text-cyan-500 transition-colors" />
+                <span className="text-[10px] font-black text-slate-500 group-hover/icon:text-slate-300">84</span>
+              </div>
+              <Share2 size={20} className="text-slate-500 hover:text-purple-500 cursor-pointer transition-colors" />
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-[10px] font-bold text-white/40 tracking-widest">Ben J.</span>
-              <Bookmark size={18} className="text-white/60 hover:text-yellow-500 cursor-pointer transition-colors" />
+              <div className="flex -space-x-3">
+                 {[1,2,3,4].map(i => (
+                   <div key={i} className="w-8 h-8 rounded-full border-2 border-black bg-slate-800 overflow-hidden ring-2 ring-white/5">
+                      <img src={`https://i.pravatar.cc/100?img=${i+10}`} alt="User" />
+                   </div>
+                 ))}
+              </div>
+              <span className="text-[10px] font-black text-slate-400 tracking-widest uppercase">+2.4k DALŠÍCH</span>
             </div>
           </div>
         </div>
       </motion.div>
 
       {/* Consistency & Stats Bar */}
-      <div className="flex flex-wrap items-center justify-center gap-6 py-4 glass-card bg-black/5 dark:bg-white/5 border-none">
-        <div className="flex items-center gap-10">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500 shadow-inner">
-              <Flame size={20} fill="currentColor" className="animate-pulse" />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-xl font-black text-slate-900 dark:text-white leading-none">5</span>
-              <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">STREAK</span>
-            </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="glass-card p-8 bg-white/5 border-white/5 flex items-center gap-6 group hover:border-orange-500/20 transition-all rounded-[32px]">
+          <div className="w-16 h-16 rounded-2xl bg-orange-500/10 flex items-center justify-center text-orange-500 group-hover:scale-110 transition-transform">
+            <Flame size={32} fill="currentColor" />
           </div>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-500">
-              <Zap size={20} />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-xl font-black text-slate-900 dark:text-white leading-none">21</span>
-              <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">SÉRIE</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center text-cyan-500">
-              <Target size={20} />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-xl font-black text-slate-900 dark:text-white leading-none">10</span>
-              <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">CÍLY</span>
-            </div>
+          <div>
+            <span className="text-4xl font-black text-white italic leading-none">{streak}</span>
+            <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mt-1">Denní Aktivita</p>
           </div>
         </div>
-        <div className="h-8 w-px bg-black/5 dark:bg-white/10 hidden md:block mx-4" />
-        <div className="flex items-center gap-2">
-          <Activity size={16} className="text-green-500" />
-          <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Consistency: <span className="text-green-500">OPTIMAL</span></span>
+
+        <div className="glass-card p-8 bg-white/5 border-white/5 flex items-center gap-6 group hover:border-purple-500/20 transition-all rounded-[32px]">
+          <div className="w-16 h-16 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-500 group-hover:scale-110 transition-transform">
+            <Zap size={32} />
+          </div>
+          <div>
+            <span className="text-4xl font-black text-white italic leading-none">{totalSets}</span>
+            <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mt-1">Celkem Bloků</p>
+          </div>
+        </div>
+
+        <div className="glass-card p-8 bg-white/5 border-white/5 flex items-center gap-6 group hover:border-cyan-500/20 transition-all rounded-[32px]">
+          <div className="w-16 h-16 rounded-2xl bg-cyan-500/10 flex items-center justify-center text-cyan-500 group-hover:scale-110 transition-transform">
+            <Target size={32} />
+          </div>
+          <div>
+            <span className="text-4xl font-black text-white italic leading-none">12%</span>
+            <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mt-1">Progres Modulu</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Operator Status - NEW */}
+      <div className="glass-card border-white/5 bg-white/2 p-6 rounded-[32px] overflow-hidden relative">
+        <div className="absolute top-0 right-0 p-4">
+           <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse"></div>
+              <span className="text-[8px] font-black text-cyan-500 uppercase tracking-widest">System Online</span>
+           </div>
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+           <div className="space-y-2">
+              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Operator ID</span>
+              <p className="text-xs font-black text-white tracking-widest">#USR-229-ALPHA</p>
+           </div>
+           <div className="space-y-2">
+              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Current Rank</span>
+              <p className="text-xs font-black text-cyan-500 tracking-widest uppercase italic">Advanced Scout</p>
+           </div>
+           <div className="space-y-2">
+              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Next Milestone</span>
+              <p className="text-xs font-black text-white tracking-widest uppercase">100 Sets Logged</p>
+           </div>
+           <div className="space-y-2">
+              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Security Clearance</span>
+              <p className="text-xs font-black text-purple-500 tracking-widest uppercase">Level 4</p>
+           </div>
         </div>
       </div>
 

@@ -8,15 +8,17 @@ import { Profile } from './components/Profile';
 import { ExerciseLog, UserProfile } from './types';
 import { motion, AnimatePresence } from 'motion/react';
 import { Github, Twitter, Instagram, Sun, Moon } from 'lucide-react';
+import { EXERCISE_LIBRARY } from './data/exerciseLibrary';
 
 const DEFAULT_PROFILE: UserProfile = {
-  name: 'Karel',
-  weight: 75,
-  height: 180,
+  name: 'Karel Operator',
+  weight: 82,
+  height: 185,
   bio: 'Kalisthenický operativec se zaměřením na statické prvky a progresivní telemetrii.',
   posts: 124,
   followers: 1204,
   following: 85,
+  favoriteExercises: ['pullups', 'planche'],
   goals: {
     pullups: 15,
     pushups: 40,
@@ -93,66 +95,76 @@ export default function App() {
       case 'dashboard':
         return <Dashboard logs={logs} />;
       case 'explorer':
-        return <Explorer />;
+        return <Explorer profile={profile} onUpdateProfile={handleUpdateProfile} />;
       case 'log':
         return <WorkoutForm onSave={handleSaveLog} />;
       case 'stats':
         return (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-white">Historie tréninků</h2>
+          <div className="space-y-6 max-w-4xl mx-auto pb-20">
+            <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">Operační Historie</h2>
             <div className="grid gap-4">
               {logs.length > 0 ? (
-                [...logs].reverse().map((log) => (
-                  <div key={log.id} className="glass-card p-5 flex items-center justify-between border-white/5 bg-white/5 group hover:border-cyan-500/20 transition-all">
-                    <div className="flex-1">
-                      <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <p className="text-sm font-black text-white uppercase tracking-tight italic">{log.type}</p>
-                        {log.variation && (
-                          <span className="text-[9px] font-black text-white/50 bg-white/5 px-2 py-0.5 rounded border border-white/10 uppercase tracking-widest">
-                            {log.variation}
-                          </span>
-                        )}
-                        {log.block && (
-                          <span className="text-[8px] font-black bg-cyan-500/10 text-cyan-400 px-2 py-0.5 rounded border border-cyan-500/20 uppercase tracking-tighter shadow-[0_0_10px_rgba(34,211,238,0.1)]">
-                            {log.block}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex flex-wrap items-center gap-3">
-                        <p className="text-[9px] text-slate-500 font-bold uppercase tracking-[0.2em]">{new Date(log.timestamp).toLocaleString()}</p>
-                        {log.form && (
-                          <div className="flex items-center gap-1">
-                             <div className="w-1 h-1 rounded-full bg-purple-500" />
-                             <span className="text-[8px] font-black text-purple-400 uppercase tracking-widest">{log.form}</span>
-                          </div>
-                        )}
-                        {log.assistance && (
-                          <div className="flex items-center gap-1">
-                             <div className="w-1 h-1 rounded-full bg-orange-500" />
-                             <span className="text-[8px] font-black text-orange-400 uppercase tracking-widest">{log.assistance.type}: {log.assistance.value}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap gap-2 justify-end max-w-[50%]">
-                      {log.sets.map((s, i) => (
-                        <div key={i} className="flex flex-col items-center px-3 py-1 bg-black/40 rounded-xl border border-white/5 min-w-[50px] shadow-inner">
-                          <div className="flex items-baseline gap-0.5">
-                            <span className="text-xs font-black text-cyan-400 font-mono leading-none">
-                              {s.reps || s.time}
+                [...logs].reverse().map((log) => {
+                  const exercise = EXERCISE_LIBRARY.find(e => e.id === log.exerciseId);
+                  return (
+                    <div key={log.id} className="glass-card p-6 flex flex-col sm:flex-row sm:items-center justify-between border-white/5 bg-white/5 group hover:border-cyan-500/20 transition-all gap-6">
+                      <div className="flex-1 space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-base font-black text-white uppercase tracking-tight italic">{exercise?.name || log.type}</p>
+                          {log.execution && (
+                            <span className="text-[9px] font-black text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20 uppercase tracking-widest">
+                              {log.execution}
                             </span>
-                            <span className="text-[7px] font-black text-cyan-800 uppercase">
-                              {s.reps ? 'R' : 'S'}
+                          )}
+                          {log.grip && (
+                            <span className="text-[8px] font-black bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded border border-purple-500/20 uppercase tracking-tighter shadow-sm">
+                              {log.grip}
                             </span>
-                          </div>
-                          {s.weight ? <span className="text-[8px] text-purple-400 font-black mt-1 leading-none">+{s.weight}KG</span> : null}
+                          )}
                         </div>
-                      ))}
+                        <div className="flex flex-wrap items-center gap-4">
+                          <p className="text-[9px] text-[#94a3b8] font-bold uppercase tracking-[0.25em]">{new Date(log.timestamp).toLocaleString()}</p>
+                          <div className="flex items-center gap-4 text-[8px] font-black uppercase tracking-widest text-slate-500">
+                            {log.equipment && <span>• {log.equipment}</span>}
+                            {log.position && <span>• {log.position}</span>}
+                          </div>
+                        </div>
+                        {log.assistance && log.assistance.type !== 'None' && (
+                          <div className="flex items-center gap-1.5 bg-orange-500/5 px-2 py-1 rounded-lg border border-orange-500/10 w-fit">
+                             <div className="w-1 h-1 rounded-full bg-orange-500" />
+                             <span className="text-[8px] font-black text-orange-400 uppercase tracking-widest">Asistence: {log.assistance.type} {log.assistance.value && `(${log.assistance.value})`}</span>
+                          </div>
+                        )}
+                        {log.notes && (
+                          <p className="text-[10px] text-slate-400 italic font-medium leading-relaxed max-w-md">"{log.notes}"</p>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-2 justify-end sm:max-w-[40%]">
+                        {log.sets.map((s, i) => (
+                          <div key={i} className="flex flex-col items-center px-4 py-2 bg-black/40 rounded-2xl border border-white/5 min-w-[60px] shadow-inner group-hover:border-cyan-500/10 transition-colors">
+                            <div className="flex items-baseline gap-0.5">
+                              <span className="text-lg font-black text-cyan-400 font-mono leading-none">
+                                {s.reps || s.time}
+                              </span>
+                              <span className="text-[8px] font-black text-cyan-800 uppercase">
+                                {s.reps ? 'R' : 'S'}
+                              </span>
+                            </div>
+                            {s.weight ? (
+                              <span className="text-[9px] text-purple-400 font-black mt-1 leading-none">+{s.weight}KG</span>
+                            ) : s.rpe ? (
+                              <span className="text-[7px] text-slate-600 font-black mt-1">RPE {s.rpe}</span>
+                            ) : null}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               ) : (
-                <p className="text-slate-500 italic">Zatím žádná historie.</p>
+                <div className="flex flex-col items-center justify-center py-20 bg-white/5 rounded-[40px] border border-dashed border-white/10">
+                  <p className="text-slate-500 font-black uppercase tracking-widest italic">Systémový archiv je prázdný</p>
+                </div>
               )}
             </div>
           </div>
