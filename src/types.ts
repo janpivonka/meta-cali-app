@@ -1,7 +1,7 @@
 export type GripType = 'pronated' | 'supinated' | 'neutral' | 'false' | 'mixed';
 export type ThumbPosition = 'top' | 'bottom';
 export type EquipmentType = 'pull-up bar' | 'dip bars' | 'rings' | 'floor' | 'parallelettes' | 'stall bars';
-export type ExecutionType = 'standard' | 'wide' | 'shoulder-width' | 'narrow' | 'commando' | 'one arm' | 'archer' | 'typewriter' | 'high' | 'negatives' | 'partials' | 'explosive' | 'controlled' | 'scapula';
+export type ExecutionType = 'standard' | 'wide' | 'shoulder-width' | 'narrow' | 'commando' | 'one arm' | 'archer' | 'typewriter' | 'high' | 'negatives' | 'partials' | 'explosive' | 'controlled' | 'scapula' | 'korean';
 export type BodyPosition = 'hollow body' | 'arch back' | 'L-sit' | 'tuck' | 'adv tuck' | 'halflay' | 'one leg' | 'straddle' | 'full' | 'australian (bent legs)' | 'australian (straight legs)';
 export type OneArmHandPosition = 'wrist' | 'forearm' | 'elbow' | 'biceps' | 'shoulder' | 'horizontal' | 'free';
 export type BandPlacement = 'both legs' | 'one leg' | 'waist' | 'knees' | 'back';

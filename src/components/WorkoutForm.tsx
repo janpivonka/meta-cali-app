@@ -42,7 +42,7 @@ const THUMBS: { val: ThumbPosition; label: string }[] = [
   { val: 'top', label: 'Suicide (Palec nahoře)' }
 ];
 const EQUIPMENTS: EquipmentType[] = ['pull-up bar', 'dip bars', 'rings', 'floor', 'parallelettes', 'stall bars'];
-const EXECUTIONS: ExecutionType[] = ['standard', 'wide', 'shoulder-width', 'narrow', 'commando', 'one arm', 'archer', 'typewriter', 'high', 'negatives', 'partials', 'explosive', 'controlled', 'scapula'];
+const EXECUTIONS: ExecutionType[] = ['standard', 'wide', 'shoulder-width', 'narrow', 'commando', 'one arm', 'archer', 'typewriter', 'high', 'negatives', 'partials', 'explosive', 'controlled', 'scapula', 'korean'];
 const POSITIONS: BodyPosition[] = ['hollow body', 'arch back', 'L-sit', 'tuck', 'adv tuck', 'halflay', 'one leg', 'straddle', 'full', 'australian (bent legs)', 'australian (straight legs)'];
 const BAND_PLACEMENTS: BandPlacement[] = ['both legs', 'one leg', 'waist', 'knees', 'back'];
 const LOOP_TYPES: { val: BandLoopType; label: string }[] = [
@@ -366,19 +366,16 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave }) => {
                               className="flex-1 bg-black/40 border border-orange-500/20 rounded-2xl p-4 text-sm font-bold text-white focus:outline-none focus:border-orange-500 italic"
                           />
                           <div className="flex gap-1.5 bg-black/20 p-2 rounded-2xl border border-white/5">
-                            {LOOP_TYPES.map(l => (
-                              <button
-                                key={l.val}
-                                type="button"
-                                onClick={() => setBandLoopType(l.val)}
-                                className={cn(
-                                  "px-3 py-2 rounded-xl text-[7px] font-black uppercase tracking-widest transition-all",
-                                  bandLoopType === l.val ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" : "text-slate-600 hover:text-slate-400"
-                                )}
-                              >
-                                {l.label}
-                              </button>
-                            ))}
+                            <button
+                              type="button"
+                              onClick={() => setBandLoopType(bandLoopType === 'single' ? 'double' : 'single')}
+                              className={cn(
+                                "px-4 py-2 rounded-xl text-[7px] font-black uppercase tracking-widest transition-all",
+                                bandLoopType === 'double' ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" : "bg-white/10 text-slate-400"
+                              )}
+                            >
+                              {bandLoopType === 'double' ? 'Dvojité Smotání' : 'Jednoduché Smotání'}
+                            </button>
                           </div>
                         </div>
                         <div className="flex flex-wrap gap-1.5">

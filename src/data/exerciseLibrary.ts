@@ -5,7 +5,7 @@ export const EXERCISE_LIBRARY: ExerciseDefinition[] = [
     id: 'pullups',
     name: 'Shyby',
     category: 'Pull',
-    description: 'Základní tahový cvik na hrazdě pro rozvoj síly zad a paží.',
+    description: 'Základní tahový cvik na hrazdě pro rozvoj síly zad a paží. Zahrnuje varianty od základních shybů přes scapula aktivace až po náročné Korean shyby.',
     videoUrl: 'https://www.youtube.com/embed/eGo4IYlbE5g',
     technicalPoints: [
       'Aktivace lopatek před samotným tahem.',
@@ -13,21 +13,7 @@ export const EXERCISE_LIBRARY: ExerciseDefinition[] = [
       'Kontrolovaný pohyb bez nadměrného kmitu.',
       'Zpevněné jádro (core) po celou dobu.'
     ],
-    commonVariations: ['Široký úchop', 'Úzký úchop', 'Nadhmat', 'Podhmat', 'Archer', 'L-Sit']
-  },
-  {
-    id: 'scapulapullups',
-    name: 'Scapula Shyby',
-    category: 'Pull',
-    description: 'Izolovaný pohyb lopatek pro posílení stabilizátorů a zlepšení techniky shybů.',
-    videoUrl: 'https://www.youtube.com/embed/S2p2nNRsFvE',
-    technicalPoints: [
-      'Propnuté paže po celou dobu pohybu.',
-      'Maximální deprese a retrakce lopatek.',
-      'Kontrolované uvolnění (deprese).',
-      'Hlava v neutrální pozici.'
-    ],
-    commonVariations: ['Hrazda', 'Kruhy', 'L-Sit', 'Jednoruč']
+    commonVariations: ['Široký úchop', 'Úzký úchop', 'Nadhmat', 'Podhmat', 'Archer', 'L-Sit', 'Scapula', 'Korean', 'Australan']
   },
   {
     id: 'pushups',
@@ -98,19 +84,5 @@ export const EXERCISE_LIBRARY: ExerciseDefinition[] = [
       'Silná aktivace zádových svalů a jádra.'
     ],
     commonVariations: ['Tuck', 'Adv Tuck', 'Straddle', 'Full']
-  },
-  {
-    id: 'koreanpullups',
-    name: 'Korean Shyby',
-    category: 'Pull',
-    description: 'Náročný variant shybů prováděný s hrazdou za zády, vyžadující vysokou mobilitu ramen a sílu zad.',
-    videoUrl: 'https://www.youtube.com/embed/fD_fV8jS9Y8',
-    technicalPoints: [
-      'Úchop za zády v šíři ramen.',
-      'Aktivní lopatková protiakce.',
-      'Tah směřující k bedrům.',
-      'Udržení vertikální polohy těla bez nadměrného prohnutí.'
-    ],
-    commonVariations: ['Standard', 'L-Sit', 'Weighted']
   }
 ];
