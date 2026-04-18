@@ -23,7 +23,8 @@ import {
   GripWidth,
   ThumbPosition,
   EquipmentType, 
-  ExecutionType, 
+  ExecutionStyle,
+  ExecutionMethod,
   OneArmHandPosition,
   BandPlacement,
   BandLoopType,
@@ -44,7 +45,8 @@ const THUMBS: { val: ThumbPosition; label: string }[] = [
   { val: 'top', label: 'Suicide (Palec nahoře)' }
 ];
 const EQUIPMENTS: EquipmentType[] = ['pull-up bar', 'low bar', 'dip bars', 'rings', 'floor', 'parallelettes', 'stall bars'];
-const EXECUTIONS: ExecutionType[] = ['standard', 'one arm', 'archer', 'typewriter', 'commando', 'high', 'negatives', 'partials', 'explosive', 'controlled', 'scapula', 'korean', 'australian'];
+const EXECUTION_STYLES: ExecutionStyle[] = ['basic', 'one arm', 'archer', 'typewriter', 'commando', 'high', 'korean', 'australian'];
+const EXECUTION_METHODS: ExecutionMethod[] = ['standard', 'explosive', 'partial', 'negative', 'scapula', 'controlled'];
 const POSITIONS: BodyPosition[] = ['hollow body', 'arch back', 'L-sit', 'tuck', 'adv tuck', 'halflay', 'one leg', 'straddle', 'full', 'australian (bent legs)', 'australian (straight legs)'];
 const BAND_PLACEMENTS: BandPlacement[] = ['both legs', 'one leg', 'waist', 'knees', 'back'];
 const LOOP_TYPES: { val: BandLoopType; label: string }[] = [
@@ -67,7 +69,8 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave }) => {
   const [gripWidth, setGripWidth] = useState<GripWidth>('shoulder-width');
   const [thumb, setThumb] = useState<ThumbPosition>('bottom');
   const [equipment, setEquipment] = useState<EquipmentType>('pull-up bar');
-  const [execution, setExecution] = useState<ExecutionType | string>('standard');
+  const [executionStyle, setExecutionStyle] = useState<ExecutionStyle | string>('basic');
+  const [executionMethod, setExecutionMethod] = useState<ExecutionMethod | string>('standard');
   const [oneArmHandPosition, setOneArmHandPosition] = useState<OneArmHandPosition | string>('free');
   const [position, setPosition] = useState<BodyPosition | string>('standard');
   const [assistanceType, setAssistanceType] = useState<'None' | 'Band' | 'Weight'>('None');
@@ -112,7 +115,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave }) => {
       if (eq === 'floor' || eq === 'parallelettes') return false;
       
       // If NOT australian, also exclude low bar and dip bars
-      if (!execution.toString().includes('australian') && !position.toString().includes('australian')) {
+      if (!executionStyle.toString().includes('australian') && !position.toString().includes('australian')) {
         return eq !== 'low bar' && eq !== 'dip bars';
       }
       return true;
@@ -120,12 +123,12 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave }) => {
     return true;
   });
 
-  const handleExecutionChange = (ex: ExecutionType) => {
-    setExecution(ex);
+  const handleStyleChange = (style: ExecutionStyle) => {
+    setExecutionStyle(style);
     // Logic as requested
-    if (ex === 'archer' || ex === 'typewriter') {
+    if (style === 'archer' || style === 'typewriter') {
       setGripWidth('wide');
-    } else if (ex === 'commando') {
+    } else if (style === 'commando') {
       setGripWidth('narrow');
       setGrip('neutral');
     }
@@ -144,8 +147,9 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave }) => {
       gripWidth,
       thumb,
       equipment,
-      execution,
-      oneArmHandPosition: execution === 'one arm' ? oneArmHandPosition : undefined,
+      executionStyle,
+      executionMethod,
+      oneArmHandPosition: executionStyle === 'one arm' ? oneArmHandPosition : undefined,
       position,
       assistance: assistanceType !== 'None' ? {
         type: assistanceType,
@@ -175,6 +179,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave }) => {
           <p className="text-[10px] text-cyan-500 font-black uppercase tracking-[0.4em]">Sekvenční záznam parametrů výkonu • v3.0</p>
         </div>
       </div>
+
 
       <form onSubmit={handleSubmit} className="space-y-12">
         {/* EXERCISE SELECTION GRID */}
@@ -305,25 +310,31 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave }) => {
            <div className="space-y-8 p-8 bg-white/5 rounded-[32px] border border-white/5">
               <div className="space-y-6">
                  <div>
-                   <label className="text-[8px] font-black uppercase tracking-[0.3em] text-purple-500/60 block mb-3">Provedení (Execution)</label>
+                   <label className="text-[8px] font-black uppercase tracking-[0.3em] text-purple-500/60 block mb-3">Styl Cviku (Style)</label>
                    <div className="flex flex-wrap gap-2">
-                      {EXECUTIONS.map(ex => (
+                      {EXECUTION_STYLES.map(style => (
                         <button
-                          key={ex}
+                          key={style}
                           type="button"
-                          onClick={() => handleExecutionChange(ex)}
+                          onClick={() => handleStyleChange(style)}
                           className={cn(
                             "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all",
-                            execution === ex ? "bg-purple-500 text-white border-purple-400 shadow-lg shadow-purple-500/20" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
+                            executionStyle === style ? "bg-purple-500 text-white border-purple-400 shadow-lg shadow-purple-500/20" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
                           )}
                         >
-                          {ex}
+                          {style === 'basic' ? 'Základní' : 
+                           style === 'one arm' ? 'Jedna ruka' : 
+                           style === 'archer' ? 'Archer' : 
+                           style === 'typewriter' ? 'Typewriter' : 
+                           style === 'commando' ? 'Commando' : 
+                           style === 'high' ? 'Vysoké' : 
+                           style === 'korean' ? 'Korejské' : 'Australské'}
                         </button>
                       ))}
                    </div>
                  </div>
 
-                 {execution === 'one arm' && (
+                 {executionStyle === 'one arm' && (
                     <motion.div 
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
@@ -349,6 +360,29 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave }) => {
                   )}
 
                  <div>
+                   <label className="text-[8px] font-black uppercase tracking-[0.3em] text-purple-500/60 block mb-3">Metoda/Tempo (Method)</label>
+                    <div className="flex flex-wrap gap-2">
+                       {EXECUTION_METHODS.map(method => (
+                         <button
+                           key={method}
+                           type="button"
+                           onClick={() => setExecutionMethod(method)}
+                           className={cn(
+                             "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all",
+                             executionMethod === method ? "bg-white/20 text-white border-white/20 shadow-lg" : "bg-black/20 text-slate-600 border-white/5 hover:border-white/20"
+                           )}
+                         >
+                           {method === 'standard' ? 'Standardní' : 
+                            method === 'explosive' ? 'Explozivní' : 
+                            method === 'partial' ? 'Částečné' : 
+                            method === 'negative' ? 'Negativní' : 
+                            method === 'scapula' ? 'Lopatkové' : 'Kontrolované'}
+                         </button>
+                       ))}
+                    </div>
+                  </div>
+
+                  <div>
                    <label className="text-[8px] font-black uppercase tracking-[0.3em] text-purple-500/60 block mb-3">Tělesná Pozice (Position)</label>
                    <div className="flex flex-wrap gap-2">
                       {POSITIONS.map(pos => (

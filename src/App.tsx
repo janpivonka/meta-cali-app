@@ -116,9 +116,14 @@ export default function App() {
                       <div className="flex-1 space-y-2">
                         <div className="flex flex-wrap items-center gap-2">
                           <p className="text-base font-black text-white uppercase tracking-tight italic">{exercise?.name || log.type}</p>
-                          {log.execution && (
+                          {log.executionStyle && log.executionStyle !== 'basic' && (
                             <span className="text-[9px] font-black text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20 uppercase tracking-widest">
-                              {log.execution}
+                              {log.executionStyle}
+                            </span>
+                          )}
+                          {log.executionMethod && log.executionMethod !== 'standard' && (
+                            <span className="text-[9px] font-black text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20 uppercase tracking-widest">
+                              {log.executionMethod}
                             </span>
                           )}
                           {log.grip && (
