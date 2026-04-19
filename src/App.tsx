@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
 import { Explorer } from './components/Explorer';
 import { WorkoutForm } from './components/WorkoutForm';
 import { AiInsights } from './components/AiInsights';
 import { Profile } from './components/Profile';
-import { ExerciseLog, UserProfile, Workout, ExerciseDefinition } from './types';
+import { ExerciseLog, UserProfile, Workout, ExerciseDefinition, BandPlacement } from './types';
 import { motion, AnimatePresence, Reorder } from 'motion/react';
-import { Activity, Github, Twitter, Instagram, Sun, Moon, Share2, Edit3 } from 'lucide-react';
+import { Activity, Github, Twitter, Instagram, Sun, Moon, Share2, Edit3, MessageSquare } from 'lucide-react';
 import { EXERCISE_LIBRARY } from './data/exerciseLibrary';
 import { cn } from './lib/utils';
 
@@ -38,6 +38,7 @@ export default function App() {
   const [preSelectedExerciseId, setPreSelectedExerciseId] = useState<string | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [isDark, setIsDark] = useState(true);
+  const builderRef = useRef<HTMLDivElement>(null);
 
   // Load data from localStorage on mount
   useEffect(() => {
@@ -124,6 +125,11 @@ export default function App() {
         });
       }
     }
+
+    // Scroll to builder after saving
+    setTimeout(() => {
+      builderRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   };
 
   const handleReorderExercises = (newExercises: ExerciseLog[]) => {
@@ -180,7 +186,10 @@ export default function App() {
         return (
           <div className="space-y-8 max-w-5xl mx-auto pb-20">
             {currentWorkout && currentWorkout.exercises.length > 0 && (
-              <div className="glass-card p-6 border-cyan-500/20 bg-cyan-500/5 rounded-[40px] mb-8">
+              <div 
+                ref={builderRef}
+                className="glass-card p-6 border-cyan-500/20 bg-cyan-500/5 rounded-[40px] mb-8"
+              >
                 <div className="flex flex-col sm:flex-row items-center justify-between mb-8 gap-6">
                   <div>
                     <h3 className="text-[10px] font-black text-cyan-500 uppercase tracking-[0.4em]">Stavba Mise (Session Builder)</h3>
@@ -241,13 +250,37 @@ export default function App() {
                                  ex.loadType === 'weighted' ? `Weight+ (${ex.assistanceValue}kg)` : 
                                  `Weight- (${ex.assistanceValue})`}
                               </span>
+                              {ex.loadType === 'assisted' && ex.assistanceDetails && (
+                                <span className="text-[8px] font-bold text-orange-500/60 uppercase">
+                                  {ex.assistanceDetails.loopType === 'double' ? 'Dvojitá' : 'Jednoduchá'} guma • 
+                                  {(ex.assistanceDetails.placement as BandPlacement[] || []).map(p => 
+                                    p === 'one leg' ? 'Noha' : p === 'both legs' ? 'Nohy' : p === 'waist' ? 'Pas' : p === 'back' ? 'Záda' : 'Kolena'
+                                  ).join(', ')}
+                                </span>
+                              )}
                             </div>
-                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1 opacity-60 group-hover:opacity-100 transition-opacity">
-                              <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest truncate">
-                                {ex.gripWidth === 'shoulder-width' ? 'Široký' : ex.gripWidth === 'narrow' ? 'Úzký' : 'Střední'} {ex.grip}
-                                {ex.position && ex.position !== 'standard' && ` • ${ex.position}`}
-                              </span>
-                              <div className="flex flex-wrap items-center gap-1">
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2">
+                              {/* Physical Parameters */}
+                              <div className="flex items-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                                <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">
+                                  {ex.gripWidth === 'shoulder-width' ? 'Široký' : ex.gripWidth === 'narrow' ? 'Úzký' : 'Střední'} {ex.grip}
+                                  {ex.thumb && ` • ${ex.thumb === 'bottom' ? 'Standard' : 'Suicide'} palec`}
+                                  {ex.falseGrip && ` • False Grip`}
+                                </span>
+                              </div>
+                              
+                              {/* Tactical Params */}
+                              <div className="flex items-center gap-1.5 border-l border-white/10 pl-3">
+                                <span className="text-[8px] font-black text-purple-400 uppercase tracking-tighter italic">
+                                  {ex.executionStyle !== 'basic' && `${ex.executionStyle} • `}
+                                  {ex.oneArmHandPosition && ex.executionStyle === 'one arm' && `(${ex.oneArmHandPosition}) • `}
+                                  {ex.executionMethod}
+                                  {ex.position && ex.position !== 'standard' && ` • ${ex.position}`}
+                                  {ex.equipment && ` @ ${ex.equipment}`}
+                                </span>
+                              </div>
+
+                              <div className="flex flex-wrap items-center gap-1 ml-auto">
                                 {ex.sets.map((s, si) => (
                                   <div key={si} className="flex items-center">
                                     <span className="text-[10px] font-black text-white font-mono bg-white/5 px-1.5 py-0.5 rounded border border-white/5">
@@ -258,6 +291,13 @@ export default function App() {
                                 ))}
                               </div>
                             </div>
+                            
+                            {ex.notes && (
+                              <div className="mt-2 flex items-start gap-2 bg-white/5 p-2 rounded-xl border border-white/5 opacity-50 group-hover:opacity-100 transition-opacity">
+                                <MessageSquare size={10} className="text-cyan-500 shrink-0 mt-0.5" />
+                                <p className="text-[9px] font-medium text-slate-400 italic line-clamp-1">{ex.notes}</p>
+                              </div>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
