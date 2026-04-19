@@ -13,8 +13,9 @@ export interface WorkoutSet {
   reps?: number;
   time?: number; // duration in seconds
   weight?: number; // extra weight in kg
-  rpe?: number; // Rate of Perceived Exertion 1-10
 }
+
+export type LoadType = 'bodyweight' | 'weighted' | 'assisted';
 
 export interface ExerciseMedia {
   type: 'image' | 'video';
@@ -35,12 +36,11 @@ export interface ExerciseLog {
   executionMethod?: ExecutionMethod | string;
   oneArmHandPosition?: OneArmHandPosition | string;
   position?: BodyPosition | string;
-  assistance?: {
-    type: 'Band' | 'Weight' | 'None';
-    value?: string | number; // e.g. "Red", 10 (kg)
+  loadType: LoadType;
+  assistanceValue?: string | number; // e.g. "Red", 10 (kg)
+  assistanceDetails?: {
     placement?: BandPlacement[] | string;
     loopType?: BandLoopType;
-    notes?: string;
   };
   sets: WorkoutSet[];
   notes?: string;

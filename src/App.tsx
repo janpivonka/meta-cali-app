@@ -6,7 +6,7 @@ import { WorkoutForm } from './components/WorkoutForm';
 import { AiInsights } from './components/AiInsights';
 import { Profile } from './components/Profile';
 import { ExerciseLog, UserProfile, Workout, ExerciseDefinition } from './types';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, Reorder } from 'motion/react';
 import { Activity, Github, Twitter, Instagram, Sun, Moon, Share2, Edit3 } from 'lucide-react';
 import { EXERCISE_LIBRARY } from './data/exerciseLibrary';
 import { cn } from './lib/utils';
@@ -126,6 +126,12 @@ export default function App() {
     }
   };
 
+  const handleReorderExercises = (newExercises: ExerciseLog[]) => {
+    if (currentWorkout) {
+      setCurrentWorkout({ ...currentWorkout, exercises: newExercises });
+    }
+  };
+
   const handleRemoveExerciseFromWorkout = (index: number) => {
     if (currentWorkout) {
       const updatedExercises = currentWorkout.exercises.filter((_, i) => i !== index);
@@ -198,50 +204,77 @@ export default function App() {
                   </div>
                 </div>
                 
-                <div className="space-y-3">
+                <Reorder.Group 
+                  axis="y" 
+                  values={currentWorkout.exercises} 
+                  onReorder={handleReorderExercises}
+                  className="space-y-3"
+                >
                   {currentWorkout.exercises.map((ex, i) => (
-                    <button 
+                    <Reorder.Item 
+                      value={ex} 
                       key={ex.id}
-                      onClick={() => setEditingIndex(i)}
-                      className={cn(
-                        "w-full text-left p-4 rounded-[24px] border transition-all group flex items-center justify-between gap-4",
-                        editingIndex === i 
-                          ? "bg-cyan-500/20 border-cyan-500/40 translate-x-1 shadow-lg shadow-cyan-500/5" 
-                          : "bg-black/40 border-white/5 hover:border-white/10"
-                      )}
+                      className="relative overflow-visible"
                     >
-                      <div className="flex items-center gap-4 flex-1">
-                        <div className={cn(
-                          "w-8 h-8 rounded-xl flex items-center justify-center text-[10px] font-black italic",
-                          editingIndex === i ? "bg-cyan-500 text-black" : "bg-white/5 text-slate-400 group-hover:text-white transition-colors"
-                        )}>
-                          {i + 1}
-                        </div>
-                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                          <span className="text-[11px] font-black text-white uppercase tracking-tighter italic">{ex.type}</span>
-                          <span className="text-[10px] text-slate-500">•</span>
-                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                            {ex.gripWidth === 'shoulder-width' ? 'Šířka ramen' : ex.gripWidth === 'narrow' ? 'Úzký' : 'Široký'} {ex.grip}
-                            {ex.position && ex.position !== 'standard' && ` • ${ex.position}`}
-                            {ex.falseGrip && ` • FALSE GRIP`}
-                          </span>
-                          <span className="text-[10px] text-slate-500">•</span>
-                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                            {ex.sets.map((s, si) => (
-                              <span key={si} className="text-[10px] font-bold text-cyan-400 font-mono">
-                                {s.reps || s.time} {s.reps ? 'opakování' : 'sekund'} {si + 1}. série{si < ex.sets.length - 1 ? ' • ' : ''}
+                      <button 
+                        onClick={() => setEditingIndex(i)}
+                        className={cn(
+                          "w-full text-left p-4 rounded-[24px] border transition-all group flex items-center justify-between gap-4 cursor-grab active:cursor-grabbing",
+                          editingIndex === i 
+                            ? "bg-cyan-500/20 border-cyan-500/40 translate-x-1 shadow-lg shadow-cyan-500/5" 
+                            : "bg-black/40 border-white/5 hover:border-white/10"
+                        )}
+                      >
+                        <div className="flex items-center gap-4 flex-1 overflow-hidden">
+                          <div className={cn(
+                            "w-8 h-8 rounded-xl flex items-center justify-center text-[10px] font-black italic shrink-0",
+                            editingIndex === i ? "bg-cyan-500 text-black" : "bg-white/5 text-slate-400 group-hover:text-white transition-colors"
+                          )}>
+                            {i + 1}
+                          </div>
+                          <div className="flex-1 min-w-0 overflow-hidden">
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                              <span className="text-[11px] font-black text-white uppercase tracking-tighter italic truncate">{ex.type}</span>
+                              <span className="text-[11px] font-black text-slate-700">/</span>
+                              <span className="text-[10px] font-black text-cyan-500/80 uppercase tracking-widest bg-cyan-500/5 px-2 py-0.5 rounded-lg border border-cyan-500/10">
+                                {ex.loadType === 'bodyweight' ? 'Vlastní' : 
+                                 ex.loadType === 'weighted' ? `Weight+ (${ex.assistanceValue}kg)` : 
+                                 `Weight- (${ex.assistanceValue})`}
                               </span>
-                            ))}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                              <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest truncate">
+                                {ex.gripWidth === 'shoulder-width' ? 'Široký' : ex.gripWidth === 'narrow' ? 'Úzký' : 'Střední'} {ex.grip}
+                                {ex.position && ex.position !== 'standard' && ` • ${ex.position}`}
+                              </span>
+                              <div className="flex flex-wrap items-center gap-1">
+                                {ex.sets.map((s, si) => (
+                                  <div key={si} className="flex items-center">
+                                    <span className="text-[10px] font-black text-white font-mono bg-white/5 px-1.5 py-0.5 rounded border border-white/5">
+                                      {s.reps || s.time}{s.reps ? 'r' : 's'}
+                                    </span>
+                                    {si < ex.sets.length - 1 && <span className="text-[10px] text-slate-700 mx-0.5">|</span>}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <Edit3 size={14} className={cn(
-                        "transition-all",
-                        editingIndex === i ? "text-cyan-500 scale-125" : "text-slate-700 opacity-0 group-hover:opacity-100"
-                      )} />
-                    </button>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <div className="w-1 h-8 rounded-full bg-white/5 flex flex-col justify-center gap-1 items-center px-[1px]">
+                             <div className="w-[2px] h-[2px] rounded-full bg-slate-600" />
+                             <div className="w-[2px] h-[2px] rounded-full bg-slate-600" />
+                             <div className="w-[2px] h-[2px] rounded-full bg-slate-600" />
+                          </div>
+                          <Edit3 size={14} className={cn(
+                            "transition-all",
+                            editingIndex === i ? "text-cyan-500 scale-125" : "text-slate-700 opacity-0 group-hover:opacity-100"
+                          )} />
+                        </div>
+                      </button>
+                    </Reorder.Item>
                   ))}
-                </div>
+                </Reorder.Group>
               </div>
             )}
 
@@ -327,11 +360,9 @@ export default function App() {
                                       {s.reps ? 'R' : 'S'}
                                     </span>
                                   </div>
-                                  {s.weight ? (
+                                  {s.weight && (
                                     <span className="text-[9px] text-purple-400 font-black mt-1 leading-none">+{s.weight}KG</span>
-                                  ) : s.rpe ? (
-                                    <span className="text-[7px] text-slate-600 font-black mt-1">RPE {s.rpe}</span>
-                                  ) : null}
+                                  )}
                                 </div>
                               ))}
                             </div>

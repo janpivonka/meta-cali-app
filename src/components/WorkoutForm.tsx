@@ -28,7 +28,8 @@ import {
   OneArmHandPosition,
   BandPlacement,
   BandLoopType,
-  BodyPosition 
+  BodyPosition,
+  LoadType
 } from '../types';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -69,6 +70,24 @@ const ONE_ARM_POSITIONS: { val: OneArmHandPosition; label: string }[] = [
 export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, initialExerciseId, initialData }) => {
   const [exerciseId, setExerciseId] = useState<string>(initialData?.exerciseId || initialExerciseId || EXERCISE_LIBRARY[0].id);
 
+  const [grip, setGrip] = useState<GripType>('pronated');
+  const [gripWidth, setGripWidth] = useState<GripWidth>('shoulder-width');
+  const [thumb, setThumb] = useState<ThumbPosition>('bottom');
+  const [equipment, setEquipment] = useState<EquipmentType>('pull-up bar');
+  const [executionStyle, setExecutionStyle] = useState<ExecutionStyle | string>('basic');
+  const [executionMethod, setExecutionMethod] = useState<ExecutionMethod | string>('standard');
+  const [oneArmHandPosition, setOneArmHandPosition] = useState<OneArmHandPosition | string>('free');
+  const [position, setPosition] = useState<BodyPosition | string>('standard');
+  const [loadType, setLoadType] = useState<LoadType>('bodyweight');
+  const [assistanceValue, setAssistanceValue] = useState('');
+  const [bandPlacements, setBandPlacements] = useState<BandPlacement[]>(['both legs']);
+  const [bandLoopType, setBandLoopType] = useState<BandLoopType>('single');
+  const [falseGrip, setFalseGrip] = useState(false);
+  const [sets, setSets] = useState<WorkoutSet[]>([{ reps: 10 }]);
+  const [notes, setNotes] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [shared, setShared] = useState(false);
+
   // Sync with initialData if it changes
   React.useEffect(() => {
     if (initialData) {
@@ -85,38 +104,16 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       setSets(initialData.sets);
       setNotes(initialData.notes || '');
       setShared(initialData.shared || false);
-      if (initialData.assistance) {
-        setAssistanceType(initialData.assistance.type as any);
-        setAssistanceValue(initialData.assistance.value?.toString() || '');
-        if (initialData.assistance.type === 'Band') {
-          setBandPlacements(initialData.assistance.placement as BandPlacement[] || ['both legs']);
-          setBandLoopType(initialData.assistance.loopType || 'single');
-        }
-      } else {
-        setAssistanceType('None');
-        setAssistanceValue('');
+      setLoadType(initialData.loadType || 'bodyweight');
+      setAssistanceValue(initialData.assistanceValue?.toString() || '');
+      if (initialData.assistanceDetails) {
+        setBandPlacements(initialData.assistanceDetails.placement as BandPlacement[] || ['both legs']);
+        setBandLoopType(initialData.assistanceDetails.loopType || 'single');
       }
     } else if (initialExerciseId) {
       setExerciseId(initialExerciseId);
     }
   }, [initialData, initialExerciseId]);
-  const [grip, setGrip] = useState<GripType>('pronated');
-  const [gripWidth, setGripWidth] = useState<GripWidth>('shoulder-width');
-  const [thumb, setThumb] = useState<ThumbPosition>('bottom');
-  const [equipment, setEquipment] = useState<EquipmentType>('pull-up bar');
-  const [executionStyle, setExecutionStyle] = useState<ExecutionStyle | string>('basic');
-  const [executionMethod, setExecutionMethod] = useState<ExecutionMethod | string>('standard');
-  const [oneArmHandPosition, setOneArmHandPosition] = useState<OneArmHandPosition | string>('free');
-  const [position, setPosition] = useState<BodyPosition | string>('standard');
-  const [assistanceType, setAssistanceType] = useState<'None' | 'Band' | 'Weight'>('None');
-  const [assistanceValue, setAssistanceValue] = useState('');
-  const [bandPlacements, setBandPlacements] = useState<BandPlacement[]>(['both legs']);
-  const [bandLoopType, setBandLoopType] = useState<BandLoopType>('single');
-  const [falseGrip, setFalseGrip] = useState(false);
-  const [sets, setSets] = useState<WorkoutSet[]>([{ reps: 0, weight: 0, rpe: 7 }]);
-  const [notes, setNotes] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [shared, setShared] = useState(false);
 
   // Filtered exercises for selection
   const filteredExercises = EXERCISE_LIBRARY.filter(ex => 
@@ -147,10 +144,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
 
   const availableEquipment = EQUIPMENTS.filter(eq => {
     if (currentExercise?.category === 'Pull') {
-      // For pullups, exclude floor and parallelettes always
       if (eq === 'floor' || eq === 'parallelettes') return false;
-      
-      // If NOT australian, also exclude low bar and dip bars
       if (!executionStyle.toString().includes('australian') && !position.toString().includes('australian')) {
         return eq !== 'low bar' && eq !== 'dip bars';
       }
@@ -161,7 +155,6 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
 
   const handleStyleChange = (style: ExecutionStyle) => {
     setExecutionStyle(style);
-    // Logic as requested
     if (style === 'archer' || style === 'typewriter') {
       setGripWidth('wide');
     } else if (style === 'commando') {
@@ -188,11 +181,11 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       executionMethod,
       oneArmHandPosition: executionStyle === 'one arm' ? oneArmHandPosition : undefined,
       position,
-      assistance: assistanceType !== 'None' ? {
-        type: assistanceType,
-        value: assistanceValue,
-        placement: assistanceType === 'Band' ? bandPlacements : undefined,
-        loopType: assistanceType === 'Band' ? bandLoopType : undefined,
+      loadType,
+      assistanceValue: loadType !== 'bodyweight' ? assistanceValue : undefined,
+      assistanceDetails: loadType === 'assisted' ? {
+        placement: bandPlacements,
+        loopType: bandLoopType,
       } : undefined,
       sets: validSets,
       notes,
@@ -200,8 +193,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       timestamp: Date.now(),
     });
 
-    // Reset some fields but keep core context for consecutive logs if needed
-    setSets([{ reps: 0, weight: 0, rpe: 7 }]);
+    setSets([{ reps: 10 }]);
     setNotes('');
   };
 
@@ -216,7 +208,6 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
           <p className="text-[10px] text-cyan-500 font-black uppercase tracking-[0.4em]">Sekvenční záznam parametrů výkonu • v3.0</p>
         </div>
       </div>
-
 
       <form onSubmit={handleSubmit} className="space-y-12">
         {/* EXERCISE SELECTION GRID */}
@@ -457,86 +448,86 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
            </div>
         </div>
 
-        {/* ASSISTANCE & EXTRA LOAD */}
+        {/* LOAD & ASSISTANCE */}
         <div className="p-8 bg-orange-500/5 rounded-[32px] border border-orange-500/10">
-           <div className="flex flex-col md:flex-row items-center gap-8">
-              <div className="flex-1 space-y-4">
+           <div className="flex flex-col items-stretch gap-8">
+              <div className="space-y-4">
                 <label className="text-[10px] font-black uppercase tracking-[0.4em] text-orange-500 flex items-center gap-2">
-                   <Target size={14} /> Mechanická Asistence
+                   <Target size={14} /> Konfigurace Zátěže
                 </label>
                 <div className="flex gap-2">
-                   {['None', 'Band', 'Weight'].map(a => (
+                   {(['bodyweight', 'weighted', 'assisted'] as LoadType[]).map(lt => (
                      <button
-                        key={a}
+                        key={lt}
                         type="button"
-                        onClick={() => setAssistanceType(a as any)}
+                        onClick={() => setLoadType(lt)}
                         className={cn(
-                          "flex-1 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all",
-                          assistanceType === a ? "bg-orange-500 text-black border-orange-400 shadow-lg" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
+                          "flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all",
+                          loadType === lt ? "bg-orange-500 text-black border-orange-400 shadow-lg" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
                         )}
                      >
-                        {a === 'Band' ? 'Odporová Guma' : a === 'Weight' ? 'Závaží' : 'Žádná'}
+                        {lt === 'bodyweight' ? 'Vlastní' : lt === 'weighted' ? 'Zatížení (+)' : 'Odlehčení (-)'}
                      </button>
                    ))}
                 </div>
               </div>
-              {assistanceType === 'Band' && (
-                <div className="flex flex-col sm:flex-row gap-8 w-full">
-                  <div className="flex-1 space-y-4">
-                     <label className="text-[10px] font-black uppercase tracking-[0.4em] text-orange-500/60 block">Odpor & Pozice</label>
-                     <div className="grid grid-cols-1 gap-4">
-                        <div className="flex gap-4">
-                          <input 
-                              type="text"
-                              placeholder="Barva/Odpor..."
-                              value={assistanceValue}
-                              onChange={(e) => setAssistanceValue(e.target.value)}
-                              className="flex-1 bg-black/40 border border-orange-500/20 rounded-2xl p-4 text-sm font-bold text-white focus:outline-none focus:border-orange-500 italic"
-                          />
-                          <div className="flex gap-1.5 bg-black/20 p-2 rounded-2xl border border-white/5">
-                            <button
-                              type="button"
-                              onClick={() => setBandLoopType(bandLoopType === 'single' ? 'double' : 'single')}
-                              className={cn(
-                                "px-4 py-2 rounded-xl text-[7px] font-black uppercase tracking-widest transition-all",
-                                bandLoopType === 'double' ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" : "bg-white/10 text-slate-400"
-                              )}
-                            >
-                              {bandLoopType === 'double' ? 'Dvojité Smotání' : 'Jednoduché Smotání'}
-                            </button>
-                          </div>
-                        </div>
-                        <div className="flex flex-wrap gap-1.5">
-                           {BAND_PLACEMENTS.map(p => (
-                             <button
-                               key={p}
-                               type="button"
-                               onClick={() => toggleBandPlacement(p)}
-                               className={cn(
-                                 "px-2 py-2 rounded-lg text-[7px] font-black uppercase tracking-widest border transition-all flex-1 text-center",
-                                 bandPlacements.includes(p) ? "bg-orange-500 text-black border-orange-400 shadow-md shadow-orange-500/10" : "bg-black/40 text-slate-500 border-white/5"
-                               )}
-                             >
-                               {p === 'one leg' ? 'Jedna noha' : p === 'both legs' ? 'Obě nohy' : p === 'waist' ? 'Pas' : p === 'back' ? 'Záda' : 'Kolena'}
-                             </button>
-                           ))}
-                        </div>
-                     </div>
-                  </div>
-                </div>
-              )}
 
-              {assistanceType === 'Weight' && (
-                <div className="w-full md:w-64 space-y-4">
-                   <label className="text-[10px] font-black uppercase tracking-[0.4em] text-orange-500/60 block">Závaží</label>
-                   <input 
-                      type="text"
-                      placeholder="Kilogramy..."
-                      value={assistanceValue}
-                      onChange={(e) => setAssistanceValue(e.target.value)}
-                      className="w-full bg-black/40 border border-orange-500/20 rounded-2xl p-4 text-sm font-bold text-white focus:outline-none focus:border-orange-500 italic"
-                   />
-                </div>
+              {loadType !== 'bodyweight' && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex flex-col gap-6"
+                >
+                  <div className="flex flex-col sm:flex-row items-end gap-4">
+                    <div className="flex-1 space-y-4 w-full">
+                      <label className="text-[8px] font-black uppercase tracking-[0.3em] text-orange-500/60 block px-2">
+                        {loadType === 'weighted' ? 'Extra Hmotnost (kg)' : 'Metoda Odlehčení (Guma/Stroj/Dopomoc)'}
+                      </label>
+                      <input 
+                        type="text"
+                        placeholder={loadType === 'weighted' ? "Např. 10..." : "Např. Červená guma..."}
+                        value={assistanceValue}
+                        onChange={(e) => setAssistanceValue(e.target.value)}
+                        className="w-full bg-black/40 border border-orange-500/20 rounded-2xl p-4 text-sm font-bold text-white focus:outline-none focus:border-orange-500 italic"
+                      />
+                    </div>
+                    {loadType === 'assisted' && (
+                      <div className="bg-black/20 p-2 rounded-2xl border border-white/5 h-[54px] flex items-center">
+                        <button
+                          type="button"
+                          onClick={() => setBandLoopType(bandLoopType === 'single' ? 'double' : 'single')}
+                          className={cn(
+                            "px-4 py-2 rounded-xl text-[7px] font-black uppercase tracking-widest transition-all",
+                            bandLoopType === 'double' ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" : "bg-white/10 text-slate-400"
+                          )}
+                        >
+                          {bandLoopType === 'double' ? 'Dvojité' : 'Jednoduché'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {loadType === 'assisted' && (
+                    <div className="space-y-4">
+                      <label className="text-[8px] font-black uppercase tracking-[0.3em] text-orange-500/60 block px-2">Umístění Podpory</label>
+                      <div className="flex flex-wrap gap-2">
+                         {BAND_PLACEMENTS.map(p => (
+                           <button
+                             key={p}
+                             type="button"
+                             onClick={() => toggleBandPlacement(p)}
+                             className={cn(
+                               "px-4 py-2 rounded-xl text-[7px] font-black uppercase tracking-widest border transition-all flex-1 text-center",
+                               bandPlacements.includes(p) ? "bg-orange-500 text-black border-orange-400" : "bg-black/40 text-slate-500 border-white/5"
+                             )}
+                           >
+                             {p === 'one leg' ? 'Jedna noha' : p === 'both legs' ? 'Obě nohy' : p === 'waist' ? 'Pas' : p === 'back' ? 'Záda' : 'Kolena'}
+                           </button>
+                         ))}
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
               )}
            </div>
         </div>
@@ -555,57 +546,44 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     key={index}
-                    className="glass-card grid grid-cols-1 md:grid-cols-4 items-center gap-6 p-8 border-white/5 bg-white/5 rounded-[32px] group hover:border-cyan-500/30 transition-all shadow-xl"
+                    className="glass-card flex flex-col md:flex-row items-center gap-6 p-8 border-white/5 bg-white/5 rounded-[40px] group hover:border-cyan-500/30 transition-all shadow-xl"
                   >
-                    <div className="flex items-center gap-4">
-                       <div className="w-12 h-12 rounded-2xl bg-black/40 flex items-center justify-center border border-white/10 group-hover:border-cyan-500/40 transition-colors">
+                    <div className="flex items-center gap-4 min-w-[120px]">
+                       <div className="w-12 h-12 rounded-[18px] bg-black/40 flex items-center justify-center border border-white/10 group-hover:border-cyan-500/40 transition-colors">
                           <span className="text-xl font-black text-white italic">{index + 1}</span>
                        </div>
-                       <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Sekvence</span>
+                       <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Série</span>
                     </div>
 
-                    <div className="flex flex-col items-center gap-2">
-                       <div className="flex items-center gap-4">
+                    <div className="flex-1 flex flex-col items-center gap-2">
+                       <div className="flex items-center gap-6">
                           <button 
                             type="button" 
                             onClick={() => updateSet(index, isHoldExercise(exerciseId) ? 'time' : 'reps', Math.max(0, (isHoldExercise(exerciseId) ? (set.time || 0) : (set.reps || 0)) - 1))}
-                            className="text-slate-600 hover:text-white transition-colors p-1"
+                            className="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all active:scale-90"
                           ><Minus size={18} /></button>
                           <input 
                              type="number"
                              value={isHoldExercise(exerciseId) ? (set.time || 0) : (set.reps || 0)}
                              onChange={(e) => updateSet(index, isHoldExercise(exerciseId) ? 'time' : 'reps', parseInt(e.target.value) || 0)}
-                             className="bg-transparent text-4xl font-black text-white w-16 text-center focus:outline-none font-mono tracking-tighter"
+                             className="bg-transparent text-5xl font-black text-white w-24 text-center focus:outline-none font-mono tracking-tighter"
                           />
                           <button 
                             type="button" 
                             onClick={() => updateSet(index, isHoldExercise(exerciseId) ? 'time' : 'reps', (isHoldExercise(exerciseId) ? (set.time || 0) : (set.reps || 0)) + 1)}
-                            className="text-slate-600 hover:text-white transition-colors p-1"
+                            className="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all active:scale-90"
                           ><Plus size={18} /></button>
                        </div>
-                       <span className="text-[8px] font-black uppercase tracking-widest text-slate-600">{isHoldExercise(exerciseId) ? 'Sekund' : 'Opakování'}</span>
+                       <span className="text-[10px] font-black uppercase tracking-widest text-slate-600 italic">
+                         {isHoldExercise(exerciseId) ? 'Sekund' : 'Opakování'}
+                       </span>
                     </div>
 
-                    <div className="flex flex-col items-center gap-2">
-                       <div className="flex items-center gap-2 bg-black/20 px-4 py-2 rounded-xl border border-white/5 group-hover:border-purple-500/20 transition-all">
-                          <span className="text-[9px] font-black text-purple-500">RPE:</span>
-                          <input 
-                             type="number"
-                             min="1"
-                             max="10"
-                             value={set.rpe || 7}
-                             onChange={(e) => updateSet(index, 'rpe', parseInt(e.target.value) || 0)}
-                             className="bg-transparent text-xl font-black text-white w-8 text-center focus:outline-none font-mono"
-                          />
-                       </div>
-                       <span className="text-[8px] font-black uppercase tracking-widest text-slate-600">Intenzita (1-10)</span>
-                    </div>
-
-                    <div className="flex justify-end pr-4">
+                    <div className="flex justify-end min-w-[60px]">
                        <button 
                         type="button" 
                         onClick={() => removeSet(index)}
-                        className="text-slate-700 hover:text-red-500 transition-colors p-2"
+                        className="w-10 h-10 rounded-xl bg-red-500/5 text-slate-700 hover:text-red-500 hover:bg-red-500/10 transition-all p-2 flex items-center justify-center"
                        ><Minus size={20} /></button>
                     </div>
                   </motion.div>
