@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ExerciseLog } from '../types';
+import { Workout } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Activity, 
@@ -26,10 +26,10 @@ import {
 import { cn, formatDate } from '../lib/utils';
 
 interface DashboardProps {
-  logs: ExerciseLog[];
+  workouts: Workout[];
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ logs }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ workouts }) => {
   const [activeTab, setActiveTab] = useState<'zaklad' | 'osobni' | 'verejne'>('zaklad');
   const [showCalendarModal, setShowCalendarModal] = useState(false);
   const [selectedDayDetail, setSelectedDayDetail] = useState<number | null>(null);
@@ -60,7 +60,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ logs }) => {
   });
 
   const getStatus = (date: Date) => {
-    const hasLog = logs.some(l => isSameDay(new Date(l.timestamp), date));
+    const hasLog = workouts.some(w => isSameDay(new Date(w.timestamp), date));
     if (hasLog) return 'trained';
     if (date.getDay() === 0) return 'rest';
     if (date.getTime() > today.getTime()) return 'planned';
@@ -112,28 +112,25 @@ export const Dashboard: React.FC<DashboardProps> = ({ logs }) => {
   ];
 
   // LIVE STATS CALCULATION
-  const totalSets = logs.reduce((acc, log) => acc + log.sets.length, 0);
+  const totalSets = workouts.reduce((acc, w) => acc + w.exercises.reduce((exAcc, ex) => exAcc + ex.sets.length, 0), 0);
   
   // Basic streak calculation
   const calculateStreak = () => {
-    if (logs.length === 0) return 0;
-    const sortedLogs = [...logs].sort((a, b) => b.timestamp - a.timestamp);
+    if (workouts.length === 0) return 0;
     let streak = 0;
-    let currentDate = new Date();
-    currentDate.setHours(0,0,0,0);
-
-    // Check if there's a log from today or yesterday to start
-    const hasLogToday = logs.some(l => isSameDay(new Date(l.timestamp), today));
+ 
+    // Check if there's a workout from today or yesterday to start
+    const hasLogToday = workouts.some(w => isSameDay(new Date(w.timestamp), today));
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    const hasLogYesterday = logs.some(l => isSameDay(new Date(l.timestamp), yesterday));
-
+    const hasLogYesterday = workouts.some(w => isSameDay(new Date(w.timestamp), yesterday));
+ 
     if (!hasLogToday && !hasLogYesterday) return 0;
-
-    // Simplified streak: count consecutive days with at least one log
+ 
+    // Simplified streak: count consecutive days with at least one workout
     let checkDate = hasLogToday ? today : yesterday;
     while (true) {
-      const dayLogs = logs.filter(l => isSameDay(new Date(l.timestamp), checkDate));
+      const dayLogs = workouts.filter(w => isSameDay(new Date(w.timestamp), checkDate));
       if (dayLogs.length > 0) {
         streak++;
         checkDate = new Date(checkDate);

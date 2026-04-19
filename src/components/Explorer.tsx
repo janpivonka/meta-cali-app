@@ -21,9 +21,10 @@ import { ExerciseDefinition, UserProfile } from '../types';
 interface ExplorerProps {
   profile: UserProfile;
   onUpdateProfile: (profile: UserProfile) => void;
+  onAddExercise: (exercise: ExerciseDefinition) => void;
 }
 
-export const Explorer: React.FC<ExplorerProps> = ({ profile, onUpdateProfile }) => {
+export const Explorer: React.FC<ExplorerProps> = ({ profile, onUpdateProfile, onAddExercise }) => {
   const [activeTab, setActiveTab] = useState<'zaklad' | 'osobni' | 'verejne'>('zaklad');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -241,7 +242,13 @@ export const Explorer: React.FC<ExplorerProps> = ({ profile, onUpdateProfile }) 
                       {profile.favoriteExercises.includes(selectedExercise.id) ? 'Uloženo v Oblíbených' : 'Přidat do Oblíbených'}
                     </button>
 
-                    <button className="w-full py-4 bg-cyan-500 text-black flex items-center justify-center gap-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-xl shadow-cyan-500/10">
+                    <button 
+                      onClick={() => {
+                        onAddExercise(selectedExercise);
+                        setSelectedExercise(null);
+                      }}
+                      className="w-full py-4 bg-cyan-500 text-black flex items-center justify-center gap-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-xl shadow-cyan-500/10"
+                    >
                        <Plus size={16} /> Přidat do Tréninku
                     </button>
 

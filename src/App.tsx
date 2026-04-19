@@ -5,10 +5,11 @@ import { Explorer } from './components/Explorer';
 import { WorkoutForm } from './components/WorkoutForm';
 import { AiInsights } from './components/AiInsights';
 import { Profile } from './components/Profile';
-import { ExerciseLog, UserProfile } from './types';
+import { ExerciseLog, UserProfile, Workout, ExerciseDefinition } from './types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Github, Twitter, Instagram, Sun, Moon } from 'lucide-react';
+import { Activity, Github, Twitter, Instagram, Sun, Moon, Share2, Edit3 } from 'lucide-react';
 import { EXERCISE_LIBRARY } from './data/exerciseLibrary';
+import { cn } from './lib/utils';
 
 const DEFAULT_PROFILE: UserProfile = {
   name: 'Karel Operator',
@@ -31,21 +32,33 @@ const DEFAULT_PROFILE: UserProfile = {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [logs, setLogs] = useState<ExerciseLog[]>([]);
+  const [workouts, setWorkouts] = useState<Workout[]>([]);
+  const [currentWorkout, setCurrentWorkout] = useState<Workout | null>(null);
   const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
+  const [preSelectedExerciseId, setPreSelectedExerciseId] = useState<string | null>(null);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [isDark, setIsDark] = useState(true);
 
   // Load data from localStorage on mount
   useEffect(() => {
-    const savedLogs = localStorage.getItem('meta-cali-logs');
+    const savedWorkouts = localStorage.getItem('meta-cali-workouts');
     const savedProfile = localStorage.getItem('meta-cali-profile');
     const savedTheme = localStorage.getItem('meta-cali-theme');
+    const savedCurrentWorkout = localStorage.getItem('meta-cali-current-workout');
     
-    if (savedLogs) {
+    if (savedWorkouts) {
       try {
-        setLogs(JSON.parse(savedLogs));
+        setWorkouts(JSON.parse(savedWorkouts));
       } catch (e) {
-        console.error("Failed to parse logs", e);
+        console.error("Failed to parse workouts", e);
+      }
+    }
+
+    if (savedCurrentWorkout) {
+      try {
+        setCurrentWorkout(JSON.parse(savedCurrentWorkout));
+      } catch (e) {
+        console.error("Failed to parse current workout", e);
       }
     }
 
@@ -79,16 +92,69 @@ export default function App() {
 
   // Save data to localStorage on change
   useEffect(() => {
-    localStorage.setItem('meta-cali-logs', JSON.stringify(logs));
-  }, [logs]);
+    localStorage.setItem('meta-cali-workouts', JSON.stringify(workouts));
+  }, [workouts]);
+
+  useEffect(() => {
+    localStorage.setItem('meta-cali-current-workout', JSON.stringify(currentWorkout));
+  }, [currentWorkout]);
 
   useEffect(() => {
     localStorage.setItem('meta-cali-profile', JSON.stringify(profile));
   }, [profile]);
 
-  const handleSaveLog = (log: ExerciseLog) => {
-    setLogs((prev) => [...prev, log]);
-    setActiveTab('dashboard');
+  const handleAddExerciseToWorkout = (log: ExerciseLog) => {
+    if (editingIndex !== null && currentWorkout) {
+      const updatedExercises = [...currentWorkout.exercises];
+      updatedExercises[editingIndex] = log;
+      setCurrentWorkout({ ...currentWorkout, exercises: updatedExercises });
+      setEditingIndex(null);
+    } else {
+      if (!currentWorkout) {
+        const newWorkout: Workout = {
+          id: crypto.randomUUID(),
+          exercises: [log],
+          timestamp: Date.now(),
+        };
+        setCurrentWorkout(newWorkout);
+      } else {
+        setCurrentWorkout({
+          ...currentWorkout,
+          exercises: [...currentWorkout.exercises, log]
+        });
+      }
+    }
+  };
+
+  const handleRemoveExerciseFromWorkout = (index: number) => {
+    if (currentWorkout) {
+      const updatedExercises = currentWorkout.exercises.filter((_, i) => i !== index);
+      if (updatedExercises.length === 0) {
+        setCurrentWorkout(null);
+      } else {
+        setCurrentWorkout({ ...currentWorkout, exercises: updatedExercises });
+      }
+      setEditingIndex(null);
+    }
+  };
+
+  const handleSaveWorkout = () => {
+    if (currentWorkout && currentWorkout.exercises.length > 0) {
+      setWorkouts(prev => [currentWorkout, ...prev]);
+      setCurrentWorkout(null);
+      setActiveTab('stats');
+    }
+  };
+
+  const handleCancelWorkout = () => {
+    if (window.confirm('Opravdu chcete zrušit neuložený trénink?')) {
+      setCurrentWorkout(null);
+    }
+  };
+
+  const handleStartExercise = (ex: ExerciseDefinition) => {
+    setPreSelectedExerciseId(ex.id);
+    setActiveTab('log');
   };
 
   const handleUpdateProfile = (newProfile: UserProfile) => {
@@ -98,79 +164,183 @@ export default function App() {
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard logs={logs} />;
+        return <Dashboard workouts={workouts} />;
       case 'explorer':
-        return <Explorer profile={profile} onUpdateProfile={handleUpdateProfile} />;
+        return <Explorer profile={profile} onUpdateProfile={handleUpdateProfile} onAddExercise={handleStartExercise} />;
       case 'log':
-        return <WorkoutForm onSave={handleSaveLog} />;
+        const isEditing = editingIndex !== null;
+        const currentEditingData = isEditing && currentWorkout ? currentWorkout.exercises[editingIndex] : null;
+
+        return (
+          <div className="space-y-8 max-w-5xl mx-auto pb-20">
+            {currentWorkout && currentWorkout.exercises.length > 0 && (
+              <div className="glass-card p-6 border-cyan-500/20 bg-cyan-500/5 rounded-[40px] mb-8">
+                <div className="flex flex-col sm:flex-row items-center justify-between mb-8 gap-6">
+                  <div>
+                    <h3 className="text-[10px] font-black text-cyan-500 uppercase tracking-[0.4em]">Stavba Mise (Session Builder)</h3>
+                    <p className="text-sm font-black text-white italic mt-1 tracking-tight">Aktuálně rozpracováno: {currentWorkout.exercises.length} cviků</p>
+                  </div>
+                  <div className="flex gap-3 w-full sm:w-auto">
+                    <button 
+                      onClick={handleCancelWorkout}
+                      className="flex-1 sm:flex-none px-6 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all transition-transform active:scale-95"
+                    >
+                      Zrušit Vše
+                    </button>
+                    {!isEditing && (
+                      <button 
+                        onClick={handleSaveWorkout}
+                        className="flex-2 sm:flex-none px-8 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest bg-cyan-500 text-black shadow-lg shadow-cyan-500/20 hover:scale-105 active:scale-95 transition-all"
+                      >
+                        Finalizovat & Uložit
+                      </button>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  {currentWorkout.exercises.map((ex, i) => (
+                    <button 
+                      key={ex.id}
+                      onClick={() => setEditingIndex(i)}
+                      className={cn(
+                        "w-full text-left p-4 rounded-[24px] border transition-all group flex items-center justify-between gap-4",
+                        editingIndex === i 
+                          ? "bg-cyan-500/20 border-cyan-500/40 translate-x-1 shadow-lg shadow-cyan-500/5" 
+                          : "bg-black/40 border-white/5 hover:border-white/10"
+                      )}
+                    >
+                      <div className="flex items-center gap-4 flex-1">
+                        <div className={cn(
+                          "w-8 h-8 rounded-xl flex items-center justify-center text-[10px] font-black italic",
+                          editingIndex === i ? "bg-cyan-500 text-black" : "bg-white/5 text-slate-400 group-hover:text-white transition-colors"
+                        )}>
+                          {i + 1}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <span className="text-[11px] font-black text-white uppercase tracking-tighter italic">{ex.type}</span>
+                          <span className="text-[10px] text-slate-500">•</span>
+                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                            {ex.gripWidth === 'shoulder-width' ? 'Šířka ramen' : ex.gripWidth === 'narrow' ? 'Úzký' : 'Široký'} {ex.grip}
+                            {ex.position && ex.position !== 'standard' && ` • ${ex.position}`}
+                            {ex.falseGrip && ` • FALSE GRIP`}
+                          </span>
+                          <span className="text-[10px] text-slate-500">•</span>
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                            {ex.sets.map((s, si) => (
+                              <span key={si} className="text-[10px] font-bold text-cyan-400 font-mono">
+                                {s.reps || s.time} {s.reps ? 'opakování' : 'sekund'} {si + 1}. série{si < ex.sets.length - 1 ? ' • ' : ''}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      <Edit3 size={14} className={cn(
+                        "transition-all",
+                        editingIndex === i ? "text-cyan-500 scale-125" : "text-slate-700 opacity-0 group-hover:opacity-100"
+                      )} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="relative">
+               {isEditing && (
+                 <div className="absolute -top-12 left-0 right-0 flex justify-center">
+                    <button 
+                      onClick={() => setEditingIndex(null)}
+                      className="bg-white text-black px-6 py-2 rounded-full text-[9px] font-black uppercase tracking-[0.2em] shadow-xl hover:scale-105 transition-all"
+                    >
+                      + Přidat nový blok místo editace
+                    </button>
+                 </div>
+               )}
+               <WorkoutForm 
+                 onSave={(log) => {
+                   handleAddExerciseToWorkout(log);
+                   setPreSelectedExerciseId(null);
+                 }} 
+                 onDelete={isEditing ? () => handleRemoveExerciseFromWorkout(editingIndex!) : undefined}
+                 initialExerciseId={preSelectedExerciseId}
+                 initialData={currentEditingData}
+               />
+            </div>
+          </div>
+        );
       case 'stats':
         return (
           <div className="space-y-6 max-w-4xl mx-auto pb-20">
             <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">Operační Historie</h2>
             <div className="grid gap-4">
-              {logs.length > 0 ? (
-                [...logs].reverse().map((log) => {
-                  const exercise = EXERCISE_LIBRARY.find(e => e.id === log.exerciseId);
-                  return (
-                    <div key={log.id} className="glass-card p-6 flex flex-col sm:flex-row sm:items-center justify-between border-white/5 bg-white/5 group hover:border-cyan-500/20 transition-all gap-6">
-                      <div className="flex-1 space-y-2">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-base font-black text-white uppercase tracking-tight italic">{exercise?.name || log.type}</p>
-                          {log.executionStyle && log.executionStyle !== 'basic' && (
-                            <span className="text-[9px] font-black text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20 uppercase tracking-widest">
-                              {log.executionStyle}
-                            </span>
-                          )}
-                          {log.executionMethod && log.executionMethod !== 'standard' && (
-                            <span className="text-[9px] font-black text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20 uppercase tracking-widest">
-                              {log.executionMethod}
-                            </span>
-                          )}
-                          {log.grip && (
-                            <span className="text-[8px] font-black bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded border border-purple-500/20 uppercase tracking-tighter shadow-sm">
-                              {log.gripWidth && `${log.gripWidth} `}{log.grip} {log.thumb && `(${log.thumb})`}
-                            </span>
-                          )}
+              {workouts.length > 0 ? (
+                [...workouts].reverse().map((workout) => (
+                  <div key={workout.id} className="glass-card p-0 border-white/5 bg-white/5 group hover:border-cyan-500/20 transition-all overflow-hidden rounded-[32px]">
+                    <div className="bg-white/5 px-6 py-4 flex items-center justify-between border-b border-white/5">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-cyan-500 flex items-center justify-center text-black font-black italic">W</div>
+                        <div>
+                          <p className="text-[10px] text-[#94a3b8] font-bold uppercase tracking-[0.25em]">{new Date(workout.timestamp).toLocaleString()}</p>
+                          <p className="text-xs font-black text-white uppercase tracking-widest mt-0.5">{workout.exercises.length} CVÍKŮ • {workout.exercises.reduce((acc, ex) => acc + ex.sets.length, 0)} SÉRIÍ</p>
                         </div>
-                        <div className="flex flex-wrap items-center gap-4">
-                          <p className="text-[9px] text-[#94a3b8] font-bold uppercase tracking-[0.25em]">{new Date(log.timestamp).toLocaleString()}</p>
-                          <div className="flex items-center gap-4 text-[8px] font-black uppercase tracking-widest text-slate-500">
-                            {log.equipment && <span>• {log.equipment}</span>}
-                            {log.position && <span>• {log.position}</span>}
-                          </div>
-                        </div>
-                        {log.assistance && log.assistance.type !== 'None' && (
-                          <div className="flex items-center gap-1.5 bg-orange-500/5 px-2 py-1 rounded-lg border border-orange-500/10 w-fit">
-                             <div className="w-1 h-1 rounded-full bg-orange-500" />
-                             <span className="text-[8px] font-black text-orange-400 uppercase tracking-widest">Asistence: {log.assistance.type} {log.assistance.value && `(${log.assistance.value})`}</span>
-                          </div>
-                        )}
-                        {log.notes && (
-                          <p className="text-[10px] text-slate-400 italic font-medium leading-relaxed max-w-md">"{log.notes}"</p>
-                        )}
                       </div>
-                      <div className="flex flex-wrap gap-2 justify-end sm:max-w-[40%]">
-                        {log.sets.map((s, i) => (
-                          <div key={i} className="flex flex-col items-center px-4 py-2 bg-black/40 rounded-2xl border border-white/5 min-w-[60px] shadow-inner group-hover:border-cyan-500/10 transition-colors">
-                            <div className="flex items-baseline gap-0.5">
-                              <span className="text-lg font-black text-cyan-400 font-mono leading-none">
-                                {s.reps || s.time}
-                              </span>
-                              <span className="text-[8px] font-black text-cyan-800 uppercase">
-                                {s.reps ? 'R' : 'S'}
-                              </span>
-                            </div>
-                            {s.weight ? (
-                              <span className="text-[9px] text-purple-400 font-black mt-1 leading-none">+{s.weight}KG</span>
-                            ) : s.rpe ? (
-                              <span className="text-[7px] text-slate-600 font-black mt-1">RPE {s.rpe}</span>
-                            ) : null}
-                          </div>
-                        ))}
-                      </div>
+                      <Share2 size={16} className="text-slate-500 hover:text-cyan-400 cursor-pointer transition-colors" />
                     </div>
-                  );
-                })
+                    <div className="p-6 space-y-6">
+                      {workout.exercises.map((log) => {
+                        const exercise = EXERCISE_LIBRARY.find(e => e.id === log.exerciseId);
+                        return (
+                          <div key={log.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pb-6 border-b border-white/5 last:border-0 last:pb-0">
+                            <div className="flex-1 space-y-2">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="text-base font-black text-white uppercase tracking-tight italic">{exercise?.name || log.type}</p>
+                                {log.executionStyle && log.executionStyle !== 'basic' && (
+                                  <span className="text-[9px] font-black text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20 uppercase tracking-widest">
+                                    {log.executionStyle}
+                                  </span>
+                                )}
+                                {log.executionMethod && log.executionMethod !== 'standard' && (
+                                  <span className="text-[9px] font-black text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20 uppercase tracking-widest">
+                                    {log.executionMethod}
+                                  </span>
+                                )}
+                                {log.grip && (
+                                  <span className="text-[8px] font-black bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded border border-purple-500/20 uppercase tracking-tighter shadow-sm flex items-center gap-1">
+                                    {log.gripWidth && `${log.gripWidth} `}{log.grip} {log.thumb && `(${log.thumb})`}
+                                    {log.falseGrip && <span className="text-cyan-400 ml-1">• FALSE</span>}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex flex-wrap items-center gap-4 text-[8px] font-black uppercase tracking-widest text-slate-500">
+                                {log.equipment && <span>• {log.equipment}</span>}
+                                {log.position && <span>• {log.position}</span>}
+                              </div>
+                            </div>
+                            <div className="flex flex-wrap gap-2 justify-end sm:max-w-[40%]">
+                              {log.sets.map((s, i) => (
+                                <div key={i} className="flex flex-col items-center px-4 py-2 bg-black/40 rounded-2xl border border-white/5 min-w-[60px] shadow-inner group-hover:border-cyan-500/10 transition-colors">
+                                  <div className="flex items-baseline gap-0.5">
+                                    <span className="text-lg font-black text-cyan-400 font-mono leading-none">
+                                      {s.reps || s.time}
+                                    </span>
+                                    <span className="text-[8px] font-black text-cyan-800 uppercase">
+                                      {s.reps ? 'R' : 'S'}
+                                    </span>
+                                  </div>
+                                  {s.weight ? (
+                                    <span className="text-[9px] text-purple-400 font-black mt-1 leading-none">+{s.weight}KG</span>
+                                  ) : s.rpe ? (
+                                    <span className="text-[7px] text-slate-600 font-black mt-1">RPE {s.rpe}</span>
+                                  ) : null}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))
               ) : (
                 <div className="flex flex-col items-center justify-center py-20 bg-white/5 rounded-[40px] border border-dashed border-white/10">
                   <p className="text-slate-500 font-black uppercase tracking-widest italic">Systémový archiv je prázdný</p>
@@ -180,11 +350,11 @@ export default function App() {
           </div>
         );
       case 'ai':
-        return <AiInsights logs={logs} />;
+        return <AiInsights workouts={workouts} />;
       case 'profile':
         return <Profile profile={profile} onSave={handleUpdateProfile} />;
       default:
-        return <Dashboard logs={logs} />;
+        return <Dashboard workouts={workouts} />;
     }
   };
 

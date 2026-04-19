@@ -1,29 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { ExerciseLog } from '../types';
+import { Workout } from '../types';
 import { getWorkoutAdvice } from '../services/geminiService';
 import { BrainCircuit, Loader2, Sparkles, RefreshCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface AiInsightsProps {
-  logs: ExerciseLog[];
+  workouts: Workout[];
 }
 
-export const AiInsights: React.FC<AiInsightsProps> = ({ logs }) => {
+export const AiInsights: React.FC<AiInsightsProps> = ({ workouts }) => {
   const [advice, setAdvice] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const fetchAdvice = async () => {
     setLoading(true);
-    const result = await getWorkoutAdvice(logs);
+    const result = await getWorkoutAdvice(workouts);
     setAdvice(result);
     setLoading(false);
   };
 
   useEffect(() => {
-    if (logs.length > 0 && !advice) {
+    if (workouts.length > 0 && !advice) {
       fetchAdvice();
     }
-  }, [logs]);
+  }, [workouts]);
 
   return (
     <div id="ai-insights-section" className="glass-card p-6 md:p-10 overflow-hidden relative border-purple-500/20 bg-gradient-to-br from-cyan-500/5 to-purple-500/5 min-h-[400px] flex flex-col">

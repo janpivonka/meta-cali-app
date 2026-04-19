@@ -1,4 +1,4 @@
-export type GripType = 'pronated' | 'supinated' | 'neutral' | 'false' | 'mixed';
+export type GripType = 'pronated' | 'supinated' | 'neutral' | 'mixed';
 export type GripWidth = 'narrow' | 'shoulder-width' | 'wide';
 export type ThumbPosition = 'top' | 'bottom';
 export type EquipmentType = 'pull-up bar' | 'low bar' | 'dip bars' | 'rings' | 'floor' | 'parallelettes' | 'stall bars';
@@ -29,6 +29,7 @@ export interface ExerciseLog {
   grip?: GripType;
   gripWidth?: GripWidth;
   thumb?: ThumbPosition;
+  falseGrip?: boolean;
   equipment?: EquipmentType;
   executionStyle?: ExecutionStyle | string;
   executionMethod?: ExecutionMethod | string;
@@ -44,8 +45,16 @@ export interface ExerciseLog {
   sets: WorkoutSet[];
   notes?: string;
   media?: ExerciseMedia[];
-  shared?: boolean;
   timestamp: number;
+}
+
+export interface Workout {
+  id: string;
+  name?: string;
+  exercises: ExerciseLog[];
+  timestamp: number;
+  shared?: boolean;
+  notes?: string;
 }
 
 export interface ExerciseDefinition {
@@ -81,6 +90,6 @@ export interface UserProfile {
 }
 
 export interface UserStats {
-  logs: ExerciseLog[];
+  workouts: Workout[];
   profile?: UserProfile;
 }

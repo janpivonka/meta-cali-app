@@ -36,9 +36,12 @@ import { EXERCISE_LIBRARY } from '../data/exerciseLibrary';
 
 interface WorkoutFormProps {
   onSave: (log: ExerciseLog) => void;
+  onDelete?: () => void;
+  initialExerciseId?: string | null;
+  initialData?: ExerciseLog | null;
 }
 
-const GRIPS: GripType[] = ['pronated', 'supinated', 'neutral', 'false', 'mixed'];
+const GRIPS: GripType[] = ['pronated', 'supinated', 'neutral', 'mixed'];
 const GRIP_WIDTHS: GripWidth[] = ['narrow', 'shoulder-width', 'wide'];
 const THUMBS: { val: ThumbPosition; label: string }[] = [
   { val: 'bottom', label: 'Standard (Palec dole)' },
@@ -63,8 +66,40 @@ const ONE_ARM_POSITIONS: { val: OneArmHandPosition; label: string }[] = [
   { val: 'free', label: 'Volně podél těla' }
 ];
 
-export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave }) => {
-  const [exerciseId, setExerciseId] = useState<string>(EXERCISE_LIBRARY[0].id);
+export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, initialExerciseId, initialData }) => {
+  const [exerciseId, setExerciseId] = useState<string>(initialData?.exerciseId || initialExerciseId || EXERCISE_LIBRARY[0].id);
+
+  // Sync with initialData if it changes
+  React.useEffect(() => {
+    if (initialData) {
+      setExerciseId(initialData.exerciseId);
+      setGrip(initialData.grip || 'pronated');
+      setGripWidth(initialData.gripWidth || 'shoulder-width');
+      setThumb(initialData.thumb || 'bottom');
+      setFalseGrip(initialData.falseGrip || false);
+      setEquipment(initialData.equipment || 'pull-up bar');
+      setExecutionStyle(initialData.executionStyle || 'basic');
+      setExecutionMethod(initialData.executionMethod || 'standard');
+      setOneArmHandPosition(initialData.oneArmHandPosition || 'free');
+      setPosition(initialData.position || 'standard');
+      setSets(initialData.sets);
+      setNotes(initialData.notes || '');
+      setShared(initialData.shared || false);
+      if (initialData.assistance) {
+        setAssistanceType(initialData.assistance.type as any);
+        setAssistanceValue(initialData.assistance.value?.toString() || '');
+        if (initialData.assistance.type === 'Band') {
+          setBandPlacements(initialData.assistance.placement as BandPlacement[] || ['both legs']);
+          setBandLoopType(initialData.assistance.loopType || 'single');
+        }
+      } else {
+        setAssistanceType('None');
+        setAssistanceValue('');
+      }
+    } else if (initialExerciseId) {
+      setExerciseId(initialExerciseId);
+    }
+  }, [initialData, initialExerciseId]);
   const [grip, setGrip] = useState<GripType>('pronated');
   const [gripWidth, setGripWidth] = useState<GripWidth>('shoulder-width');
   const [thumb, setThumb] = useState<ThumbPosition>('bottom');
@@ -77,6 +112,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave }) => {
   const [assistanceValue, setAssistanceValue] = useState('');
   const [bandPlacements, setBandPlacements] = useState<BandPlacement[]>(['both legs']);
   const [bandLoopType, setBandLoopType] = useState<BandLoopType>('single');
+  const [falseGrip, setFalseGrip] = useState(false);
   const [sets, setSets] = useState<WorkoutSet[]>([{ reps: 0, weight: 0, rpe: 7 }]);
   const [notes, setNotes] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -140,12 +176,13 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave }) => {
     if (validSets.length === 0) return;
 
     onSave({
-      id: crypto.randomUUID(),
+      id: initialData?.id || crypto.randomUUID(),
       exerciseId,
       type: currentExercise?.name || 'Unknown',
       grip,
       gripWidth,
       thumb,
+      falseGrip,
       equipment,
       executionStyle,
       executionMethod,
@@ -267,23 +304,39 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave }) => {
                    </div>
                  </div>
 
-                 <div>
-                   <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-500/60 block mb-3">Pozice palce (Thumb)</label>
-                   <div className="flex flex-wrap gap-2">
-                      {THUMBS.map(t => (
-                        <button
-                          key={t.val}
-                          type="button"
-                          onClick={() => setThumb(t.val)}
-                          className={cn(
-                            "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all",
-                            thumb === t.val ? "bg-white text-black border-white shadow-lg" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
-                          )}
-                        >
-                          {t.label}
-                        </button>
-                      ))}
-                   </div>
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div>
+                      <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-500/60 block mb-3">Pozice palce (Thumb)</label>
+                      <div className="flex flex-wrap gap-2">
+                         {THUMBS.map(t => (
+                           <button
+                             key={t.val}
+                             type="button"
+                             onClick={() => setThumb(t.val)}
+                             className={cn(
+                               "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex-1 text-center",
+                               thumb === t.val ? "bg-white text-black border-white shadow-lg" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
+                             )}
+                           >
+                             {t.label.split(' ')[0]}
+                           </button>
+                         ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-400 block mb-3">False Grip</label>
+                      <button
+                        type="button"
+                        onClick={() => setFalseGrip(!falseGrip)}
+                        className={cn(
+                          "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all w-full text-center h-[38px] flex items-center justify-center",
+                          falseGrip ? "bg-cyan-500 text-black border-cyan-400 shadow-lg shadow-cyan-500/20" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
+                        )}
+                      >
+                        {falseGrip ? 'AKTIVNÍ' : 'NEAKTIVNÍ'}
+                      </button>
+                    </div>
                  </div>
 
                  <div>
@@ -611,15 +664,27 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave }) => {
         </div>
 
         {/* SUBMIT */}
-        <div className="pt-8">
+        <div className="pt-8 flex flex-col sm:flex-row gap-4">
+           {initialData && onDelete && (
+             <button
+               type="button"
+               onClick={onDelete}
+               className="flex-1 py-7 bg-red-500/10 text-red-500 text-sm font-black uppercase tracking-[0.5em] rounded-[32px] border border-red-500/20 hover:bg-red-500 hover:text-white transition-all"
+             >
+               Smazat tento cvik
+             </button>
+           )}
            <button
              type="submit"
-             className="w-full py-7 bg-white text-black text-sm font-black uppercase tracking-[0.5em] rounded-[32px] hover:bg-cyan-500 active:scale-95 transition-all shadow-2xl shadow-cyan-500/10 group relative overflow-hidden"
+             className={cn(
+               "flex-[2] py-7 text-sm font-black uppercase tracking-[0.5em] rounded-[32px] active:scale-95 transition-all shadow-2xl group relative overflow-hidden",
+               initialData ? "bg-cyan-500 text-black shadow-cyan-500/10" : "bg-white text-black shadow-white/5 hover:bg-cyan-500"
+             )}
            >
              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
              <div className="flex items-center justify-center gap-4 relative z-10">
-               <Check size={24} />
-               Synchronizovat do Archivu
+               {initialData ? <Edit3 size={24} /> : <Check size={24} />}
+               {initialData ? 'Aktualizovat Blok' : 'Uložit do tréninku'}
              </div>
            </button>
         </div>

@@ -1,16 +1,20 @@
 import { GoogleGenAI } from "@google/genai";
-import { ExerciseLog } from "../types";
+import { Workout } from "../types";
 
-export async function getWorkoutAdvice(logs: ExerciseLog[]) {
-  if (logs.length === 0) {
+export async function getWorkoutAdvice(workouts: Workout[]) {
+  if (workouts.length === 0) {
     return "Zatím nemáš žádná data. Odcvič svůj první trénink a já ti poradím!";
   }
 
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-  const recentLogsText = logs.slice(-10).map(log => 
-    `${new Date(log.timestamp).toLocaleDateString()}: ${log.type} - ${log.sets.map(s => s.reps).join(',')} reps`
-  ).join('\n');
+  const recentSessionsText = workouts.slice(-5).map(w => {
+    const sessionDate = new Date(w.timestamp).toLocaleDateString();
+    const exercisesText = w.exercises.map(ex => 
+      `${ex.type}: ${ex.sets.map(s => s.reps || `${s.time}s`).join(',')} reps`
+    ).join(' | ');
+    return `${sessionDate}: ${exercisesText}`;
+  }).join('\n');
 
   try {
     const response = await ai.models.generateContent({
@@ -18,8 +22,8 @@ export async function getWorkoutAdvice(logs: ExerciseLog[]) {
       contents: `Jsi expertní kalisthenický trenér. Analyzuj tyto nedávné tréninky a dej uživateli krátké, 
       úderné a motivující rady v češtině (max 150 slov). Zaměř se na progresivní přetížení a techniku.
 
-      Nedávné tréninky:
-      ${recentLogsText}`,
+      Nedávná tréninková data:
+      ${recentSessionsText}`,
     });
 
     return response.text || "Omlouvám se, ale analýza se nepodařila. Zkus to prosím později.";
