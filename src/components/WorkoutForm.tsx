@@ -29,7 +29,8 @@ import {
   BandPlacement,
   BandLoopType,
   BodyPosition,
-  LoadType
+  LoadType,
+  LegPosition
 } from '../types';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -57,6 +58,7 @@ const LOOP_TYPES: { val: BandLoopType; label: string }[] = [
   { val: 'single', label: 'Jednoduché' },
   { val: 'double', label: 'Dvojité (omotané)' }
 ];
+const LEG_POSITIONS: LegPosition[] = ['tuck', 'adv tuck', 'halflay', 'full'];
 const ONE_ARM_POSITIONS: { val: OneArmHandPosition; label: string }[] = [
   { val: 'wrist', label: 'Zápěstí' },
   { val: 'forearm', label: 'Předloktí' },
@@ -77,6 +79,8 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
   const [executionStyle, setExecutionStyle] = useState<ExecutionStyle | string>('basic');
   const [executionMethod, setExecutionMethod] = useState<ExecutionMethod | string>('standard');
   const [oneArmHandPosition, setOneArmHandPosition] = useState<OneArmHandPosition | string>('free');
+  const [oneLegPrimaryPosition, setOneLegPrimaryPosition] = useState<LegPosition>('full');
+  const [oneLegSecondaryPosition, setOneLegSecondaryPosition] = useState<LegPosition>('tuck');
   const [position, setPosition] = useState<BodyPosition | string>('standard');
   const [loadType, setLoadType] = useState<LoadType>('bodyweight');
   const [assistanceValue, setAssistanceValue] = useState('');
@@ -97,6 +101,8 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     setExecutionStyle('basic');
     setExecutionMethod('standard');
     setOneArmHandPosition('free');
+    setOneLegPrimaryPosition('full');
+    setOneLegSecondaryPosition('tuck');
     setPosition('standard');
     setLoadType('bodyweight');
     setAssistanceValue('');
@@ -125,6 +131,8 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       setExecutionStyle(initialData.executionStyle || 'basic');
       setExecutionMethod(initialData.executionMethod || 'standard');
       setOneArmHandPosition(initialData.oneArmHandPosition || 'free');
+      setOneLegPrimaryPosition(initialData.oneLegPrimaryPosition || 'full');
+      setOneLegSecondaryPosition(initialData.oneLegSecondaryPosition || 'tuck');
       setPosition(initialData.position || 'standard');
       setSets(initialData.sets);
       setNotes(initialData.notes || '');
@@ -266,6 +274,8 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       executionStyle,
       executionMethod,
       oneArmHandPosition: executionStyle === 'one arm' ? oneArmHandPosition : undefined,
+      oneLegPrimaryPosition: position === 'one leg' ? oneLegPrimaryPosition : undefined,
+      oneLegSecondaryPosition: position === 'one leg' ? oneLegSecondaryPosition : undefined,
       position,
       loadType,
       assistanceValue: loadType !== 'bodyweight' ? assistanceValue : undefined,
@@ -528,7 +538,59 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                         </button>
                       ))}
                    </div>
-                 </div>
+                  </div>
+
+                  {position === 'one leg' && (
+                    <motion.div 
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="space-y-4 pt-4 border-t border-white/5 pb-4"
+                    >
+                      <div className="space-y-2">
+                        <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-400 block mb-2">První noha (Primary Leg)</label>
+                        <div className="flex flex-wrap gap-2">
+                          {LEG_POSITIONS.map(p => (
+                            <button
+                              key={p}
+                              type="button"
+                              onClick={() => {
+                                setOneLegPrimaryPosition(p);
+                                if (p === oneLegSecondaryPosition) {
+                                  const fallback = LEG_POSITIONS.find(lp => lp !== p) || 'tuck';
+                                  setOneLegSecondaryPosition(fallback as any);
+                                }
+                              }}
+                              className={cn(
+                                "px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest border transition-all flex-1 text-center min-w-[80px]",
+                                oneLegPrimaryPosition === p ? "bg-cyan-500 text-black border-cyan-400" : "bg-black/40 text-slate-500 border-white/5"
+                              )}
+                            >
+                              {p}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-400/60 block mb-2">Druhá noha (Secondary Leg)</label>
+                        <div className="flex flex-wrap gap-2">
+                          {LEG_POSITIONS.filter(p => p !== oneLegPrimaryPosition).map(p => (
+                            <button
+                              key={p}
+                              type="button"
+                              onClick={() => setOneLegSecondaryPosition(p)}
+                              className={cn(
+                                "px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest border transition-all flex-1 text-center min-w-[80px]",
+                                oneLegSecondaryPosition === p ? "bg-cyan-500 text-black border-cyan-400" : "bg-black/40 text-slate-500 border-white/5"
+                              )}
+                            >
+                              {p}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
               </div>
            </div>
         </div>

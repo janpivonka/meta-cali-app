@@ -277,6 +277,7 @@ export default function App() {
                                   {ex.oneArmHandPosition && ex.executionStyle === 'one arm' && `(${ex.oneArmHandPosition}) • `}
                                   {ex.executionMethod}
                                   {ex.position && ex.position !== 'standard' && ` • ${ex.position}`}
+                                  {ex.oneLegPrimaryPosition && ex.oneLegSecondaryPosition && ex.position === 'one leg' && ` (${ex.oneLegPrimaryPosition}/${ex.oneLegSecondaryPosition})`}
                                   {ex.equipment && ` @ ${ex.equipment}`}
                                 </span>
                               </div>
