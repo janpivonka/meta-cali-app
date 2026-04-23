@@ -224,20 +224,6 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
         }
       }
 
-      // If user selected High Bar Style -> Change low-gear equipment to Pull-up bar
-      if (styleChanged && ['high', 'korean'].includes(executionStyle as string)) {
-        if (equipment === 'low bar' || equipment === 'dip bars') {
-          setEquipment('pull-up bar');
-        }
-      }
-
-      // If user selected Low-gear Equipment -> Change position to Australian
-      if (equipChanged && (equipment === 'low bar' || equipment === 'dip bars')) {
-        if (position !== 'australian (bent legs)' && position !== 'australian (straight legs)') {
-          setPosition('australian (straight legs)');
-        }
-      }
-
       // If user selected Pull-up bar -> Remove Australian position
       if (equipChanged && equipment === 'pull-up bar') {
         if (position && position.toString().includes('australian')) {
