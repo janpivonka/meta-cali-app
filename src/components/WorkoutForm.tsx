@@ -54,7 +54,7 @@ const EQUIPMENTS: EquipmentType[] = ['pull-up bar', 'low bar', 'dip bars', 'ring
 const EXECUTION_STYLES: ExecutionStyle[] = ['basic', 'one arm', 'archer', 'typewriter', 'commando', 'high', 'korean'];
 const EXECUTION_METHODS: ExecutionMethod[] = ['standard', 'explosive', 'partial', 'negative', 'scapula', 'controlled'];
 const POSITIONS: BodyPosition[] = ['neutral', 'hollow body', 'arch back', 'L-sit'];
-const LEG_PROGRESSIONS: LegProgression[] = ['none', 'tuck', 'adv tuck', 'straddle', 'one leg', 'halflay', 'full', 'australian (bent legs)', 'australian (straight legs)'];
+const LEG_PROGRESSIONS: LegProgression[] = ['tuck', 'adv tuck', 'straddle', 'one leg', 'halflay', 'full', 'australian (bent legs)', 'australian (straight legs)'];
 const BAND_PLACEMENTS: BandPlacement[] = ['both legs', 'one leg', 'waist', 'knees', 'back'];
 const LOOP_TYPES: { val: BandLoopType; label: string }[] = [
   { val: 'single', label: 'Jednoduché' },
@@ -83,8 +83,9 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
   const [oneArmHandPosition, setOneArmHandPosition] = useState<OneArmHandPosition | string>('free');
   const [oneLegPrimaryPosition, setOneLegPrimaryPosition] = useState<SingleLegPosition>('full');
   const [oneLegSecondaryPosition, setOneLegSecondaryPosition] = useState<SingleLegPosition>('tuck');
+  const [isOneLeg, setIsOneLeg] = useState(false);
   const [position, setPosition] = useState<BodyPosition | string>('neutral');
-  const [legProgression, setLegProgression] = useState<LegProgression | string>('none');
+  const [legProgression, setLegProgression] = useState<LegProgression | string>('full');
   const [loadType, setLoadType] = useState<LoadType>('bodyweight');
   const [assistanceValue, setAssistanceValue] = useState('');
   const [bandPlacements, setBandPlacements] = useState<BandPlacement[]>(['both legs']);
@@ -106,8 +107,9 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     setOneArmHandPosition('free');
     setOneLegPrimaryPosition('full');
     setOneLegSecondaryPosition('tuck');
+    setIsOneLeg(false);
     setPosition('neutral');
-    setLegProgression('none');
+    setLegProgression('full');
     setLoadType('bodyweight');
     setAssistanceValue('');
     setBandPlacements(['both legs']);
@@ -137,8 +139,9 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       setOneArmHandPosition(initialData.oneArmHandPosition || 'free');
       setOneLegPrimaryPosition(initialData.oneLegPrimaryPosition || 'full');
       setOneLegSecondaryPosition(initialData.oneLegSecondaryPosition || 'tuck');
+      setIsOneLeg(initialData.isOneLeg || false);
       setPosition(initialData.position || 'neutral');
-      setLegProgression(initialData.legProgression || 'none');
+      setLegProgression(initialData.legProgression || 'full');
       setSets(initialData.sets);
       setNotes(initialData.notes || '');
       setShared(initialData.shared || false);
@@ -242,7 +245,8 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       // If user selected Pull-up bar -> Remove Australian progression
       if (equipChanged && equipment === 'pull-up bar') {
         if (legProgression && legProgression.toString().includes('australian')) {
-          setLegProgression('none');
+          setLegProgression('full');
+          setIsOneLeg(false);
         }
       }
     }
@@ -282,8 +286,9 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       executionStyle,
       executionMethod,
       oneArmHandPosition: executionStyle === 'one arm' ? oneArmHandPosition : undefined,
-      oneLegPrimaryPosition: legProgression === 'one leg' ? oneLegPrimaryPosition : undefined,
-      oneLegSecondaryPosition: legProgression === 'one leg' ? oneLegSecondaryPosition : undefined,
+      oneLegPrimaryPosition: (legProgression === 'one leg' || isOneLeg) ? oneLegPrimaryPosition : undefined,
+      oneLegSecondaryPosition: (legProgression === 'one leg' && !isOneLeg) ? oneLegSecondaryPosition : undefined,
+      isOneLeg: isOneLeg || legProgression === 'one leg',
       position,
       legProgression,
       loadType,
@@ -562,20 +567,37 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                             legProgression === prog ? "bg-purple-500 text-white border-purple-400 shadow-lg shadow-purple-500/20" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
                           )}
                         >
-                          {prog === 'none' ? 'Základní (Sounož)' : prog}
+                          {prog === 'full' ? 'Základní (Full)' : prog}
                         </button>
                       ))}
                    </div>
                   </div>
 
-                  {legProgression === 'one leg' && (
+                  {legProgression.toString().includes('australian') && (
+                    <div className="flex items-center gap-3 pt-2">
+                       <button
+                         type="button"
+                         onClick={() => setIsOneLeg(!isOneLeg)}
+                         className={cn(
+                           "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all",
+                           isOneLeg ? "bg-cyan-500 text-black border-cyan-400 shadow-lg" : "bg-black/20 text-slate-500 border-white/5"
+                         )}
+                       >
+                         One Leg {isOneLeg ? '✓' : '✗'}
+                       </button>
+                    </div>
+                  )}
+
+                  {(legProgression === 'one leg' || (legProgression.toString().includes('australian') && isOneLeg)) && (
                     <motion.div 
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       className="space-y-4 pt-4 border-t border-white/5 pb-4"
                     >
                       <div className="space-y-2">
-                        <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-400 block mb-2">První noha (Primary Leg)</label>
+                        <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-400 block mb-2">
+                          {legProgression.toString().includes('australian') ? 'Pozice nohy ve vzduchu (Floating Leg)' : 'První noha (Primary Leg)'}
+                        </label>
                         <div className="flex flex-wrap gap-2">
                           {SINGLE_LEG_POSITIONS.map(p => (
                             <button
@@ -583,7 +605,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                               type="button"
                               onClick={() => {
                                 setOneLegPrimaryPosition(p);
-                                if (p === oneLegSecondaryPosition) {
+                                if (p === oneLegSecondaryPosition && legProgression === 'one leg') {
                                   const fallback = SINGLE_LEG_POSITIONS.find(lp => lp !== p) || 'tuck';
                                   setOneLegSecondaryPosition(fallback as any);
                                 }
@@ -599,24 +621,26 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                         </div>
                       </div>
 
-                      <div className="space-y-2">
-                        <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-400/60 block mb-2">Druhá noha (Secondary Leg)</label>
-                        <div className="flex flex-wrap gap-2">
-                          {SINGLE_LEG_POSITIONS.filter(p => p !== oneLegPrimaryPosition).map(p => (
-                            <button
-                              key={p}
-                              type="button"
-                              onClick={() => setOneLegSecondaryPosition(p)}
-                              className={cn(
-                                "px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest border transition-all flex-1 text-center min-w-[80px]",
-                                oneLegSecondaryPosition === p ? "bg-cyan-500 text-black border-cyan-400" : "bg-black/40 text-slate-500 border-white/5"
-                              )}
-                            >
-                              {p}
-                            </button>
-                          ))}
+                      {legProgression === 'one leg' && (
+                        <div className="space-y-2">
+                          <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-400/60 block mb-2">Druhá noha (Secondary Leg)</label>
+                          <div className="flex flex-wrap gap-2">
+                            {SINGLE_LEG_POSITIONS.filter(p => p !== oneLegPrimaryPosition).map(p => (
+                              <button
+                                key={p}
+                                type="button"
+                                onClick={() => setOneLegSecondaryPosition(p)}
+                                className={cn(
+                                  "px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest border transition-all flex-1 text-center min-w-[80px]",
+                                  oneLegSecondaryPosition === p ? "bg-cyan-500 text-black border-cyan-400" : "bg-black/40 text-slate-500 border-white/5"
+                                )}
+                              >
+                                {p}
+                              </button>
+                            ))}
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </motion.div>
                   )}
               </div>

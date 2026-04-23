@@ -39,6 +39,7 @@ export interface ExerciseLog {
   oneArmHandPosition?: OneArmHandPosition | string;
   oneLegPrimaryPosition?: SingleLegPosition;
   oneLegSecondaryPosition?: SingleLegPosition;
+  isOneLeg?: boolean;
   position?: BodyPosition | string;
   legProgression?: LegProgression | string;
   loadType: LoadType;
