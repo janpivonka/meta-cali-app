@@ -170,14 +170,62 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
 
   const availableEquipment = EQUIPMENTS.filter(eq => {
     if (currentExercise?.category === 'Pull') {
+      // Standard hard exclusions for Pull
       if (eq === 'floor' || eq === 'parallelettes') return false;
-      if (!executionStyle.toString().includes('australian') && !position.toString().includes('australian')) {
-        return eq !== 'low bar' && eq !== 'dip bars';
-      }
-      return true;
     }
     return true;
   });
+
+  const availableExecutionStyles = EXECUTION_STYLES;
+
+  // Track the previous values to know what changed
+  const prevEquipmentRef = React.useRef(equipment);
+  const prevStyleRef = React.useRef(executionStyle);
+  const prevPositionRef = React.useRef(position);
+
+  // Smart conflict resolution (Proactive de-selection)
+  React.useEffect(() => {
+    if (currentExercise?.category === 'Pull') {
+      const styleChanged = prevStyleRef.current !== executionStyle;
+      const equipChanged = prevEquipmentRef.current !== equipment;
+      const posChanged = prevPositionRef.current !== position;
+
+      // Logic: A changed value updates the other incompatible one
+      
+      // If user selected Australian style -> Change high bar to low bar
+      if ((styleChanged || posChanged) && (executionStyle === 'australian' || (position && position.toString().includes('australian')))) {
+        if (equipment === 'pull-up bar') {
+          setEquipment('low bar');
+        }
+      }
+
+      // If user selected High Bar Style -> Change low-gear equipment to Pull-up bar
+      if (styleChanged && ['high', 'korean'].includes(executionStyle as string)) {
+        if (equipment === 'low bar' || equipment === 'dip bars') {
+          setEquipment('pull-up bar');
+        }
+      }
+
+      // If user selected Low-gear Equipment -> Change non-australian style to Australian
+      if (equipChanged && (equipment === 'low bar' || equipment === 'dip bars')) {
+        if (executionStyle !== 'australian' && !position.toString().includes('australian')) {
+          setExecutionStyle('australian');
+        }
+      }
+
+      // If user selected Pull-up bar -> Change Australian style to Basic
+      if (equipChanged && equipment === 'pull-up bar') {
+        if (executionStyle === 'australian' || (position && position.toString().includes('australian'))) {
+          setExecutionStyle('basic');
+          if (position.toString().includes('australian')) setPosition('standard');
+        }
+      }
+    }
+
+    prevEquipmentRef.current = equipment;
+    prevStyleRef.current = executionStyle;
+    prevPositionRef.current = position;
+  }, [equipment, executionStyle, position, currentExercise]);
 
   const handleStyleChange = (style: ExecutionStyle) => {
     setExecutionStyle(style);
@@ -381,7 +429,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                  <div>
                    <label className="text-[8px] font-black uppercase tracking-[0.3em] text-purple-500/60 block mb-3">Styl Cviku (Style)</label>
                    <div className="flex flex-wrap gap-2">
-                      {EXECUTION_STYLES.map(style => (
+                      {availableExecutionStyles.map(style => (
                         <button
                           key={style}
                           type="button"
