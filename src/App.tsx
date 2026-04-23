@@ -276,8 +276,9 @@ export default function App() {
                                   {ex.executionStyle !== 'basic' && `${ex.executionStyle} • `}
                                   {ex.oneArmHandPosition && ex.executionStyle === 'one arm' && `(${ex.oneArmHandPosition}) • `}
                                   {ex.executionMethod}
-                                  {ex.position && ex.position !== 'standard' && ` • ${ex.position}`}
-                                  {ex.oneLegPrimaryPosition && ex.oneLegSecondaryPosition && ex.position === 'one leg' && ` (${ex.oneLegPrimaryPosition}/${ex.oneLegSecondaryPosition})`}
+                                  {ex.position && ex.position !== 'neutral' && ex.position !== 'standard' && ` • ${ex.position}`}
+                                  {ex.legProgression && ex.legProgression !== 'none' && ` • ${ex.legProgression}`}
+                                  {ex.oneLegPrimaryPosition && ex.oneLegSecondaryPosition && ex.legProgression === 'one leg' && ` (${ex.oneLegPrimaryPosition}/${ex.oneLegSecondaryPosition})`}
                                   {ex.equipment && ` @ ${ex.equipment}`}
                                 </span>
                               </div>

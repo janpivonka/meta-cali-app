@@ -30,7 +30,8 @@ import {
   BandLoopType,
   BodyPosition,
   LoadType,
-  LegPosition
+  LegProgression,
+  SingleLegPosition
 } from '../types';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -52,13 +53,14 @@ const THUMBS: { val: ThumbPosition; label: string }[] = [
 const EQUIPMENTS: EquipmentType[] = ['pull-up bar', 'low bar', 'dip bars', 'rings', 'floor', 'parallelettes', 'stall bars'];
 const EXECUTION_STYLES: ExecutionStyle[] = ['basic', 'one arm', 'archer', 'typewriter', 'commando', 'high', 'korean'];
 const EXECUTION_METHODS: ExecutionMethod[] = ['standard', 'explosive', 'partial', 'negative', 'scapula', 'controlled'];
-const POSITIONS: BodyPosition[] = ['hollow body', 'arch back', 'L-sit', 'tuck', 'adv tuck', 'halflay', 'one leg', 'straddle', 'full', 'australian (bent legs)', 'australian (straight legs)'];
+const POSITIONS: BodyPosition[] = ['neutral', 'hollow body', 'arch back', 'L-sit'];
+const LEG_PROGRESSIONS: LegProgression[] = ['none', 'tuck', 'adv tuck', 'straddle', 'one leg', 'halflay', 'full', 'australian (bent legs)', 'australian (straight legs)'];
 const BAND_PLACEMENTS: BandPlacement[] = ['both legs', 'one leg', 'waist', 'knees', 'back'];
 const LOOP_TYPES: { val: BandLoopType; label: string }[] = [
   { val: 'single', label: 'Jednoduché' },
   { val: 'double', label: 'Dvojité (omotané)' }
 ];
-const LEG_POSITIONS: LegPosition[] = ['tuck', 'adv tuck', 'halflay', 'full'];
+const SINGLE_LEG_POSITIONS: SingleLegPosition[] = ['tuck', 'adv tuck', 'halflay', 'full'];
 const ONE_ARM_POSITIONS: { val: OneArmHandPosition; label: string }[] = [
   { val: 'wrist', label: 'Zápěstí' },
   { val: 'forearm', label: 'Předloktí' },
@@ -79,9 +81,10 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
   const [executionStyle, setExecutionStyle] = useState<ExecutionStyle | string>('basic');
   const [executionMethod, setExecutionMethod] = useState<ExecutionMethod | string>('standard');
   const [oneArmHandPosition, setOneArmHandPosition] = useState<OneArmHandPosition | string>('free');
-  const [oneLegPrimaryPosition, setOneLegPrimaryPosition] = useState<LegPosition>('full');
-  const [oneLegSecondaryPosition, setOneLegSecondaryPosition] = useState<LegPosition>('tuck');
-  const [position, setPosition] = useState<BodyPosition | string>('standard');
+  const [oneLegPrimaryPosition, setOneLegPrimaryPosition] = useState<SingleLegPosition>('full');
+  const [oneLegSecondaryPosition, setOneLegSecondaryPosition] = useState<SingleLegPosition>('tuck');
+  const [position, setPosition] = useState<BodyPosition | string>('neutral');
+  const [legProgression, setLegProgression] = useState<LegProgression | string>('none');
   const [loadType, setLoadType] = useState<LoadType>('bodyweight');
   const [assistanceValue, setAssistanceValue] = useState('');
   const [bandPlacements, setBandPlacements] = useState<BandPlacement[]>(['both legs']);
@@ -103,7 +106,8 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     setOneArmHandPosition('free');
     setOneLegPrimaryPosition('full');
     setOneLegSecondaryPosition('tuck');
-    setPosition('standard');
+    setPosition('neutral');
+    setLegProgression('none');
     setLoadType('bodyweight');
     setAssistanceValue('');
     setBandPlacements(['both legs']);
@@ -133,7 +137,8 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       setOneArmHandPosition(initialData.oneArmHandPosition || 'free');
       setOneLegPrimaryPosition(initialData.oneLegPrimaryPosition || 'full');
       setOneLegSecondaryPosition(initialData.oneLegSecondaryPosition || 'tuck');
-      setPosition(initialData.position || 'standard');
+      setPosition(initialData.position || 'neutral');
+      setLegProgression(initialData.legProgression || 'none');
       setSets(initialData.sets);
       setNotes(initialData.notes || '');
       setShared(initialData.shared || false);
@@ -190,6 +195,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
   const prevEquipmentRef = React.useRef(equipment);
   const prevStyleRef = React.useRef(executionStyle);
   const prevPositionRef = React.useRef(position);
+  const prevLegProgressionRef = React.useRef(legProgression);
   const prevGripRef = React.useRef(grip);
   const prevGripWidthRef = React.useRef(gripWidth);
 
@@ -199,6 +205,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       const styleChanged = prevStyleRef.current !== executionStyle;
       const equipChanged = prevEquipmentRef.current !== equipment;
       const posChanged = prevPositionRef.current !== position;
+      const legProgChanged = prevLegProgressionRef.current !== legProgression;
       const gripChanged = prevGripRef.current !== grip;
       const widthChanged = prevGripWidthRef.current !== gripWidth;
 
@@ -225,17 +232,17 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
         }
       }
 
-      // If user selected Australian position -> Change high bar to low bar
-      if (posChanged && (position && position.toString().includes('australian'))) {
+      // If user selected Australian progression -> Change high bar to low bar
+      if (legProgChanged && (legProgression && legProgression.toString().includes('australian'))) {
         if (equipment === 'pull-up bar') {
           setEquipment('low bar');
         }
       }
 
-      // If user selected Pull-up bar -> Remove Australian position
+      // If user selected Pull-up bar -> Remove Australian progression
       if (equipChanged && equipment === 'pull-up bar') {
-        if (position && position.toString().includes('australian')) {
-          setPosition('hollow body');
+        if (legProgression && legProgression.toString().includes('australian')) {
+          setLegProgression('none');
         }
       }
     }
@@ -243,9 +250,10 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     prevEquipmentRef.current = equipment;
     prevStyleRef.current = executionStyle;
     prevPositionRef.current = position;
+    prevLegProgressionRef.current = legProgression;
     prevGripRef.current = grip;
     prevGripWidthRef.current = gripWidth;
-  }, [equipment, executionStyle, position, grip, gripWidth, currentExercise]);
+  }, [equipment, executionStyle, position, legProgression, grip, gripWidth, currentExercise]);
 
   const handleStyleChange = (style: ExecutionStyle) => {
     setExecutionStyle(style);
@@ -274,9 +282,10 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       executionStyle,
       executionMethod,
       oneArmHandPosition: executionStyle === 'one arm' ? oneArmHandPosition : undefined,
-      oneLegPrimaryPosition: position === 'one leg' ? oneLegPrimaryPosition : undefined,
-      oneLegSecondaryPosition: position === 'one leg' ? oneLegSecondaryPosition : undefined,
+      oneLegPrimaryPosition: legProgression === 'one leg' ? oneLegPrimaryPosition : undefined,
+      oneLegSecondaryPosition: legProgression === 'one leg' ? oneLegSecondaryPosition : undefined,
       position,
+      legProgression,
       loadType,
       assistanceValue: loadType !== 'bodyweight' ? assistanceValue : undefined,
       assistanceDetails: loadType === 'assisted' ? {
@@ -522,7 +531,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                   </div>
 
                   <div>
-                   <label className="text-[8px] font-black uppercase tracking-[0.3em] text-purple-500/60 block mb-3">Tělesná Pozice (Position)</label>
+                   <label className="text-[8px] font-black uppercase tracking-[0.3em] text-purple-500/60 block mb-3">Tělesná Pozice (Core)</label>
                    <div className="flex flex-wrap gap-2">
                       {POSITIONS.map(pos => (
                         <button
@@ -534,13 +543,32 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                             position === pos ? "bg-purple-500 text-white border-purple-400 shadow-lg shadow-purple-500/20" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
                           )}
                         >
-                          {pos}
+                          {pos === 'neutral' ? 'Neutrální' : pos}
                         </button>
                       ))}
                    </div>
                   </div>
 
-                  {position === 'one leg' && (
+                  <div>
+                   <label className="text-[8px] font-black uppercase tracking-[0.3em] text-purple-500/60 block mb-3">Progrese Nohou (Legs)</label>
+                   <div className="flex flex-wrap gap-2">
+                      {LEG_PROGRESSIONS.map(prog => (
+                        <button
+                          key={prog}
+                          type="button"
+                          onClick={() => setLegProgression(prog)}
+                          className={cn(
+                            "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all",
+                            legProgression === prog ? "bg-purple-500 text-white border-purple-400 shadow-lg shadow-purple-500/20" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
+                          )}
+                        >
+                          {prog === 'none' ? 'Základní (Sounož)' : prog}
+                        </button>
+                      ))}
+                   </div>
+                  </div>
+
+                  {legProgression === 'one leg' && (
                     <motion.div 
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
@@ -549,14 +577,14 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                       <div className="space-y-2">
                         <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-400 block mb-2">První noha (Primary Leg)</label>
                         <div className="flex flex-wrap gap-2">
-                          {LEG_POSITIONS.map(p => (
+                          {SINGLE_LEG_POSITIONS.map(p => (
                             <button
                               key={p}
                               type="button"
                               onClick={() => {
                                 setOneLegPrimaryPosition(p);
                                 if (p === oneLegSecondaryPosition) {
-                                  const fallback = LEG_POSITIONS.find(lp => lp !== p) || 'tuck';
+                                  const fallback = SINGLE_LEG_POSITIONS.find(lp => lp !== p) || 'tuck';
                                   setOneLegSecondaryPosition(fallback as any);
                                 }
                               }}
@@ -574,7 +602,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                       <div className="space-y-2">
                         <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-400/60 block mb-2">Druhá noha (Secondary Leg)</label>
                         <div className="flex flex-wrap gap-2">
-                          {LEG_POSITIONS.filter(p => p !== oneLegPrimaryPosition).map(p => (
+                          {SINGLE_LEG_POSITIONS.filter(p => p !== oneLegPrimaryPosition).map(p => (
                             <button
                               key={p}
                               type="button"

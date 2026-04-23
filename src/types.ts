@@ -4,8 +4,9 @@ export type ThumbPosition = 'top' | 'bottom';
 export type EquipmentType = 'pull-up bar' | 'low bar' | 'dip bars' | 'rings' | 'floor' | 'parallelettes' | 'stall bars';
 export type ExecutionStyle = 'basic' | 'one arm' | 'archer' | 'typewriter' | 'commando' | 'high' | 'korean';
 export type ExecutionMethod = 'standard' | 'explosive' | 'partial' | 'negative' | 'scapula' | 'controlled';
-export type BodyPosition = 'hollow body' | 'arch back' | 'L-sit' | 'tuck' | 'adv tuck' | 'halflay' | 'one leg' | 'straddle' | 'full' | 'australian (bent legs)' | 'australian (straight legs)';
-export type LegPosition = 'tuck' | 'adv tuck' | 'halflay' | 'full';
+export type BodyPosition = 'neutral' | 'hollow body' | 'arch back' | 'L-sit';
+export type LegProgression = 'none' | 'tuck' | 'adv tuck' | 'straddle' | 'one leg' | 'halflay' | 'full' | 'australian (bent legs)' | 'australian (straight legs)';
+export type SingleLegPosition = 'tuck' | 'adv tuck' | 'halflay' | 'full';
 export type OneArmHandPosition = 'wrist' | 'forearm' | 'elbow' | 'biceps' | 'shoulder' | 'horizontal' | 'free';
 export type BandPlacement = 'both legs' | 'one leg' | 'waist' | 'knees' | 'back';
 export type BandLoopType = 'single' | 'double';
@@ -36,9 +37,10 @@ export interface ExerciseLog {
   executionStyle?: ExecutionStyle | string;
   executionMethod?: ExecutionMethod | string;
   oneArmHandPosition?: OneArmHandPosition | string;
-  oneLegPrimaryPosition?: LegPosition;
-  oneLegSecondaryPosition?: LegPosition;
+  oneLegPrimaryPosition?: SingleLegPosition;
+  oneLegSecondaryPosition?: SingleLegPosition;
   position?: BodyPosition | string;
+  legProgression?: LegProgression | string;
   loadType: LoadType;
   assistanceValue?: string | number; // e.g. "Red", 10 (kg)
   assistanceDetails?: {
