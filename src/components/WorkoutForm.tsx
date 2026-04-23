@@ -49,7 +49,7 @@ const THUMBS: { val: ThumbPosition; label: string }[] = [
   { val: 'top', label: 'Suicide (Palec nahoře)' }
 ];
 const EQUIPMENTS: EquipmentType[] = ['pull-up bar', 'low bar', 'dip bars', 'rings', 'floor', 'parallelettes', 'stall bars'];
-const EXECUTION_STYLES: ExecutionStyle[] = ['basic', 'one arm', 'archer', 'typewriter', 'commando', 'high', 'korean', 'australian'];
+const EXECUTION_STYLES: ExecutionStyle[] = ['basic', 'one arm', 'archer', 'typewriter', 'commando', 'high', 'korean'];
 const EXECUTION_METHODS: ExecutionMethod[] = ['standard', 'explosive', 'partial', 'negative', 'scapula', 'controlled'];
 const POSITIONS: BodyPosition[] = ['hollow body', 'arch back', 'L-sit', 'tuck', 'adv tuck', 'halflay', 'one leg', 'straddle', 'full', 'australian (bent legs)', 'australian (straight legs)'];
 const BAND_PLACEMENTS: BandPlacement[] = ['both legs', 'one leg', 'waist', 'knees', 'back'];
@@ -217,8 +217,8 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
         }
       }
 
-      // If user selected Australian style -> Change high bar to low bar
-      if ((styleChanged || posChanged) && (executionStyle === 'australian' || (position && position.toString().includes('australian')))) {
+      // If user selected Australian position -> Change high bar to low bar
+      if (posChanged && (position && position.toString().includes('australian'))) {
         if (equipment === 'pull-up bar') {
           setEquipment('low bar');
         }
@@ -231,18 +231,17 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
         }
       }
 
-      // If user selected Low-gear Equipment -> Change non-australian style to Australian
+      // If user selected Low-gear Equipment -> Change position to Australian
       if (equipChanged && (equipment === 'low bar' || equipment === 'dip bars')) {
-        if (executionStyle !== 'australian' && !position.toString().includes('australian')) {
-          setExecutionStyle('australian');
+        if (position !== 'australian (bent legs)' && position !== 'australian (straight legs)') {
+          setPosition('australian (straight legs)');
         }
       }
 
-      // If user selected Pull-up bar -> Change Australian style to Basic
+      // If user selected Pull-up bar -> Remove Australian position
       if (equipChanged && equipment === 'pull-up bar') {
-        if (executionStyle === 'australian' || (position && position.toString().includes('australian'))) {
-          setExecutionStyle('basic');
-          if (position.toString().includes('australian')) setPosition('standard');
+        if (position && position.toString().includes('australian')) {
+          setPosition('hollow body');
         }
       }
     }
