@@ -263,7 +263,7 @@ export default function App() {
                               {/* Physical Parameters */}
                               <div className="flex items-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
                                 <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">
-                                  {ex.gripWidth === 'shoulder-width' ? 'Široký' : ex.gripWidth === 'narrow' ? 'Úzký' : 'Střední'} {ex.grip}
+                                  {ex.gripWidth === 'wide' ? 'Široký' : ex.gripWidth === 'narrow' ? 'Úzký' : 'Šířka ramen'} {ex.grip}
                                   {ex.thumb && ` • ${ex.thumb === 'bottom' ? 'Standard' : 'Suicide'} palec`}
                                   {ex.falseGrip && ` • False Grip`}
                                 </span>

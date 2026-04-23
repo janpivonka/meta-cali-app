@@ -88,6 +88,31 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
   const [searchQuery, setSearchQuery] = useState('');
   const [shared, setShared] = useState(false);
 
+  const resetForm = () => {
+    setGrip('pronated');
+    setGripWidth('shoulder-width');
+    setThumb('bottom');
+    setFalseGrip(false);
+    setEquipment('pull-up bar');
+    setExecutionStyle('basic');
+    setExecutionMethod('standard');
+    setOneArmHandPosition('free');
+    setPosition('standard');
+    setLoadType('bodyweight');
+    setAssistanceValue('');
+    setBandPlacements(['both legs']);
+    setBandLoopType('single');
+    setSets([{ reps: 10 }]);
+    setNotes('');
+    setSearchQuery('');
+    setShared(false);
+    if (!initialExerciseId) {
+      setExerciseId(EXERCISE_LIBRARY[0].id);
+    } else {
+      setExerciseId(initialExerciseId);
+    }
+  };
+
   // Sync with initialData if it changes
   React.useEffect(() => {
     if (initialData) {
@@ -110,8 +135,9 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
         setBandPlacements(initialData.assistanceDetails.placement as BandPlacement[] || ['both legs']);
         setBandLoopType(initialData.assistanceDetails.loopType || 'single');
       }
-    } else if (initialExerciseId) {
-      setExerciseId(initialExerciseId);
+    } else {
+      // If we are no longer editing, reset to defaults or initialExerciseId
+      resetForm();
     }
   }, [initialData, initialExerciseId]);
 
@@ -193,8 +219,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       timestamp: Date.now(),
     });
 
-    setSets([{ reps: 10 }]);
-    setNotes('');
+    resetForm();
   };
 
   return (
