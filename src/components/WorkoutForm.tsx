@@ -182,6 +182,8 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
   const prevEquipmentRef = React.useRef(equipment);
   const prevStyleRef = React.useRef(executionStyle);
   const prevPositionRef = React.useRef(position);
+  const prevGripRef = React.useRef(grip);
+  const prevGripWidthRef = React.useRef(gripWidth);
 
   // Smart conflict resolution (Proactive de-selection)
   React.useEffect(() => {
@@ -189,9 +191,32 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       const styleChanged = prevStyleRef.current !== executionStyle;
       const equipChanged = prevEquipmentRef.current !== equipment;
       const posChanged = prevPositionRef.current !== position;
+      const gripChanged = prevGripRef.current !== grip;
+      const widthChanged = prevGripWidthRef.current !== gripWidth;
 
       // Logic: A changed value updates the other incompatible one
       
+      // If user selected narrow + neutral grip -> Change style to Commando
+      if ((gripChanged || widthChanged) && grip === 'neutral' && gripWidth === 'narrow') {
+        if (executionStyle !== 'commando') {
+          setExecutionStyle('commando');
+        }
+      }
+
+      // If executionStyle is Commando but user changes grip/width away -> Revert to basic
+      if (executionStyle === 'commando' && (grip !== 'neutral' || gripWidth !== 'narrow')) {
+        if (gripChanged || widthChanged) {
+          setExecutionStyle('basic');
+        }
+      }
+
+      // If style is Archer/Typewriter but width changes away from Wide -> Revert to basic
+      if ((executionStyle === 'archer' || executionStyle === 'typewriter') && gripWidth !== 'wide') {
+        if (widthChanged) {
+          setExecutionStyle('basic');
+        }
+      }
+
       // If user selected Australian style -> Change high bar to low bar
       if ((styleChanged || posChanged) && (executionStyle === 'australian' || (position && position.toString().includes('australian')))) {
         if (equipment === 'pull-up bar') {
@@ -225,7 +250,9 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     prevEquipmentRef.current = equipment;
     prevStyleRef.current = executionStyle;
     prevPositionRef.current = position;
-  }, [equipment, executionStyle, position, currentExercise]);
+    prevGripRef.current = grip;
+    prevGripWidthRef.current = gripWidth;
+  }, [equipment, executionStyle, position, grip, gripWidth, currentExercise]);
 
   const handleStyleChange = (style: ExecutionStyle) => {
     setExecutionStyle(style);
