@@ -37,6 +37,7 @@ export default function App() {
   const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
   const [preSelectedExerciseId, setPreSelectedExerciseId] = useState<string | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editingSetIndex, setEditingSetIndex] = useState<number | null>(null);
   const [isDark, setIsDark] = useState(true);
   const builderRef = useRef<HTMLDivElement>(null);
 
@@ -105,30 +106,38 @@ export default function App() {
   }, [profile]);
 
   const handleAddExerciseToWorkout = (log: ExerciseLog) => {
-    if (editingIndex !== null && currentWorkout) {
-      const updatedExercises = [...currentWorkout.exercises];
-      updatedExercises[editingIndex] = log;
-      setCurrentWorkout({ ...currentWorkout, exercises: updatedExercises });
-      setEditingIndex(null);
-    } else {
-      if (!currentWorkout) {
-        const newWorkout: Workout = {
+    setCurrentWorkout(prev => {
+      if (!prev) {
+        return {
           id: crypto.randomUUID(),
           exercises: [log],
           timestamp: Date.now(),
         };
-        setCurrentWorkout(newWorkout);
-      } else {
-        setCurrentWorkout({
-          ...currentWorkout,
-          exercises: [...currentWorkout.exercises, log]
-        });
       }
-    }
+
+      // Check by ID first to be absolutely sure we don't duplicate
+      const existingByIdIndex = prev.exercises.findIndex(ex => ex.id === log.id);
+      
+      if (editingIndex !== null || existingByIdIndex !== -1) {
+        const indexToUpdate = editingIndex !== null ? editingIndex : existingByIdIndex;
+        const updatedExercises = [...prev.exercises];
+        updatedExercises[indexToUpdate] = log;
+        return { ...prev, exercises: updatedExercises };
+      } else {
+        return {
+          ...prev,
+          exercises: [...prev.exercises, log]
+        };
+      }
+    });
+
+    setEditingIndex(null);
+    setEditingSetIndex(null);
+    setPreSelectedExerciseId(null);
 
     // Scroll to builder after saving
     setTimeout(() => {
-      builderRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      builderRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 100);
   };
 
@@ -175,15 +184,36 @@ export default function App() {
 
   const handleEditExercise = (index: number) => {
     setActiveTab('log');
-    if (editingIndex === index) {
+    if (editingIndex === index && editingSetIndex === null) {
       setEditingIndex(null);
     } else {
       setEditingIndex(index);
+      setEditingSetIndex(null);
       // Scroll to grip section
       setTimeout(() => {
         document.getElementById('grip-width-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 400);
     }
+  };
+
+  const handleEditSet = (exerciseIndex: number, setIndex: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setActiveTab('log');
+    setEditingIndex(exerciseIndex);
+    setEditingSetIndex(setIndex);
+    
+    // Scroll to the specific set in the form
+    setTimeout(() => {
+      const el = document.getElementById(`set-item-${setIndex}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('animate-pulse-cyan');
+        setTimeout(() => el.classList.remove('animate-pulse-cyan'), 2000);
+      } else {
+        // Fallback to grip section if set element not found (maybe form not fully rendered)
+        document.getElementById('grip-width-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 500);
   };
 
   const handleUpdateProfile = (newProfile: UserProfile) => {
@@ -242,94 +272,206 @@ export default function App() {
                       key={ex.id}
                       className="relative overflow-visible"
                     >
-                      <button 
+                      <div 
                         onClick={() => handleEditExercise(i)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleEditExercise(i);
+                          }
+                        }}
+                        tabIndex={0}
+                        role="button"
+                        aria-label={`Edit ${ex.type}`}
                         className={cn(
-                          "w-full text-left p-4 rounded-[24px] border transition-all group flex items-center justify-between gap-4 cursor-grab active:cursor-grabbing",
+                          "w-full text-left p-4 rounded-[24px] border transition-all group flex items-center justify-between gap-4 cursor-pointer",
                           editingIndex === i 
                             ? "bg-cyan-500/20 border-cyan-500/40 translate-x-1 shadow-lg shadow-cyan-500/5" 
                             : "bg-black/40 border-white/5 hover:border-white/10"
                         )}
                       >
-                        <div className="flex items-center gap-4 flex-1 overflow-hidden">
-                          <div className={cn(
-                            "w-8 h-8 rounded-xl flex items-center justify-center text-[10px] font-black italic shrink-0",
-                            editingIndex === i ? "bg-cyan-500 text-black" : "bg-white/5 text-slate-400 group-hover:text-white transition-colors"
-                          )}>
-                            {i + 1}
-                          </div>
-                          <div className="flex-1 min-w-0 overflow-hidden">
-                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                              <span className="text-[11px] font-black text-white uppercase tracking-tighter italic truncate">{ex.type}</span>
-                              <span className="text-[11px] font-black text-slate-700">/</span>
-                              <span className="text-[10px] font-black text-cyan-500/80 uppercase tracking-widest bg-cyan-500/5 px-2 py-0.5 rounded-lg border border-cyan-500/10">
-                                {ex.loadType === 'bodyweight' ? 'Bodyweight' : 
-                                 ex.loadType === 'weighted' ? `Weight+ (${ex.assistanceValue}kg)` : 
-                                 `Weight- (${ex.assistanceValue})`}
-                              </span>
-                              {ex.loadType === 'assisted' && ex.assistanceDetails && (
-                                <span className="text-[8px] font-bold text-orange-500/60 uppercase">
-                                  {ex.assistanceDetails.loopType === 'double' ? 'Double' : 'Single'} band • 
-                                  {(ex.assistanceDetails.placement as BandPlacement[] || []).map(p => 
-                                    p === 'one foot' ? 'One Foot' : 
-                                    p === 'both feet' ? 'Both Feet' : 
-                                    p === 'knees' ? 'Knee/s' : 
-                                    p === 'waist' ? 'Waist' : 
-                                    p === 'buttocks' ? 'Buttocks' : 'Chest'
-                                  ).join(', ')}
-                                </span>
-                              )}
+                        <div className="flex flex-col gap-4 flex-1 overflow-hidden">
+                          <div className="flex items-center gap-4">
+                            <div className={cn(
+                              "w-8 h-8 rounded-xl flex items-center justify-center text-[10px] font-black italic shrink-0",
+                              editingIndex === i ? "bg-cyan-500 text-black" : "bg-white/5 text-slate-400 group-hover:text-white transition-colors"
+                            )}>
+                              {i + 1}
                             </div>
-                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2">
-                              {/* Physical Parameters */}
-                              <div className="flex items-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
-                                <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">
-                                  {ex.executionStyle === 'commando' ? 'Commando' : (
-                                    <>
-                                      {ex.executionStyle !== 'one arm' && (ex.gripWidth === 'wide' ? 'Wide ' : ex.gripWidth === 'narrow' ? 'Narrow ' : 'Shoulder-width ')}
-                                      {ex.grip}
-                                    </>
-                                  )}
-                                  {ex.thumb && ` • ${ex.thumb === 'under' ? 'Under' : 'Over'} thumb`}
-                                  {ex.falseGrip && ` • False Grip`}
-                                </span>
-                              </div>
+                            <div className="flex-1 min-w-0">
+                               <div className="flex items-baseline gap-2">
+                                 <span className="text-[12px] font-black text-white/50 uppercase tracking-widest italic py-2">
+                                   Session Fragment Execution
+                                 </span>
+                               </div>
+
+                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                  {ex.sets.map((s, si) => {
+                                    // Categories for set-specific display
+                                    const exName = EXERCISE_LIBRARY.find(e => e.id === ex.exerciseId)?.name || ex.type;
+                                    
+                                    const loadTag = [];
+                                    const lType = ex.loadType;
+                                    const resTotal = s.assistanceDetails?.resistance || ex.assistanceValue;
+                                    if (lType === 'bodyweight') loadTag.push('BODYWEIGHT');
+                                    else if (lType === 'weighted') loadTag.push(`WEIGHT- (${resTotal || 0}KG)`);
+                                    else loadTag.push(`ASSIST- (${resTotal || '?'})`);
+
+                                    const gripLine = [];
+                                    const gWidth = s.gripWidth || ex.gripWidth || 'shoulder-width';
+                                    const gType = s.grip || ex.grip || 'pronated';
+                                    const gThumb = s.thumb || ex.thumb || 'under';
+                                    const gFalse = (s.falseGrip !== undefined ? s.falseGrip : ex.falseGrip) ? 'FALSE GRIP' : null;
+                                    const gEquip = s.equipment || ex.equipment || 'pull-up bar';
+
+                                    gripLine.push(gWidth);
+                                    gripLine.push(gType);
+                                    gripLine.push(`${gThumb} THUMB`);
+                                    if (gFalse) gripLine.push(gFalse);
+                                    gripLine.push(`@ ${gEquip}`);
+  
+                                    const execLine = [];
+                                    const eStyle = s.executionStyle || ex.executionStyle || 'basic';
+                                    const eMethod = s.executionMethod || ex.executionMethod || 'standard';
+                                    const ePos = s.position || ex.position || 'neutral';
+                                    const eLeg = s.legProgression || ex.legProgression || 'full';
+                                    const eHand = s.oneArmHandPosition || ex.oneArmHandPosition;
+                                    const eOneLeg = s.isOneLeg || ex.isOneLeg;
+
+                                    execLine.push(eStyle);
+                                    execLine.push(eMethod);
+                                    execLine.push(ePos);
+                                    execLine.push(eLeg);
+                                    if (eHand) execLine.push(`H:${eHand}`);
+                                    if (eOneLeg) execLine.push(`1L:${s.oneLegPrimaryPosition || ex.oneLegPrimaryPosition || 'full'}`);
+  
+                                    const orangeLine = [];
+                                    // Primary load display in header loadTag, but details here
+                                    const res = s.assistanceDetails?.resistance || ex.assistanceValue;
+                                    if (ex.loadType === 'assisted' && res) {
+                                      orangeLine.push(`${res} BAND`);
+                                      const p = s.assistanceDetails?.placement || (ex.assistanceDetails?.placement as any);
+                                      if (p) orangeLine.push(Array.isArray(p) ? p.join('/') : p);
+                                      if (s.assistanceDetails?.loopType || ex.assistanceDetails?.loopType) {
+                                        orangeLine.push((s.assistanceDetails?.loopType || ex.assistanceDetails?.loopType) === 'double' ? 'WRAP' : 'SINGLE');
+                                      }
+                                    }
+                                    if (s.weight && s.weight > 0) orangeLine.push(`+${s.weight}KG`);
+                                    
+                                    const isHighlighted = editingIndex === i && editingSetIndex === si;
+  
+                                    return (
+                                      <button 
+                                        key={si} 
+                                        onClick={(e) => handleEditSet(i, si, e)}
+                                        className={cn(
+                                          "w-full p-3.5 rounded-2xl border transition-all text-left flex flex-col gap-2 relative group/set overflow-hidden",
+                                          isHighlighted
+                                            ? "bg-cyan-500 border-cyan-400 shadow-xl"
+                                            : "bg-black/40 border-white/5 text-white hover:border-white/10"
+                                        )}
+                                      >
+                                        {/* Set Header: Exercise + Load Tag */}
+                                        <div className="flex items-center gap-2 mb-0.5">
+                                          <span className={cn(
+                                            "text-[10px] font-black italic uppercase tracking-tighter",
+                                            isHighlighted ? "text-black" : "text-white"
+                                          )}>
+                                            {exName}
+                                          </span>
+                                          <span className="text-[9px] font-black text-slate-800/30">/</span>
+                                          <div className={cn(
+                                            "text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md border",
+                                            isHighlighted ? "bg-black/10 border-black/10 text-black/60" : "bg-cyan-500/5 border-cyan-500/10 text-cyan-400"
+                                          )}>
+                                            {loadTag[0]}
+                                          </div>
+                                        </div>
+
+                                        <div className="flex flex-col gap-1.5">
+                                          {/* Orange Line: Assistance */}
+                                          {orangeLine.length > 0 && (
+                                            <div className="flex flex-wrap gap-x-2 gap-y-1">
+                                              {orangeLine.map((p, pidx) => (
+                                                <span key={pidx} className={cn(
+                                                  "text-[7px] font-black uppercase italic",
+                                                  isHighlighted ? "text-black/70" : "text-orange-400"
+                                                )}>
+                                                  {pidx > 0 && "• "}{p}
+                                                </span>
+                                              ))}
+                                            </div>
+                                          )}
+
+                                          {/* Gray Line: Grip */}
+                                          {gripLine.length > 0 && (
+                                            <div className="flex flex-wrap gap-x-2 gap-y-1">
+                                              {gripLine.map((p, pidx) => (
+                                                <span key={pidx} className={cn(
+                                                  "text-[7px] font-bold uppercase",
+                                                  isHighlighted ? "text-black/60" : "text-slate-500"
+                                                )}>
+                                                  {pidx > 0 && "• "}{p}
+                                                </span>
+                                              ))}
+                                            </div>
+                                          )}
+
+                                          {/* Purple Line: Execution */}
+                                          {execLine.length > 0 && (
+                                            <div className="flex flex-wrap gap-x-2 gap-y-1">
+                                              {execLine.map((p, pidx) => (
+                                                <span key={pidx} className={cn(
+                                                  "text-[7px] font-black uppercase italic",
+                                                  isHighlighted ? "text-black" : "text-purple-400"
+                                                )}>
+                                                  {pidx > 0 && "• "}{p}
+                                                </span>
+                                              ))}
+                                            </div>
+                                          )}
+                                        </div>
+
+                                        {/* Bottom Right Reps Badge */}
+                                        <div className={cn(
+                                          "absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/40 border border-white/5 flex items-baseline gap-0.5",
+                                          isHighlighted && "bg-black/20 border-black/10"
+                                        )}>
+                                          <span className={cn(
+                                            "text-[10px] font-black font-mono",
+                                            isHighlighted ? "text-black" : "text-white"
+                                          )}>
+                                            {s.reps || s.time}
+                                          </span>
+                                          <span className={cn(
+                                            "text-[7px] font-black uppercase",
+                                            isHighlighted ? "text-black/60" : "text-slate-500"
+                                          )}>
+                                            {s.reps ? 'r' : 's'}
+                                          </span>
+                                          {s.weight !== undefined && s.weight > 0 && (
+                                            <span className={cn(
+                                              "text-[10px] font-black font-mono ml-1",
+                                              isHighlighted ? "text-black" : "text-orange-400"
+                                            )}>
+                                              +{s.weight}k
+                                            </span>
+                                          )}
+                                        </div>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
                               
-                              {/* Tactical Params */}
-                              <div className="flex items-center gap-1.5 border-l border-white/10 pl-3">
-                                <span className="text-[8px] font-black text-purple-400 uppercase tracking-tighter italic">
-                                  {ex.executionStyle !== 'basic' && ex.executionStyle !== 'commando' && `${ex.executionStyle} • `}
-                                  {ex.oneArmHandPosition && ex.executionStyle === 'one arm' && `(${ex.oneArmHandPosition}) • `}
-                                  {ex.executionMethod}
-                                  {ex.position && ex.position !== 'neutral' && ex.position !== 'standard' && ` • ${ex.position}`}
-                                  {ex.legProgression && ex.legProgression !== 'full' && ` • ${ex.legProgression}`}
-                                  {ex.isOneLeg && ex.legProgression !== 'one leg' && ex.oneLegPrimaryPosition && ` (One Leg: ${ex.oneLegPrimaryPosition})`}
-                                  {ex.legProgression === 'one leg' && ex.oneLegPrimaryPosition && ex.oneLegSecondaryPosition && ` (${ex.oneLegPrimaryPosition}/${ex.oneLegSecondaryPosition})`}
-                                  {ex.equipment && ` @ ${ex.equipment}`}
-                                </span>
+                                {ex.notes && (
+                                  <div className="mt-4 flex items-start gap-2 bg-white/5 p-3 rounded-2xl border border-white/5 opacity-80 group-hover:opacity-100 transition-opacity">
+                                    <MessageSquare size={12} className="text-cyan-500 shrink-0 mt-0.5" />
+                                    <p className="text-[10px] font-medium text-slate-300 italic whitespace-normal leading-relaxed">{ex.notes}</p>
+                                  </div>
+                                )}
                               </div>
 
-                              <div className="flex flex-wrap items-center gap-1 ml-auto">
-                                {ex.sets.map((s, si) => (
-                                  <div key={si} className="flex items-center">
-                                    <span className="text-[10px] font-black text-white font-mono bg-white/5 px-1.5 py-0.5 rounded border border-white/5">
-                                      {s.reps || s.time}{s.reps ? 'r' : 's'}
-                                    </span>
-                                    {si < ex.sets.length - 1 && <span className="text-[10px] text-slate-700 mx-0.5">|</span>}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                            
-                            {ex.notes && (
-                              <div className="mt-2 flex items-start gap-2 bg-white/5 p-2 rounded-xl border border-white/5 opacity-50 group-hover:opacity-100 transition-opacity">
-                                <MessageSquare size={10} className="text-cyan-500 shrink-0 mt-0.5" />
-                                <p className="text-[9px] font-medium text-slate-400 italic line-clamp-1">{ex.notes}</p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3 shrink-0">
+                              <div className="flex items-center gap-3 shrink-0">
                           <div className="w-1 h-8 rounded-full bg-white/5 flex flex-col justify-center gap-1 items-center px-[1px]">
                              <div className="w-[2px] h-[2px] rounded-full bg-slate-600" />
                              <div className="w-[2px] h-[2px] rounded-full bg-slate-600" />
@@ -340,8 +482,10 @@ export default function App() {
                             editingIndex === i ? "text-cyan-500 scale-125" : "text-slate-700 opacity-0 group-hover:opacity-100"
                           )} />
                         </div>
-                      </button>
-                    </Reorder.Item>
+                      </div>
+                    </div>
+                  </div>
+                </Reorder.Item>
                   ))}
                 </Reorder.Group>
               </div>
@@ -362,10 +506,12 @@ export default function App() {
                  onSave={(log) => {
                    handleAddExerciseToWorkout(log);
                    setPreSelectedExerciseId(null);
+                   setEditingSetIndex(null);
                  }} 
                  onDelete={isEditing ? () => handleRemoveExerciseFromWorkout(editingIndex!) : undefined}
                  initialExerciseId={preSelectedExerciseId}
                  initialData={currentEditingData}
+                 highlightedSetIndex={editingSetIndex}
                />
             </div>
           </div>
@@ -392,48 +538,132 @@ export default function App() {
                       {workout.exercises.map((log) => {
                         const exercise = EXERCISE_LIBRARY.find(e => e.id === log.exerciseId);
                         return (
-                          <div key={log.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pb-6 border-b border-white/5 last:border-0 last:pb-0">
-                            <div className="flex-1 space-y-2">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <p className="text-base font-black text-white uppercase tracking-tight italic">{exercise?.name || log.type}</p>
-                                {log.executionStyle && log.executionStyle !== 'basic' && (
-                                  <span className="text-[9px] font-black text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20 uppercase tracking-widest">
-                                    {log.executionStyle}
-                                  </span>
-                                )}
-                                {log.executionMethod && log.executionMethod !== 'standard' && (
-                                  <span className="text-[9px] font-black text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20 uppercase tracking-widest">
-                                    {log.executionMethod}
-                                  </span>
-                                )}
-                                {log.grip && (
-                                  <span className="text-[8px] font-black bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded border border-purple-500/20 uppercase tracking-tighter shadow-sm flex items-center gap-1">
-                                    {log.gripWidth && `${log.gripWidth} `}{log.grip} {log.thumb && `(${log.thumb})`}
-                                    {log.falseGrip && <span className="text-cyan-400 ml-1">• FALSE</span>}
-                                  </span>
-                                )}
+                          <div key={log.id} className="flex flex-col gap-6 pb-12 border-b border-white/5 last:border-0 last:pb-0">
+                            <div>
+                               <span className="text-[12px] font-black text-white/20 uppercase tracking-widest italic mb-4 block">
+                                 Mission Execution Fragment
+                               </span>
+
+                               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                                {log.sets.map((s, si) => {
+                                  // Categories for set-specific display
+                                  const exName = EXERCISE_LIBRARY.find(e => e.id === log.exerciseId)?.name || log.type;
+                                  
+                                  const loadTag = [];
+                                  const lType = log.loadType;
+                                  const resTotal = s.assistanceDetails?.resistance || log.assistanceValue;
+                                  if (lType === 'bodyweight') loadTag.push('BODYWEIGHT');
+                                  else if (lType === 'weighted') loadTag.push(`WEIGHT- (${resTotal || 0}KG)`);
+                                  else loadTag.push(`ASSIST- (${resTotal || '?'})`);
+
+                                  const gripLine = [];
+                                  const gWidth = s.gripWidth || log.gripWidth || 'shoulder-width';
+                                  const gType = s.grip || log.grip || 'pronated';
+                                  const gThumb = s.thumb || log.thumb || 'under';
+                                  const gFalse = (s.falseGrip !== undefined ? s.falseGrip : log.falseGrip) ? 'FALSE GRIP' : null;
+                                  const gEquip = s.equipment || log.equipment || 'pull-up bar';
+  
+                                  gripLine.push(gWidth);
+                                  gripLine.push(gType);
+                                  gripLine.push(`${gThumb} THUMB`);
+                                  if (gFalse) gripLine.push(gFalse);
+                                  gripLine.push(`@ ${gEquip}`);
+  
+                                  const execLine = [];
+                                  const eStyle = s.executionStyle || log.executionStyle || 'basic';
+                                  const eMethod = s.executionMethod || log.executionMethod || 'standard';
+                                  const ePos = s.position || log.position || 'neutral';
+                                  const eLeg = s.legProgression || log.legProgression || 'full';
+                                  const eHand = s.oneArmHandPosition || log.oneArmHandPosition;
+                                  const eOneLeg = s.isOneLeg || log.isOneLeg;
+  
+                                  execLine.push(eStyle);
+                                  execLine.push(eMethod);
+                                  execLine.push(ePos);
+                                  execLine.push(eLeg);
+                                  if (eHand) execLine.push(`H:${eHand}`);
+                                  if (eOneLeg) execLine.push(`1L:${s.oneLegPrimaryPosition || log.oneLegPrimaryPosition || 'full'}`);
+  
+                                  const orangeLine = [];
+                                  const res = s.assistanceDetails?.resistance || log.assistanceValue;
+                                  if (log.loadType === 'assisted' && res) {
+                                    orangeLine.push(`${res} BAND`);
+                                    const p = s.assistanceDetails?.placement || (log.assistanceDetails?.placement as any);
+                                    if (p) orangeLine.push(Array.isArray(p) ? p.join('/') : p);
+                                    if (s.assistanceDetails?.loopType || log.assistanceDetails?.loopType) {
+                                      orangeLine.push((s.assistanceDetails?.loopType || log.assistanceDetails?.loopType) === 'double' ? 'WRAP' : 'SINGLE');
+                                    }
+                                  }
+                                  if (s.weight && s.weight > 0) orangeLine.push(`+${s.weight}KG`);
+                                       return (
+                                    <div 
+                                      key={si} 
+                                      className="p-4 rounded-2xl border bg-black/40 border-white/5 text-white flex flex-col gap-2 relative overflow-hidden shadow-lg"
+                                    >
+                                      {/* Header */}
+                                      <div className="flex items-center gap-2 mb-0.5">
+                                        <span className="text-[10px] font-black italic uppercase tracking-tighter text-white">
+                                          {exName}
+                                        </span>
+                                        <span className="text-[9px] font-black text-slate-800/30">/</span>
+                                        <div className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md border bg-cyan-500/5 border-cyan-500/10 text-cyan-400">
+                                          {loadTag[0]}
+                                        </div>
+                                      </div>
+
+                                      <div className="flex flex-col gap-1.5">
+                                        {/* Orange Line */}
+                                        {orangeLine.length > 0 && (
+                                          <div className="flex flex-wrap gap-x-2 gap-y-1">
+                                            {orangeLine.map((p, pidx) => (
+                                              <span key={pidx} className="text-[7px] font-black uppercase italic text-orange-400">
+                                                {pidx > 0 && "• "}{p}
+                                              </span>
+                                            ))}
+                                          </div>
+                                        )}
+
+                                        {/* Gray Line */}
+                                        {gripLine.length > 0 && (
+                                          <div className="flex flex-wrap gap-x-2 gap-y-1">
+                                            {gripLine.map((p, pidx) => (
+                                              <span key={pidx} className="text-[7px] font-bold uppercase text-slate-500">
+                                                {pidx > 0 && "• "}{p}
+                                              </span>
+                                            ))}
+                                          </div>
+                                        )}
+
+                                        {/* Purple Line */}
+                                        {execLine.length > 0 && (
+                                          <div className="flex flex-wrap gap-x-2 gap-y-1">
+                                            {execLine.map((p, pidx) => (
+                                              <span key={pidx} className="text-[7px] font-black uppercase italic text-purple-400">
+                                                {pidx > 0 && "• "}{p}
+                                              </span>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </div>
+
+                                      {/* Bottom Right Badge */}
+                                      <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/40 border border-white/5 flex items-baseline gap-0.5">
+                                        <span className="text-[10px] font-black font-mono text-white">
+                                          {s.reps || s.time}
+                                        </span>
+                                        <span className="text-[7px] font-black uppercase text-slate-500">
+                                          {s.reps ? 'r' : 's'}
+                                        </span>
+                                        {s.weight !== undefined && s.weight > 0 && (
+                                          <span className="text-[10px] font-black font-mono ml-1 text-orange-400">
+                                            +{s.weight}k
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
                               </div>
-                              <div className="flex flex-wrap items-center gap-4 text-[8px] font-black uppercase tracking-widest text-slate-500">
-                                {log.equipment && <span>• {log.equipment}</span>}
-                                {log.position && <span>• {log.position}</span>}
-                              </div>
-                            </div>
-                            <div className="flex flex-wrap gap-2 justify-end sm:max-w-[40%]">
-                              {log.sets.map((s, i) => (
-                                <div key={i} className="flex flex-col items-center px-4 py-2 bg-black/40 rounded-2xl border border-white/5 min-w-[60px] shadow-inner group-hover:border-cyan-500/10 transition-colors">
-                                  <div className="flex items-baseline gap-0.5">
-                                    <span className="text-lg font-black text-cyan-400 font-mono leading-none">
-                                      {s.reps || s.time}
-                                    </span>
-                                    <span className="text-[8px] font-black text-cyan-800 uppercase">
-                                      {s.reps ? 'R' : 'S'}
-                                    </span>
-                                  </div>
-                                  {s.weight && (
-                                    <span className="text-[9px] text-purple-400 font-black mt-1 leading-none">+{s.weight}KG</span>
-                                  )}
-                                </div>
-                              ))}
                             </div>
                           </div>
                         );

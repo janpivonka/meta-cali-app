@@ -31,7 +31,8 @@ import {
   BodyPosition,
   LoadType,
   LegProgression,
-  SingleLegPosition
+  SingleLegPosition,
+  AssistanceDetails
 } from '../types';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -42,6 +43,7 @@ interface WorkoutFormProps {
   onDelete?: () => void;
   initialExerciseId?: string | null;
   initialData?: ExerciseLog | null;
+  highlightedSetIndex?: number | null;
 }
 
 const GRIPS: GripType[] = ['pronated', 'supinated', 'neutral', 'mixed'];
@@ -71,7 +73,7 @@ const ONE_ARM_POSITIONS: { val: OneArmHandPosition; label: string }[] = [
   { val: 'free', label: 'Free along body' }
 ];
 
-export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, initialExerciseId, initialData }) => {
+export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, initialExerciseId, initialData, highlightedSetIndex }) => {
   const [exerciseId, setExerciseId] = useState<string>(initialData?.exerciseId || initialExerciseId || EXERCISE_LIBRARY[0].id);
 
   const [grip, setGrip] = useState<GripType>('pronated');
@@ -91,10 +93,86 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
   const [bandPlacements, setBandPlacements] = useState<BandPlacement[]>(['both feet']);
   const [bandLoopType, setBandLoopType] = useState<BandLoopType>('single');
   const [falseGrip, setFalseGrip] = useState(false);
-  const [sets, setSets] = useState<WorkoutSet[]>([{ reps: 10 }]);
+  const [sets, setSets] = useState<WorkoutSet[]>([
+    { 
+      id: crypto.randomUUID(), 
+      reps: 10, 
+      grip: 'pronated', 
+      gripWidth: 'shoulder-width', 
+      thumb: 'under', 
+      falseGrip: false, 
+      equipment: 'pull-up bar', 
+      executionStyle: 'basic', 
+      executionMethod: 'standard', 
+      position: 'neutral', 
+      legProgression: 'full' 
+    }
+  ]);
   const [notes, setNotes] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [shared, setShared] = useState(false);
+  const [localEditingSetIndex, setLocalEditingSetIndex] = useState<number | null>(0);
+
+  const activeSet = localEditingSetIndex !== null ? sets[localEditingSetIndex] : null;
+
+  // Sync local editing index with parent highlight
+  React.useEffect(() => {
+    if (highlightedSetIndex !== undefined && highlightedSetIndex !== null) {
+      setLocalEditingSetIndex(highlightedSetIndex);
+    }
+  }, [highlightedSetIndex]);
+
+  // Sync global form-state with the currently active set
+  React.useEffect(() => {
+    if (localEditingSetIndex === null) return;
+    const active = sets[localEditingSetIndex];
+    if (active) {
+      if (active.grip) setGrip(active.grip);
+      if (active.gripWidth) setGripWidth(active.gripWidth);
+      if (active.thumb) setThumb(active.thumb);
+      if (active.falseGrip !== undefined) setFalseGrip(active.falseGrip);
+      if (active.equipment) setEquipment(active.equipment);
+      if (active.executionStyle) setExecutionStyle(active.executionStyle);
+      if (active.executionMethod) setExecutionMethod(active.executionMethod);
+      if (active.position) setPosition(active.position);
+      if (active.legProgression) setLegProgression(active.legProgression);
+      if (active.oneArmHandPosition) setOneArmHandPosition(active.oneArmHandPosition);
+      if (active.oneLegPrimaryPosition) setOneLegPrimaryPosition(active.oneLegPrimaryPosition);
+      if (active.oneLegSecondaryPosition) setOneLegSecondaryPosition(active.oneLegSecondaryPosition);
+      if (active.isOneLeg !== undefined) setIsOneLeg(active.isOneLeg);
+      
+      if (active.assistanceDetails) {
+        setBandPlacements(active.assistanceDetails.placement as BandPlacement[] || ['both feet']);
+        setBandLoopType(active.assistanceDetails.loopType || 'single');
+        setAssistanceValue(active.assistanceDetails.resistance?.toString() || '');
+      }
+    }
+  }, [localEditingSetIndex, sets]);
+
+  const updateActiveValue = (setField: keyof WorkoutSet, globalSetter: (val: any) => void, val: any) => {
+    if (localEditingSetIndex !== null) {
+      updateSet(localEditingSetIndex, setField, val);
+    }
+    globalSetter(val);
+  };
+
+  const setLoadTypeAndClean = (newType: LoadType) => {
+    setLoadType(newType);
+    
+    // Update all sets to have the correct weight/assistance cleared if needed
+    setSets(prev => prev.map(s => {
+      const updated = { ...s };
+      if (newType === 'bodyweight') {
+        updated.weight = 0;
+        updated.assistanceDetails = undefined;
+      } else if (newType === 'weighted') {
+        updated.assistanceDetails = undefined;
+      } else if (newType === 'assisted') {
+        updated.weight = 0;
+      }
+      return updated;
+    }));
+  };
 
   const resetForm = () => {
     setGrip('pronated');
@@ -118,6 +196,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     setNotes('');
     setSearchQuery('');
     setShared(false);
+    setLocalEditingSetIndex(null);
     if (!initialExerciseId) {
       setExerciseId(EXERCISE_LIBRARY[0].id);
     } else {
@@ -169,8 +248,21 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     return ['planche', 'frontlever', 'statics'].some(k => id.toLowerCase().includes(k));
   };
 
-  const addSet = () => setSets([...sets, { ...sets[sets.length - 1] }]);
-  const removeSet = (index: number) => setSets(sets.filter((_, i) => i !== index));
+  const addSet = () => {
+    const lastSet = sets[sets.length - 1];
+    const newSet = { 
+      ...lastSet, 
+      id: crypto.randomUUID(),
+      // Optional: reset reps for new set if preferred, or keep them
+    };
+    setSets([...sets, newSet]);
+    setLocalEditingSetIndex(sets.length);
+  };
+  const removeSet = (index: number) => {
+    setSets(sets.filter((_, i) => i !== index));
+    if (localEditingSetIndex === index) setLocalEditingSetIndex(null);
+    else if (localEditingSetIndex !== null && localEditingSetIndex > index) setLocalEditingSetIndex(localEditingSetIndex - 1);
+  };
 
   const updateSet = (index: number, field: keyof WorkoutSet, value: any) => {
     const newSets = [...sets];
@@ -179,42 +271,48 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
   };
 
   const toggleBandPlacement = (p: BandPlacement) => {
-    setBandPlacements(prev => {
-      const isFoot = (item: BandPlacement) => item === 'both feet' || item === 'one foot';
-      const isSupport = (item: BandPlacement) => item === 'waist' || item === 'buttocks' || item === 'knees' || item === 'chest';
-      
-      const pIsFoot = isFoot(p);
-      const pIsSupport = isSupport(p);
+    const isFoot = (item: BandPlacement) => item === 'both feet' || item === 'one foot';
+    const isSupport = (item: BandPlacement) => item === 'waist' || item === 'buttocks' || item === 'knees' || item === 'chest';
+    
+    const pIsFoot = isFoot(p);
+    const pIsSupport = isSupport(p);
+    
+    const currentActivePlacements = bandPlacements;
+    let next: BandPlacement[];
 
-      if (prev.includes(p)) {
-        // When mixed groups are active, clicking an active item deselects the other group
-        const hasFoot = prev.some(isFoot);
-        const hasSupport = prev.some(isSupport);
+    if (currentActivePlacements.includes(p)) {
+      // When mixed groups are active, clicking an active item deselects the other group
+      const hasFoot = currentActivePlacements.some(isFoot);
+      const hasSupport = currentActivePlacements.some(isSupport);
 
-        if (hasFoot && hasSupport) {
-          return [p];
-        }
-        
+      if (hasFoot && hasSupport) {
+        next = [p];
+      } else {
         // Normal toggle off
-        const next = prev.filter(item => item !== p);
-        return next.length === 0 ? ['both feet'] : next;
+        const filtered = currentActivePlacements.filter(item => item !== p);
+        next = filtered.length === 0 ? ['both feet'] : filtered;
       }
-
+    } else {
       // Adding p
       if (pIsFoot) {
         // Keep support, replace other foot elements
-        const support = prev.filter(isSupport);
-        return [...support, p];
-      }
-      
-      if (pIsSupport) {
+        const support = currentActivePlacements.filter(isSupport);
+        next = [...support, p];
+      } else if (pIsSupport) {
         // Keep foot, replace other support elements
-        const foot = prev.filter(isFoot);
-        return [...foot, p];
+        const foot = currentActivePlacements.filter(isFoot);
+        next = [...foot, p];
+      } else {
+        next = [p];
       }
+    }
 
-      return [p];
-    });
+    if (localEditingSetIndex !== null) {
+      const currentDetails = activeSet?.assistanceDetails || {};
+      updateSet(localEditingSetIndex, 'assistanceDetails', { ...currentDetails, placement: next });
+    } else {
+      setBandPlacements(next);
+    }
   };
 
   const availableEquipment = EQUIPMENTS.filter(eq => {
@@ -300,42 +398,126 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
   }, [equipment, executionStyle, position, legProgression, grip, gripWidth, currentExercise]);
 
   const handleStyleChange = (style: ExecutionStyle) => {
-    setExecutionStyle(style);
-    if (style === 'archer' || style === 'typewriter') {
-      setGripWidth('wide');
-    } else if (style === 'commando') {
-      setGripWidth('narrow');
-      setGrip('neutral');
+    if (localEditingSetIndex !== null) {
+      const newGrip = style === 'commando' ? 'neutral' : (activeSet?.grip || grip);
+      const newWidth = (style === 'archer' || style === 'typewriter') ? 'wide' : (style === 'commando' ? 'narrow' : (activeSet?.gripWidth || gripWidth));
+      
+      const newSetValues = {
+        ...activeSet,
+        executionStyle: style,
+        grip: newGrip,
+        gripWidth: newWidth
+      };
+      setSets(prev => {
+        const next = [...prev];
+        next[localEditingSetIndex] = newSetValues;
+        return next;
+      });
+    } else {
+      setExecutionStyle(style);
+      if (style === 'archer' || style === 'typewriter') {
+        setGripWidth('wide');
+      } else if (style === 'commando') {
+        setGripWidth('narrow');
+        setGrip('neutral');
+      }
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const updateActiveAssistance = (field: string, val: any) => {
+    if (field === 'resistance') setAssistanceValue(val.toString());
+    if (field === 'loopType') setBandLoopType(val);
+    if (field === 'placement') setBandPlacements(val);
+
+    if (localEditingSetIndex !== null) {
+      const currentDetails = sets[localEditingSetIndex]?.assistanceDetails || { resistance: '', loopType: 'single', placements: [] };
+      const updatedDetails = { ...currentDetails, [field]: val };
+      
+      // If we are in weighted mode, we actually update 'weight' instead of assistanceDetails.resistance
+      if (loadType === 'weighted' && field === 'resistance') {
+        updateSet(localEditingSetIndex, 'weight', parseInt(val) || 0);
+      } else if (loadType === 'assisted') {
+        updateSet(localEditingSetIndex, 'assistanceDetails', updatedDetails);
+      }
+    }
+  };
+
+    const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const validSets = sets.filter(s => (s.reps && s.reps > 0) || (s.time && s.time > 0));
     if (validSets.length === 0) return;
+
+    // Helper to find consensus among sets
+    const getConsensus = (field: keyof WorkoutSet) => {
+      if (validSets.length === 0) return undefined;
+      const first = JSON.stringify(validSets[0][field]);
+      for (let i = 1; i < validSets.length; i++) {
+        if (JSON.stringify(validSets[i][field]) !== first) return undefined;
+      }
+      return validSets[0][field];
+    };
+
+    const getConsensusAssistanceField = (field: keyof AssistanceDetails) => {
+      if (validSets.length === 0) return undefined;
+      const firstVal = validSets[0].assistanceDetails?.[field];
+      const first = JSON.stringify(firstVal);
+      for (let i = 1; i < validSets.length; i++) {
+        const currentVal = validSets[i].assistanceDetails?.[field];
+        if (JSON.stringify(currentVal) !== first) return undefined;
+      }
+      return firstVal;
+    };
+
+    const consensusLoadType = (() => {
+      const types = validSets.map(s => {
+        if (s.assistanceDetails?.resistance) return 'assisted';
+        if (s.weight && s.weight > 0) return 'weighted';
+        return 'bodyweight';
+      });
+      const first = types[0];
+      return types.every(t => t === first) ? (first as LoadType) : 'bodyweight';
+    })();
+
+    const consensusGrip = getConsensus('grip') as GripType | undefined;
+    const consensusGripWidth = getConsensus('gripWidth') as GripWidth | undefined;
+    const consensusThumb = getConsensus('thumb') as ThumbPosition | undefined;
+    const consensusFalseGrip = getConsensus('falseGrip') as boolean | undefined;
+    const consensusEquipment = getConsensus('equipment') as EquipmentType | undefined;
+    const consensusExecStyle = getConsensus('executionStyle') as ExecutionStyle | undefined;
+    const consensusExecMethod = getConsensus('executionMethod') as ExecutionMethod | undefined;
+    const consensusOneArmPos = getConsensus('oneArmHandPosition') as OneArmHandPosition | undefined;
+    const consensusIsOneLeg = getConsensus('isOneLeg') as boolean | undefined;
+    const consensusPrimaryLegPos = getConsensus('oneLegPrimaryPosition') as SingleLegPosition | undefined;
+    const consensusSecondaryLegPos = getConsensus('oneLegSecondaryPosition') as SingleLegPosition | undefined;
+    const consensusPosition = getConsensus('position') as BodyPosition | undefined;
+    const consensusLegProg = getConsensus('legProgression') as LegProgression | undefined;
+    const consensusAssistanceValue = getConsensusAssistanceField('resistance') as string | undefined;
+    const consensusLoopType = getConsensusAssistanceField('loopType') as BandLoopType | undefined;
+    const consensusPlacements = getConsensusAssistanceField('placements') as BandPlacement[] | undefined;
 
     onSave({
       id: initialData?.id || crypto.randomUUID(),
       exerciseId,
       type: currentExercise?.name || 'Unknown',
-      grip,
-      gripWidth,
-      thumb,
-      falseGrip,
-      equipment,
-      executionStyle,
-      executionMethod,
-      oneArmHandPosition: executionStyle === 'one arm' ? oneArmHandPosition : undefined,
-      oneLegPrimaryPosition: (legProgression === 'one leg' || isOneLeg) ? oneLegPrimaryPosition : undefined,
-      oneLegSecondaryPosition: (legProgression === 'one leg' && !isOneLeg) ? oneLegSecondaryPosition : undefined,
-      isOneLeg: isOneLeg || legProgression === 'one leg',
-      position,
-      legProgression,
-      loadType,
-      assistanceValue: loadType !== 'bodyweight' ? assistanceValue : undefined,
-      assistanceDetails: loadType === 'assisted' ? {
-        placement: bandPlacements,
-        loopType: bandLoopType,
+      grip: consensusGrip ?? grip,
+      gripWidth: consensusGripWidth ?? gripWidth,
+      thumb: consensusThumb ?? thumb,
+      falseGrip: consensusFalseGrip ?? falseGrip,
+      equipment: consensusEquipment ?? equipment,
+      executionStyle: consensusExecStyle ?? executionStyle,
+      executionMethod: consensusExecMethod ?? executionMethod,
+      oneArmHandPosition: consensusOneArmPos ?? oneArmHandPosition,
+      oneLegPrimaryPosition: consensusPrimaryLegPos ?? oneLegPrimaryPosition,
+      oneLegSecondaryPosition: consensusSecondaryLegPos ?? oneLegSecondaryPosition,
+      isOneLeg: consensusIsOneLeg || (legProgression === 'one leg') || isOneLeg,
+      position: consensusPosition ?? position,
+      legProgression: consensusLegProg ?? legProgression,
+      loadType: loadType, // Use the state directly to follow user intent
+      assistanceValue: assistanceValue, // Keep as string/number based on user input
+      assistanceDetails: (loadType === 'assisted') ? {
+         resistance: assistanceValue || '',
+         loopType: bandLoopType || 'single',
+         placement: bandPlacements || []
       } : undefined,
       sets: validSets,
       notes,
@@ -412,7 +594,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                         <button
                           key={w}
                           type="button"
-                          onClick={() => setGripWidth(w)}
+                          onClick={() => updateActiveValue('gripWidth', setGripWidth, w)}
                           className={cn(
                             "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all",
                             gripWidth === w ? "bg-white text-black border-white shadow-lg" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
@@ -431,7 +613,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                         <button
                           key={g}
                           type="button"
-                          onClick={() => setGrip(g)}
+                          onClick={() => updateActiveValue('grip', setGrip, g)}
                           className={cn(
                             "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all",
                             grip === g ? "bg-white text-black border-white shadow-lg" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
@@ -451,7 +633,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                            <button
                              key={t.val}
                              type="button"
-                             onClick={() => setThumb(t.val)}
+                             onClick={() => updateActiveValue('thumb', setThumb, t.val)}
                              className={cn(
                                "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex-1 text-center",
                                thumb === t.val ? "bg-white text-black border-white shadow-lg" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
@@ -467,7 +649,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                       <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-400 block mb-3">False Grip</label>
                       <button
                         type="button"
-                        onClick={() => setFalseGrip(!falseGrip)}
+                        onClick={() => updateActiveValue('falseGrip', setFalseGrip, !falseGrip)}
                         className={cn(
                           "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all w-full text-center h-[38px] flex items-center justify-center",
                           falseGrip ? "bg-cyan-500 text-black border-cyan-400 shadow-lg shadow-cyan-500/20" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
@@ -485,7 +667,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                         <button
                           key={eq}
                           type="button"
-                          onClick={() => setEquipment(eq)}
+                          onClick={() => updateActiveValue('equipment', setEquipment, eq)}
                           className={cn(
                             "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all",
                             equipment === eq ? "bg-white text-black border-white shadow-lg" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
@@ -538,7 +720,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                            <button
                              key={pos.val}
                              type="button"
-                             onClick={() => setOneArmHandPosition(pos.val)}
+                             onClick={() => updateActiveValue('oneArmHandPosition', setOneArmHandPosition, pos.val)}
                              className={cn(
                                "px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest border transition-all flex-1 text-center min-w-[80px]",
                                oneArmHandPosition === pos.val ? "bg-cyan-500 text-black border-cyan-400" : "bg-black/40 text-slate-500 border-white/5"
@@ -558,7 +740,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                          <button
                            key={method}
                            type="button"
-                           onClick={() => setExecutionMethod(method)}
+                           onClick={() => updateActiveValue('executionMethod', setExecutionMethod, method)}
                            className={cn(
                              "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all",
                              executionMethod === method ? "bg-white/20 text-white border-white/20 shadow-lg" : "bg-black/20 text-slate-600 border-white/5 hover:border-white/20"
@@ -581,7 +763,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                         <button
                           key={pos}
                           type="button"
-                          onClick={() => setPosition(pos)}
+                          onClick={() => updateActiveValue('position', setPosition, pos)}
                           className={cn(
                             "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all",
                             position === pos ? "bg-purple-500 text-white border-purple-400 shadow-lg shadow-purple-500/20" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
@@ -600,7 +782,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                         <button
                           key={prog}
                           type="button"
-                          onClick={() => setLegProgression(prog)}
+                          onClick={() => updateActiveValue('legProgression', setLegProgression, prog)}
                           className={cn(
                             "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all",
                             legProgression === prog ? "bg-purple-500 text-white border-purple-400 shadow-lg shadow-purple-500/20" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
@@ -616,7 +798,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                     <div className="flex items-center gap-3 pt-2">
                        <button
                          type="button"
-                         onClick={() => setIsOneLeg(!isOneLeg)}
+                         onClick={() => updateActiveValue('isOneLeg', setIsOneLeg, !isOneLeg)}
                          className={cn(
                            "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all",
                            isOneLeg ? "bg-cyan-500 text-black border-cyan-400 shadow-lg" : "bg-black/20 text-slate-500 border-white/5"
@@ -643,6 +825,15 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                               key={p}
                               type="button"
                               onClick={() => {
+                                if (localEditingSetIndex !== null) {
+                                  const newPrimary = p;
+                                  let newSecondary = activeSet?.oneLegSecondaryPosition || oneLegSecondaryPosition;
+                                  if (p === newSecondary && legProgression === 'one leg') {
+                                     newSecondary = SINGLE_LEG_POSITIONS.find(lp => lp !== p) || 'tuck';
+                                  }
+                                  updateSet(localEditingSetIndex, 'oneLegPrimaryPosition', newPrimary);
+                                  updateSet(localEditingSetIndex, 'oneLegSecondaryPosition', newSecondary);
+                                }
                                 setOneLegPrimaryPosition(p);
                                 if (p === oneLegSecondaryPosition && legProgression === 'one leg') {
                                   const fallback = SINGLE_LEG_POSITIONS.find(lp => lp !== p) || 'tuck';
@@ -668,7 +859,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                               <button
                                 key={p}
                                 type="button"
-                                onClick={() => setOneLegSecondaryPosition(p)}
+                                onClick={() => updateActiveValue('oneLegSecondaryPosition', setOneLegSecondaryPosition, p)}
                                 className={cn(
                                   "px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest border transition-all flex-1 text-center min-w-[80px]",
                                   oneLegSecondaryPosition === p ? "bg-cyan-500 text-black border-cyan-400" : "bg-black/40 text-slate-500 border-white/5"
@@ -697,7 +888,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                      <button
                         key={lt}
                         type="button"
-                        onClick={() => setLoadType(lt)}
+                        onClick={() => setLoadTypeAndClean(lt)}
                         className={cn(
                           "flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all",
                           loadType === lt ? "bg-orange-500 text-black border-orange-400 shadow-lg" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
@@ -724,7 +915,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                         type="text"
                         placeholder={loadType === 'weighted' ? "e.g. 10..." : "e.g. Red band..."}
                         value={assistanceValue}
-                        onChange={(e) => setAssistanceValue(e.target.value)}
+                        onChange={(e) => updateActiveAssistance('resistance', e.target.value)}
                         className="w-full bg-black/40 border border-orange-500/20 rounded-2xl p-4 text-sm font-bold text-white focus:outline-none focus:border-orange-500 italic"
                       />
                     </div>
@@ -732,7 +923,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                       <div className="bg-black/20 p-2 rounded-2xl border border-white/5 h-[54px] flex items-center">
                         <button
                           type="button"
-                          onClick={() => setBandLoopType(bandLoopType === 'single' ? 'double' : 'single')}
+                          onClick={() => updateActiveAssistance('loopType', bandLoopType === 'single' ? 'double' : 'single')}
                           className={cn(
                             "px-4 py-2 rounded-xl text-[7px] font-black uppercase tracking-widest transition-all",
                             bandLoopType === 'double' ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" : "bg-white/10 text-slate-400"
@@ -787,43 +978,100 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     key={index}
-                    className="glass-card flex flex-col md:flex-row items-center gap-6 p-8 border-white/5 bg-white/5 rounded-[40px] group hover:border-cyan-500/30 transition-all shadow-xl"
+                    id={`set-item-${index}`}
+                    className={cn(
+                      "glass-card flex flex-col md:flex-row items-center gap-6 p-8 border-white/5 bg-white/5 rounded-[40px] group transition-all shadow-xl",
+                      (highlightedSetIndex === index || localEditingSetIndex === index) ? "border-cyan-500/50 bg-cyan-500/5 ring-1 ring-cyan-500/20" : "hover:border-white/10"
+                    )}
+                    onClick={() => setLocalEditingSetIndex(index)}
                   >
-                    <div className="flex items-center gap-4 min-w-[120px]">
-                       <div className="w-12 h-12 rounded-[18px] bg-black/40 flex items-center justify-center border border-white/10 group-hover:border-cyan-500/40 transition-colors">
-                          <span className="text-xl font-black text-white italic">{index + 1}</span>
+                    <div className="flex flex-col items-center gap-2 min-w-[120px]">
+                       <div className={cn(
+                         "w-12 h-12 rounded-[18px] bg-black/40 flex items-center justify-center border transition-all",
+                         (highlightedSetIndex === index || localEditingSetIndex === index) ? "border-cyan-400 text-cyan-400 scale-110 shadow-[0_0_15px_rgba(34,211,238,0.2)]" : "border-white/10 text-white italic"
+                       )}>
+                          <span className="text-xl font-black">{index + 1}</span>
                        </div>
-                       <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Set</span>
+                       <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Sequence</span>
                     </div>
 
-                    <div className="flex-1 flex flex-col items-center gap-2">
-                       <div className="flex items-center gap-6">
-                          <button 
-                            type="button" 
-                            onClick={() => updateSet(index, isHoldExercise(exerciseId) ? 'time' : 'reps', Math.max(0, (isHoldExercise(exerciseId) ? (set.time || 0) : (set.reps || 0)) - 1))}
-                            className="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all active:scale-90"
-                          ><Minus size={18} /></button>
-                          <input 
-                             type="number"
-                             value={isHoldExercise(exerciseId) ? (set.time || 0) : (set.reps || 0)}
-                             onChange={(e) => updateSet(index, isHoldExercise(exerciseId) ? 'time' : 'reps', parseInt(e.target.value) || 0)}
-                             className="bg-transparent text-5xl font-black text-white w-24 text-center focus:outline-none font-mono tracking-tighter"
-                          />
-                          <button 
-                            type="button" 
-                            onClick={() => updateSet(index, isHoldExercise(exerciseId) ? 'time' : 'reps', (isHoldExercise(exerciseId) ? (set.time || 0) : (set.reps || 0)) + 1)}
-                            className="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all active:scale-90"
-                          ><Plus size={18} /></button>
-                       </div>
-                       <span className="text-[10px] font-black uppercase tracking-widest text-slate-600 italic">
-                         {isHoldExercise(exerciseId) ? 'Seconds' : 'Reps'}
-                       </span>
+                    <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
+                      {/* Reps/Time */}
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="flex items-center gap-4">
+                           <button 
+                             type="button" 
+                             onClick={(e) => { e.stopPropagation(); updateSet(index, isHoldExercise(exerciseId) ? 'time' : 'reps', Math.max(0, (isHoldExercise(exerciseId) ? (set.time || 0) : (set.reps || 0)) - 1)); }}
+                             className="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all active:scale-90"
+                           ><Minus size={18} /></button>
+                           <input 
+                              type="number"
+                              value={isHoldExercise(exerciseId) ? (set.time || 0) : (set.reps || 0)}
+                              onChange={(e) => updateSet(index, isHoldExercise(exerciseId) ? 'time' : 'reps', parseInt(e.target.value) || 0)}
+                              onClick={(e) => e.stopPropagation()}
+                              className="bg-transparent text-5xl font-black text-white w-24 text-center focus:outline-none font-mono tracking-tighter"
+                           />
+                           <button 
+                             type="button" 
+                             onClick={(e) => { e.stopPropagation(); updateSet(index, isHoldExercise(exerciseId) ? 'time' : 'reps', (isHoldExercise(exerciseId) ? (set.time || 0) : (set.reps || 0)) + 1); }}
+                             className="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all active:scale-90"
+                           ><Plus size={18} /></button>
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-600 italic">
+                          {isHoldExercise(exerciseId) ? 'Duration (Seconds)' : 'Repetitions'}
+                        </span>
+                      </div>
+
+                      {/* Weight (Visible if set has it, if loadType is weighted, or if editing) */}
+                      {(set.weight !== undefined || loadType === 'weighted' || localEditingSetIndex === index) && (
+                        <motion.div 
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="flex flex-col items-center gap-2"
+                        >
+                          <div className="flex items-center gap-4">
+                             <button 
+                               type="button" 
+                               onClick={(e) => { e.stopPropagation(); updateSet(index, 'weight', Math.max(0, (set.weight || 0) - 1)); }}
+                               className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 text-slate-400 hover:text-purple-400 hover:bg-purple-500/10 transition-all active:scale-90"
+                             ><Minus size={14} /></button>
+                             <div className="flex items-baseline gap-1">
+                               <input 
+                                  type="number"
+                                  value={set.weight || 0}
+                                  onChange={(e) => updateSet(index, 'weight', parseInt(e.target.value) || 0)}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="bg-transparent text-4xl font-black text-purple-400 w-20 text-center focus:outline-none font-mono tracking-tighter"
+                               />
+                               <span className="text-xs font-black text-purple-600">KG</span>
+                             </div>
+                             <button 
+                               type="button" 
+                               onClick={(e) => { e.stopPropagation(); updateSet(index, 'weight', (set.weight || 0) + 1); }}
+                               className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 text-slate-400 hover:text-purple-400 hover:bg-purple-500/10 transition-all active:scale-90"
+                             ><Plus size={14} /></button>
+                          </div>
+                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-600 italic">Extra Load</span>
+                        </motion.div>
+                      )}
                     </div>
 
-                    <div className="flex justify-end min-w-[60px]">
+                    <div className="flex flex-row md:flex-col justify-end gap-3 min-w-[60px]">
+                       {sets.length >= 2 && (
+                         <button 
+                           type="button" 
+                           onClick={(e) => { e.stopPropagation(); setLocalEditingSetIndex(index === localEditingSetIndex ? null : index); }}
+                           className={cn(
+                             "w-10 h-10 rounded-xl transition-all p-2 flex items-center justify-center",
+                             localEditingSetIndex === index ? "bg-cyan-500 text-black shadow-lg" : "bg-white/5 text-slate-500 hover:text-cyan-500 hover:bg-cyan-500/10"
+                           )}
+                         >
+                           <Edit3 size={20} />
+                         </button>
+                       )}
                        <button 
                         type="button" 
-                        onClick={() => removeSet(index)}
+                        onClick={(e) => { e.stopPropagation(); removeSet(index); }}
                         className="w-10 h-10 rounded-xl bg-red-500/5 text-slate-700 hover:text-red-500 hover:bg-red-500/10 transition-all p-2 flex items-center justify-center"
                        ><Minus size={20} /></button>
                     </div>

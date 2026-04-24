@@ -11,10 +11,32 @@ export type OneArmHandPosition = 'wrist' | 'forearm' | 'elbow' | 'biceps' | 'sho
 export type BandPlacement = 'both feet' | 'one foot' | 'buttocks' | 'waist' | 'chest' | 'knees';
 export type BandLoopType = 'single' | 'double';
 
+export interface AssistanceDetails {
+  placements?: BandPlacement[] | string;
+  loopType?: BandLoopType;
+  resistance?: string | number;
+}
+
 export interface WorkoutSet {
+  id: string;
   reps?: number;
   time?: number; // duration in seconds
   weight?: number; // extra weight in kg
+  // Overrides for per-set configuration
+  grip?: GripType;
+  gripWidth?: GripWidth;
+  thumb?: ThumbPosition;
+  falseGrip?: boolean;
+  executionStyle?: ExecutionStyle | string;
+  executionMethod?: ExecutionMethod | string;
+  position?: BodyPosition | string;
+  legProgression?: LegProgression | string;
+  equipment?: EquipmentType;
+  oneArmHandPosition?: OneArmHandPosition | string;
+  oneLegPrimaryPosition?: SingleLegPosition;
+  oneLegSecondaryPosition?: SingleLegPosition;
+  isOneLeg?: boolean;
+  assistanceDetails?: AssistanceDetails;
 }
 
 export type LoadType = 'bodyweight' | 'weighted' | 'assisted';
@@ -44,10 +66,7 @@ export interface ExerciseLog {
   legProgression?: LegProgression | string;
   loadType: LoadType;
   assistanceValue?: string | number; // e.g. "Red", 10 (kg)
-  assistanceDetails?: {
-    placement?: BandPlacement[] | string;
-    loopType?: BandLoopType;
-  };
+  assistanceDetails?: AssistanceDetails;
   sets: WorkoutSet[];
   notes?: string;
   media?: ExerciseMedia[];
