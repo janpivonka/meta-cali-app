@@ -254,7 +254,10 @@ export default function App() {
                                 <span className="text-[8px] font-bold text-orange-500/60 uppercase">
                                   {ex.assistanceDetails.loopType === 'double' ? 'Double' : 'Single'} band • 
                                   {(ex.assistanceDetails.placement as BandPlacement[] || []).map(p => 
-                                    p === 'one leg' ? 'Leg' : p === 'both legs' ? 'Legs' : p === 'waist' ? 'Waist' : p === 'back' ? 'Back' : 'Knees'
+                                    p === 'one foot' ? 'One Foot' : 
+                                    p === 'both feet' ? 'Both Feet' : 
+                                    p === 'waist' ? 'Waist' : 
+                                    p === 'buttocks' ? 'Buttocks' : 'Chest'
                                   ).join(', ')}
                                 </span>
                               )}
@@ -265,7 +268,7 @@ export default function App() {
                                 <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">
                                   {ex.executionStyle !== 'one arm' && (ex.gripWidth === 'wide' ? 'Wide ' : ex.gripWidth === 'narrow' ? 'Narrow ' : 'Shoulder-width ')}
                                   {ex.grip}
-                                  {ex.thumb && ` • ${ex.thumb === 'bottom' ? 'Standard' : 'Suicide'} thumb`}
+                                  {ex.thumb && ` • ${ex.thumb === 'under' ? 'Under' : 'Over'} thumb`}
                                   {ex.falseGrip && ` • False Grip`}
                                 </span>
                               </div>

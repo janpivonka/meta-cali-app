@@ -47,15 +47,15 @@ interface WorkoutFormProps {
 const GRIPS: GripType[] = ['pronated', 'supinated', 'neutral', 'mixed'];
 const GRIP_WIDTHS: GripWidth[] = ['narrow', 'shoulder-width', 'wide'];
 const THUMBS: { val: ThumbPosition; label: string }[] = [
-  { val: 'bottom', label: 'Standard (Thumb below)' },
-  { val: 'top', label: 'Suicide (Thumb above)' }
+  { val: 'under', label: 'Under' },
+  { val: 'over', label: 'Over' }
 ];
 const EQUIPMENTS: EquipmentType[] = ['pull-up bar', 'low bar', 'dip bars', 'rings', 'floor', 'parallelettes', 'stall bars'];
 const EXECUTION_STYLES: ExecutionStyle[] = ['basic', 'one arm', 'archer', 'typewriter', 'commando', 'high', 'korean'];
 const EXECUTION_METHODS: ExecutionMethod[] = ['standard', 'explosive', 'partial', 'negative', 'scapula', 'controlled'];
 const POSITIONS: BodyPosition[] = ['neutral', 'hollow body', 'arch back', 'L-sit'];
 const LEG_PROGRESSIONS: LegProgression[] = ['tuck', 'adv tuck', 'straddle', 'one leg', 'halflay', 'full', 'australian (bent legs)', 'australian (straight legs)'];
-const BAND_PLACEMENTS: BandPlacement[] = ['both legs', 'one leg', 'waist', 'knees', 'back'];
+const BAND_PLACEMENTS: BandPlacement[] = ['both feet', 'one foot', 'buttocks', 'waist', 'chest'];
 const LOOP_TYPES: { val: BandLoopType; label: string }[] = [
   { val: 'single', label: 'Single' },
   { val: 'double', label: 'Double (wrapped)' }
@@ -76,7 +76,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
 
   const [grip, setGrip] = useState<GripType>('pronated');
   const [gripWidth, setGripWidth] = useState<GripWidth>('shoulder-width');
-  const [thumb, setThumb] = useState<ThumbPosition>('bottom');
+  const [thumb, setThumb] = useState<ThumbPosition>('under');
   const [equipment, setEquipment] = useState<EquipmentType>('pull-up bar');
   const [executionStyle, setExecutionStyle] = useState<ExecutionStyle | string>('basic');
   const [executionMethod, setExecutionMethod] = useState<ExecutionMethod | string>('standard');
@@ -88,7 +88,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
   const [legProgression, setLegProgression] = useState<LegProgression | string>('full');
   const [loadType, setLoadType] = useState<LoadType>('bodyweight');
   const [assistanceValue, setAssistanceValue] = useState('');
-  const [bandPlacements, setBandPlacements] = useState<BandPlacement[]>(['both legs']);
+  const [bandPlacements, setBandPlacements] = useState<BandPlacement[]>(['both feet']);
   const [bandLoopType, setBandLoopType] = useState<BandLoopType>('single');
   const [falseGrip, setFalseGrip] = useState(false);
   const [sets, setSets] = useState<WorkoutSet[]>([{ reps: 10 }]);
@@ -99,7 +99,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
   const resetForm = () => {
     setGrip('pronated');
     setGripWidth('shoulder-width');
-    setThumb('bottom');
+    setThumb('under');
     setFalseGrip(false);
     setEquipment('pull-up bar');
     setExecutionStyle('basic');
@@ -112,7 +112,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     setLegProgression('full');
     setLoadType('bodyweight');
     setAssistanceValue('');
-    setBandPlacements(['both legs']);
+    setBandPlacements(['both feet']);
     setBandLoopType('single');
     setSets([{ reps: 10 }]);
     setNotes('');
@@ -131,7 +131,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       setExerciseId(initialData.exerciseId);
       setGrip(initialData.grip || 'pronated');
       setGripWidth(initialData.gripWidth || 'shoulder-width');
-      setThumb(initialData.thumb || 'bottom');
+      setThumb(initialData.thumb || 'under');
       setFalseGrip(initialData.falseGrip || false);
       setEquipment(initialData.equipment || 'pull-up bar');
       setExecutionStyle(initialData.executionStyle || 'basic');
@@ -148,7 +148,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       setLoadType(initialData.loadType || 'bodyweight');
       setAssistanceValue(initialData.assistanceValue?.toString() || '');
       if (initialData.assistanceDetails) {
-        setBandPlacements(initialData.assistanceDetails.placement as BandPlacement[] || ['both legs']);
+        setBandPlacements(initialData.assistanceDetails.placement as BandPlacement[] || ['both feet']);
         setBandLoopType(initialData.assistanceDetails.loopType || 'single');
       }
     } else {
@@ -179,9 +179,37 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
   };
 
   const toggleBandPlacement = (p: BandPlacement) => {
-    setBandPlacements(prev => 
-      prev.includes(p) ? prev.filter(item => item !== p) : [...prev, p]
-    );
+    setBandPlacements(prev => {
+      // Logic: Allowed combinations are (Feet/Foot) + (Waist/Buttocks)
+      // Otherwise only one selection
+      
+      const isFoot = p === 'both feet' || p === 'one foot';
+      const isSupport = p === 'waist' || p === 'buttocks';
+      const isAlone = p === 'chest';
+
+      if (prev.includes(p)) {
+        const next = prev.filter(item => item !== p);
+        return next.length === 0 ? ['both feet'] : next;
+      }
+
+      if (isAlone) return [p];
+
+      // If we are selecting a foot one
+      if (isFoot) {
+        // Can coexist with support, but not with another foot or chest
+        const currentSupport = prev.find(item => item === 'waist' || item === 'buttocks');
+        return currentSupport ? [p, currentSupport as BandPlacement] : [p];
+      }
+
+      // If we are selecting a support one
+      if (isSupport) {
+        // Can coexist with foot, but not with another support or chest
+        const currentFoot = prev.find(item => item === 'both feet' || item === 'one foot');
+        return currentFoot ? [currentFoot as BandPlacement, p] : [p];
+      }
+
+      return [p];
+    });
   };
 
   const availableEquipment = EQUIPMENTS.filter(eq => {
@@ -235,15 +263,22 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
         }
       }
 
-      // If user selected Australian progression -> Change high bar to low bar
+      // If user selected Australian progression -> Change high bar to low bar and default assistance
       if (legProgChanged && (legProgression && legProgression.toString().includes('australian'))) {
         if (equipment === 'pull-up bar') {
           setEquipment('low bar');
         }
+        if (loadType === 'assisted') {
+          setBandPlacements(isOneLeg ? ['one foot'] : ['both feet']);
+        }
       }
 
-      // If user selected Pull-up bar -> Remove Australian progression
-      if (equipChanged && equipment === 'pull-up bar') {
+      // Auto assistance for one leg
+      if (legProgChanged && legProgression === 'one leg' && loadType === 'assisted') {
+        setBandPlacements(['one foot']);
+      }
+
+      if (prevEquipmentRef.current !== equipment && equipment === 'pull-up bar') {
         if (legProgression && legProgression.toString().includes('australian')) {
           setLegProgression('full');
           setIsOneLeg(false);
@@ -417,7 +452,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                                thumb === t.val ? "bg-white text-black border-white shadow-lg" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
                              )}
                            >
-                             {t.label.split(' ')[0]}
+                             {t.label}
                            </button>
                          ))}
                       </div>
@@ -718,7 +753,10 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                                bandPlacements.includes(p) ? "bg-orange-500 text-black border-orange-400" : "bg-black/40 text-slate-500 border-white/5"
                              )}
                            >
-                             {p === 'one leg' ? 'One Leg' : p === 'both legs' ? 'Both Legs' : p === 'waist' ? 'Waist' : p === 'back' ? 'Back' : 'Knees'}
+                             {p === 'one foot' ? 'One Foot' : 
+                              p === 'both feet' ? 'Both Feet' : 
+                              p === 'waist' ? 'Waist (Lumbar)' : 
+                              p === 'buttocks' ? 'Buttocks' : 'Chest'}
                            </button>
                          ))}
                       </div>

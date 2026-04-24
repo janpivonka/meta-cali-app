@@ -1,6 +1,6 @@
 export type GripType = 'pronated' | 'supinated' | 'neutral' | 'mixed';
 export type GripWidth = 'narrow' | 'shoulder-width' | 'wide';
-export type ThumbPosition = 'top' | 'bottom';
+export type ThumbPosition = 'over' | 'under';
 export type EquipmentType = 'pull-up bar' | 'low bar' | 'dip bars' | 'rings' | 'floor' | 'parallelettes' | 'stall bars';
 export type ExecutionStyle = 'basic' | 'one arm' | 'archer' | 'typewriter' | 'commando' | 'high' | 'korean';
 export type ExecutionMethod = 'standard' | 'explosive' | 'partial' | 'negative' | 'scapula' | 'controlled';
@@ -8,7 +8,7 @@ export type BodyPosition = 'neutral' | 'hollow body' | 'arch back' | 'L-sit';
 export type LegProgression = 'none' | 'tuck' | 'adv tuck' | 'straddle' | 'one leg' | 'halflay' | 'full' | 'australian (bent legs)' | 'australian (straight legs)';
 export type SingleLegPosition = 'tuck' | 'adv tuck' | 'halflay' | 'full';
 export type OneArmHandPosition = 'wrist' | 'forearm' | 'elbow' | 'biceps' | 'shoulder' | 'horizontal' | 'free';
-export type BandPlacement = 'both legs' | 'one leg' | 'waist' | 'knees' | 'back';
+export type BandPlacement = 'both feet' | 'one foot' | 'buttocks' | 'waist' | 'chest';
 export type BandLoopType = 'single' | 'double';
 
 export interface WorkoutSet {
