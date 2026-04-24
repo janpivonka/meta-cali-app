@@ -32,13 +32,13 @@ interface ProfileProps {
 }
 
 const mockChartData = [
-  { day: 'Po', value: 74.5 },
-  { day: 'Út', value: 74.8 },
-  { day: 'St', value: 74.2 },
-  { day: 'Čt', value: 74.6 },
-  { day: 'Pá', value: 75.1 },
-  { day: 'So', value: 75.0 },
-  { day: 'Ne', value: 74.9 },
+  { day: 'Mon', value: 74.5 },
+  { day: 'Tue', value: 74.8 },
+  { day: 'Wed', value: 74.2 },
+  { day: 'Thu', value: 74.6 },
+  { day: 'Fri', value: 75.1 },
+  { day: 'Sat', value: 75.0 },
+  { day: 'Sun', value: 74.9 },
 ];
 
 export const Profile: React.FC<ProfileProps> = ({ profile, onSave }) => {
@@ -56,9 +56,9 @@ export const Profile: React.FC<ProfileProps> = ({ profile, onSave }) => {
   };
 
   const tabs = [
-    { id: 'zaklad', label: 'Základ' },
-    { id: 'osobni', label: 'Osobní' },
-    { id: 'verejne', label: 'Veřejné' },
+    { id: 'zaklad', label: 'Core' },
+    { id: 'osobni', label: 'Personal' },
+    { id: 'verejne', label: 'Social' },
   ];
 
   return (
@@ -113,22 +113,22 @@ export const Profile: React.FC<ProfileProps> = ({ profile, onSave }) => {
             onClick={() => setIsEditing(!isEditing)}
             className="text-[10px] font-black text-purple-400 uppercase tracking-widest flex items-center gap-2 mx-auto hover:text-purple-300 transition-colors"
           >
-            <Edit3 size={12} /> Upravit Profil
+            <Edit3 size={12} /> Edit Profile
           </button>
         </div>
 
         <div className="flex justify-center gap-12 sm:gap-16 w-full py-4 border-y border-white/5">
           <div className="text-center">
             <p className="text-lg font-black text-white leading-none">{formData.posts}</p>
-            <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mt-1">Příspěvky</p>
+            <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mt-1">Posts</p>
           </div>
           <div className="text-center">
             <p className="text-lg font-black text-white leading-none">{formData.followers}</p>
-            <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mt-1">Sledující</p>
+            <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mt-1">Followers</p>
           </div>
           <div className="text-center">
             <p className="text-lg font-black text-white leading-none">{formData.following}</p>
-            <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mt-1">Sleduji</p>
+            <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mt-1">Following</p>
           </div>
         </div>
       </div>
@@ -156,9 +156,9 @@ export const Profile: React.FC<ProfileProps> = ({ profile, onSave }) => {
         <div className="flex items-center justify-between px-4">
           <div className="flex items-center gap-2">
             <Target size={14} className="text-cyan-500" />
-            <span className="text-[10px] font-black text-cyan-500 uppercase tracking-[0.3em]">Operační Cíle</span>
+            <span className="text-[10px] font-black text-cyan-500 uppercase tracking-[0.3em]">Operational Goals</span>
           </div>
-          <button className="text-[8px] font-black text-slate-500 uppercase tracking-widest hover:text-cyan-400 transtion-colors">Spravovat</button>
+          <button className="text-[8px] font-black text-slate-500 uppercase tracking-widest hover:text-cyan-400 transtion-colors">Manage</button>
         </div>
         <div className="space-y-3 px-4">
           {(Array.isArray(formData.goals) ? formData.goals : []).map((goal, idx) => (
@@ -170,7 +170,7 @@ export const Profile: React.FC<ProfileProps> = ({ profile, onSave }) => {
                     </div>
                     <div>
                        <h4 className="text-[11px] font-black text-white uppercase tracking-widest">{goal.exercise}</h4>
-                       <p className="text-[9px] font-bold text-slate-500 uppercase">Cíl: {goal.targetValue} {goal.metric}</p>
+                       <p className="text-[9px] font-bold text-slate-500 uppercase">Target: {goal.targetValue} {goal.metric}</p>
                     </div>
                  </div>
                  <span className="text-xs font-black text-cyan-500 italic">{goal.progress}%</span>
@@ -185,7 +185,7 @@ export const Profile: React.FC<ProfileProps> = ({ profile, onSave }) => {
             </div>
           ))}
           <button className="w-full py-4 border-2 border-dashed border-white/5 rounded-2xl text-slate-700 hover:text-cyan-500 hover:border-cyan-500/20 transition-all text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2">
-             <Plus size={14} /> Přidat Nový Cíl
+             <Plus size={14} /> Add New Goal
           </button>
         </div>
       </div>
@@ -195,7 +195,7 @@ export const Profile: React.FC<ProfileProps> = ({ profile, onSave }) => {
         <div className="flex items-center justify-between px-4">
           <div className="flex items-center gap-2">
             <Heart size={14} className="text-pink-500" />
-            <span className="text-[10px] font-black text-[#94a3b8] uppercase tracking-[0.3em]">Oblíbené Moduly</span>
+            <span className="text-[10px] font-black text-[#94a3b8] uppercase tracking-[0.3em]">Favorite Modules</span>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3 px-4">
@@ -213,7 +213,7 @@ export const Profile: React.FC<ProfileProps> = ({ profile, onSave }) => {
             })
           ) : (
              <div className="col-span-2 py-8 text-center glass-card border-dashed border-white/5 opacity-30">
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Žádné oblíbené cviky</p>
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">No favorite exercises</p>
              </div>
           )}
         </div>
@@ -224,7 +224,7 @@ export const Profile: React.FC<ProfileProps> = ({ profile, onSave }) => {
         <div className="flex items-center justify-between px-4">
           <div className="flex items-center gap-2">
             <Trophy size={14} className="text-yellow-500" />
-            <span className="text-[10px] font-black text-[#94a3b8] uppercase tracking-[0.3em]">Trofeje</span>
+            <span className="text-[10px] font-black text-[#94a3b8] uppercase tracking-[0.3em]">Trophies</span>
           </div>
           <ChevronRight size={14} className="text-slate-600" />
         </div>
@@ -245,13 +245,13 @@ export const Profile: React.FC<ProfileProps> = ({ profile, onSave }) => {
         <div className="flex items-center justify-between px-4">
           <div className="flex items-center gap-2">
             <TrendingUp size={14} className="text-purple-500" />
-            <span className="text-[10px] font-black text-[#94a3b8] uppercase tracking-[0.3em]">Hlídané Hodnoty</span>
+            <span className="text-[10px] font-black text-[#94a3b8] uppercase tracking-[0.3em]">Tracked Metrics</span>
           </div>
           <ChevronRight size={14} className="text-slate-600" />
         </div>
         <div className="overflow-x-auto no-scrollbar flex gap-4 px-4 pb-2">
           {[
-            { label: 'Hmotnost', color: '#8b5cf6' },
+            { label: 'Weight', color: '#8b5cf6' },
             { label: 'Body Fat', color: '#ec4899' },
             { label: 'Muscle Mass', color: '#10b981' }
           ].map((item, idx) => (
@@ -288,7 +288,7 @@ export const Profile: React.FC<ProfileProps> = ({ profile, onSave }) => {
         <div className="flex items-center justify-between px-4">
           <div className="flex items-center gap-2">
             <Activity size={14} className="text-emerald-500" />
-            <span className="text-[10px] font-black text-[#94a3b8] uppercase tracking-[0.3em]">Aktivita</span>
+            <span className="text-[10px] font-black text-[#94a3b8] uppercase tracking-[0.3em]">Activity</span>
           </div>
         </div>
         <div className="px-4 space-y-3">
@@ -322,7 +322,7 @@ export const Profile: React.FC<ProfileProps> = ({ profile, onSave }) => {
               onClick={handleSubmit}
               className="w-full py-4 bg-white text-black font-black uppercase tracking-[0.3em] text-[10px] rounded-2xl shadow-2xl flex items-center justify-center gap-3 active:scale-95 transition-all"
             >
-              <Save size={16} /> Potvrdit Změny
+              <Save size={16} /> Confirm Changes
             </button>
           </motion.div>
         )}
@@ -337,7 +337,7 @@ export const Profile: React.FC<ProfileProps> = ({ profile, onSave }) => {
             exit={{ opacity: 0, y: -20 }}
             className="fixed top-24 left-1/2 -translate-x-1/2 bg-green-500 text-black px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-[0_0_30px_rgba(34,197,94,0.4)] z-[100] flex items-center gap-3"
           >
-            <CheckCircle size={16} /> Data synchronizována
+            <CheckCircle size={16} /> Data synchronized
           </motion.div>
         )}
       </AnimatePresence>

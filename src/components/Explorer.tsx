@@ -62,7 +62,7 @@ export const Explorer: React.FC<ExplorerProps> = ({ profile, onUpdateProfile, on
           </div>
           <input
             type="text"
-            placeholder="Vyhledat v národní databázi..."
+            placeholder="Search in operative database..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full bg-black/40 border border-white/10 rounded-[30px] py-5 pl-14 pr-6 text-sm font-bold text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 transition-all italic tracking-tight"
@@ -70,13 +70,13 @@ export const Explorer: React.FC<ExplorerProps> = ({ profile, onUpdateProfile, on
         </div>
 
         <div className="flex gap-2 overflow-x-auto no-scrollbar py-2">
-          {['Vše', ...categories].map((cat) => (
+          {['All', ...categories].map((cat) => (
             <button
               key={cat}
-              onClick={() => setSelectedCategory(cat === 'Vše' ? null : cat)}
+              onClick={() => setSelectedCategory(cat === 'All' ? null : cat)}
               className={cn(
                 "px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap transition-all border shrink-0",
-                ((selectedCategory === null && cat === 'Vše') || selectedCategory === cat)
+                ((selectedCategory === null && cat === 'All') || selectedCategory === cat)
                   ? "bg-cyan-500 border-cyan-400 text-black shadow-lg shadow-cyan-500/20"
                   : "bg-white/5 border-white/5 text-slate-500 hover:text-white"
               )}
@@ -89,9 +89,9 @@ export const Explorer: React.FC<ExplorerProps> = ({ profile, onUpdateProfile, on
 
       {/* Results Header */}
       <div className="flex items-center justify-between">
-        <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.4em]">Výsledky Analýzy</h3>
+        <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.4em]">Analysis Results</h3>
         <div className="h-px flex-1 mx-6 bg-gradient-to-r from-white/5 to-transparent" />
-        <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">{filteredResults.length} objektů</span>
+        <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">{filteredResults.length} spectral items</span>
       </div>
 
       {/* Library Grid */}
@@ -137,7 +137,7 @@ export const Explorer: React.FC<ExplorerProps> = ({ profile, onUpdateProfile, on
               </div>
               
               <div className="mt-6 flex items-center justify-between text-[8px] font-black uppercase tracking-widest text-slate-600">
-                <span className="flex items-center gap-1"><Info size={10} /> Detail protokolu</span>
+                <span className="flex items-center gap-1"><Info size={10} /> Protocol Details</span>
                 <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
               </div>
             </div>
@@ -180,7 +180,7 @@ export const Explorer: React.FC<ExplorerProps> = ({ profile, onUpdateProfile, on
                         <div className="w-10 h-10 rounded-xl bg-cyan-500 flex items-center justify-center text-black font-black italic shadow-lg shadow-cyan-500/20">M</div>
                         <div>
                           <h2 className="text-2xl font-black text-white italic tracking-tighter uppercase">{selectedExercise.name}</h2>
-                          <span className="text-[8px] text-slate-400 uppercase tracking-widest font-black">Procedurální UKÁZKA</span>
+                          <span className="text-[8px] text-slate-400 uppercase tracking-widest font-black">Procedural DEMO</span>
                         </div>
                       </div>
                    </div>
@@ -197,14 +197,14 @@ export const Explorer: React.FC<ExplorerProps> = ({ profile, onUpdateProfile, on
               <div className="p-8 md:p-12 grid grid-cols-1 lg:grid-cols-3 gap-12">
                 <div className="lg:col-span-2 space-y-10">
                   <section className="space-y-4">
-                    <h5 className="text-[10px] font-black uppercase tracking-[0.4em] text-cyan-500">Technická Specifikace</h5>
+                    <h5 className="text-[10px] font-black uppercase tracking-[0.4em] text-cyan-500">Technical Specification</h5>
                     <p className="text-slate-400 text-sm leading-relaxed font-medium italic">
                       {selectedExercise.description}
                     </p>
                   </section>
 
                   <section className="space-y-6">
-                    <h5 className="text-[10px] font-black uppercase tracking-[0.4em] text-purple-500">Klíčové Body Rozhraní</h5>
+                    <h5 className="text-[10px] font-black uppercase tracking-[0.4em] text-purple-500">Core Interface Points</h5>
                     <div className="grid gap-4">
                       {selectedExercise.technicalPoints.map((point, i) => (
                         <div key={i} className="flex gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 items-start group hover:border-purple-500/20 transition-all">
@@ -218,7 +218,7 @@ export const Explorer: React.FC<ExplorerProps> = ({ profile, onUpdateProfile, on
 
                 <div className="space-y-10">
                   <section className="space-y-4">
-                    <h5 className="text-[10px] font-black uppercase tracking-[0.4em] text-orange-500">Varianty</h5>
+                    <h5 className="text-[10px] font-black uppercase tracking-[0.4em] text-orange-500">Variations</h5>
                     <div className="flex flex-wrap gap-2">
                        {selectedExercise.commonVariations.map(v => (
                          <span key={v} className="px-3 py-1.5 rounded-xl bg-white/5 border border-white/5 text-[9px] font-black uppercase tracking-widest text-slate-400">
@@ -239,7 +239,7 @@ export const Explorer: React.FC<ExplorerProps> = ({ profile, onUpdateProfile, on
                        )}
                     >
                       <Heart size={16} fill={profile.favoriteExercises.includes(selectedExercise.id) ? "currentColor" : "none"} />
-                      {profile.favoriteExercises.includes(selectedExercise.id) ? 'Uloženo v Oblíbených' : 'Přidat do Oblíbených'}
+                      {profile.favoriteExercises.includes(selectedExercise.id) ? 'Saved in Favorites' : 'Add to Favorites'}
                     </button>
 
                     <button 
@@ -249,15 +249,15 @@ export const Explorer: React.FC<ExplorerProps> = ({ profile, onUpdateProfile, on
                       }}
                       className="w-full py-4 bg-cyan-500 text-black flex items-center justify-center gap-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-xl shadow-cyan-500/10"
                     >
-                       <Plus size={16} /> Přidat do Tréninku
+                       <Plus size={16} /> Add to Workout
                     </button>
 
                     <div className="flex gap-3">
                       <button className="flex-1 py-4 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center gap-2 text-slate-400 hover:text-white transition-all text-[9px] font-black uppercase tracking-widest">
-                         <Share2 size={14} /> Sdílet
+                         <Share2 size={14} /> Share
                       </button>
                       <button className="flex-1 py-4 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center gap-2 text-slate-400 hover:text-white transition-all text-[9px] font-black uppercase tracking-widest">
-                         <Bookmark size={14} /> Kolekce
+                         <Bookmark size={14} /> Collection
                       </button>
                     </div>
                   </div>

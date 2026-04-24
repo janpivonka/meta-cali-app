@@ -40,7 +40,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ workouts }) => {
     d1.getMonth() === d2.getMonth() && 
     d1.getDate() === d2.getDate();
 
-  const days = ['PO', 'ÚT', 'ST', 'ČT', 'PÁ', 'SO', 'NE'];
+  const days = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'];
   const today = new Date();
 
   const getMonday = (date: Date) => {
@@ -77,7 +77,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ workouts }) => {
     return firstDay === 0 ? 6 : firstDay - 1;
   };
 
-  const monthNames = ['Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen', 'Červenec', 'Srpen', 'Září', 'Říjen', 'Listopad', 'Prosinec'];
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   
   const handlePrevMonth = () => {
     if (historyMonth === 0) {
@@ -99,12 +99,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ workouts }) => {
 
   // Mock data for display
   const dailyChallenges = [
-    { id: 1, title: 'Planche Flow', difficulty: 'EXTRÉMNÍ', time: '12 min', image: 'https://picsum.photos/seed/planche/400/200' },
-    { id: 2, title: 'Explosive Power', difficulty: 'POKROČILÉ', time: '45 min', image: 'https://picsum.photos/seed/explosive/400/200' },
+    { id: 1, title: 'Planche Flow', difficulty: 'EXTREME', time: '12 min', image: 'https://picsum.photos/seed/planche/400/200' },
+    { id: 2, title: 'Explosive Power', difficulty: 'ADVANCED', time: '45 min', image: 'https://picsum.photos/seed/explosive/400/200' },
   ];
 
   const todayPlans = [
-    { id: 1, title: 'Basics Strength', difficulty: 'STŘEDNÍ', sets: '5 Sérií', image: 'https://picsum.photos/seed/strength/400/200' },
+    { id: 1, title: 'Basics Strength', difficulty: 'MEDIUM', sets: '5 Sets', image: 'https://picsum.photos/seed/strength/400/200' },
   ];
 
   const recommended = [
@@ -180,9 +180,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ workouts }) => {
       <div className="flex flex-col gap-6">
         <div className="flex items-center justify-center sm:justify-start gap-8 px-2 overflow-x-auto no-scrollbar">
           {[
-            { id: 'zaklad', label: 'Dashboard' },
-            { id: 'osobni', label: 'Operace' },
-            { id: 'verejne', label: 'Zpravodajství' },
+            { id: 'zaklad', label: 'Monitor' },
+            { id: 'osobni', label: 'Operations' },
+            { id: 'verejne', label: 'Newsroom' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -225,7 +225,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ workouts }) => {
                <span className="text-[12px] font-black uppercase tracking-[0.5em] text-cyan-400">Tactical Wisdom</span>
             </div>
             <h2 className="text-3xl md:text-5xl font-black text-white leading-tight max-w-3xl italic tracking-tighter uppercase">
-              "Disciplína není nic jiného než <span className="text-cyan-400 underline decoration-cyan-500/30 underline-offset-8">vítězství</span> nad vlastním pohodlím."
+              "Discipline is nothing more than <span className="text-cyan-400 underline decoration-cyan-500/30 underline-offset-8">victory</span> over your own comfort."
             </h2>
           </div>
 
@@ -249,7 +249,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ workouts }) => {
                    </div>
                  ))}
               </div>
-              <span className="text-[10px] font-black text-slate-400 tracking-widest uppercase">+2.4k DALŠÍCH</span>
+              <span className="text-[10px] font-black text-slate-400 tracking-widest uppercase">+2.4k OTHERS</span>
             </div>
           </div>
         </div>
@@ -263,7 +263,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ workouts }) => {
           </div>
           <div>
             <span className="text-4xl font-black text-white italic leading-none">{streak}</span>
-            <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mt-1">Denní Aktivita</p>
+            <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mt-1">Daily Streak</p>
           </div>
         </div>
 
@@ -273,7 +273,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ workouts }) => {
           </div>
           <div>
             <span className="text-4xl font-black text-white italic leading-none">{totalSets}</span>
-            <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mt-1">Celkem Bloků</p>
+            <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mt-1">Total Sets</p>
           </div>
         </div>
 
@@ -283,7 +283,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ workouts }) => {
           </div>
           <div>
             <span className="text-4xl font-black text-white italic leading-none">12%</span>
-            <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mt-1">Progres Modulu</p>
+            <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mt-1">Module Progress</p>
           </div>
         </div>
       </div>
@@ -319,12 +319,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ workouts }) => {
       {/* Weekly Calendar View */}
       <div className="space-y-4">
         <div className="flex items-center justify-between px-2">
-          <span className="text-[10px] font-black text-cyan-500 uppercase tracking-[0.3em]">Týdenní Scan</span>
+          <span className="text-[10px] font-black text-cyan-500 uppercase tracking-[0.3em]">Weekly Scan</span>
           <button 
             onClick={() => setShowCalendarModal(true)}
             className="text-[10px] text-slate-400 hover:text-cyan-500 font-black uppercase tracking-widest flex items-center gap-2"
           >
-            <CalendarIcon size={12} /> Historie
+            <CalendarIcon size={12} /> History
           </button>
         </div>
         <div className="grid grid-cols-7 gap-2">
@@ -364,7 +364,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ workouts }) => {
       {/* Daily Challenges Section */}
       <section className="space-y-6">
         <div className="flex items-center justify-between px-2">
-          <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-[0.25em]">Dnešní Výzvy</h3>
+          <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-[0.25em]">Today's Challenges</h3>
           <ArrowRight size={16} className="text-slate-400" />
         </div>
         <div className="space-y-4">
@@ -394,7 +394,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ workouts }) => {
                 <div className="flex items-center gap-3">
                   <span className="text-[9px] font-black text-purple-500 uppercase tracking-widest">{challenge.difficulty}</span>
                   <div className="h-3 w-px bg-slate-200 dark:bg-white/10" />
-                  <span className="text-[9px] font-bold text-[#94a3b8] uppercase tracking-widest">Budík: 08:30</span>
+                  <span className="text-[9px] font-bold text-[#94a3b8] uppercase tracking-widest">Alarm: 08:30</span>
                 </div>
                 <div className="flex gap-3 mt-3">
                   <Heart size={14} className="text-slate-400 hover:text-pink-500 cursor-pointer" />
@@ -412,7 +412,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ workouts }) => {
       {/* Today's Plan Section */}
       <section className="space-y-6">
         <div className="flex items-center justify-between px-2">
-          <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-[0.25em]">Dnešní Plán</h3>
+          <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-[0.25em]">Today's Plan</h3>
           <ArrowRight size={16} className="text-slate-400" />
         </div>
         <div className="space-y-4">
@@ -449,7 +449,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ workouts }) => {
       {/* Recommended Stuff Section */}
       <section className="space-y-6">
         <div className="flex items-center justify-between px-2">
-          <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-[0.25em]">Doporučeno</h3>
+          <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-[0.25em]">Recommended</h3>
           <ArrowRight size={16} className="text-slate-400" />
         </div>
         <div className="space-y-4">
@@ -503,7 +503,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ workouts }) => {
                 <X size={24} />
               </button>
               <div className="flex items-center justify-between mb-8">
-                <h2 className="text-2xl font-black text-white uppercase tracking-tighter">Operační Historie</h2>
+                <h2 className="text-2xl font-black text-white uppercase tracking-tighter">Operation History</h2>
                 <div className="flex items-center gap-4 bg-white/5 p-2 rounded-2xl border border-white/10">
                   <button onClick={handlePrevMonth} className="p-2 hover:bg-white/10 rounded-xl transition-colors text-slate-400 hover:text-cyan-500">
                     <ArrowRight size={20} className="rotate-180" />
@@ -575,11 +575,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ workouts }) => {
               <div className="flex flex-wrap gap-4 pt-6 border-t border-white/5">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-green-500" />
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Odcvičeno</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Trained</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-orange-500" />
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Plánováno</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Planned</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full border border-green-500" />
@@ -587,7 +587,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ workouts }) => {
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-slate-700" />
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bez záznamu</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No Record</span>
                 </div>
               </div>
             </motion.div>
@@ -616,23 +616,23 @@ export const Dashboard: React.FC<DashboardProps> = ({ workouts }) => {
                 <X size={24} />
               </button>
               <div className="space-y-6">
-                <span className="text-[10px] font-black text-cyan-500 uppercase tracking-[0.4em]">Detail dne</span>
+                <span className="text-[10px] font-black text-cyan-500 uppercase tracking-[0.4em]">Day Detail</span>
                 <h3 className="text-4xl font-black text-white italic">{formatDate(selectedDayDetail)}</h3>
                 
                 <div className="p-6 bg-white/5 border border-white/10 rounded-3xl space-y-4">
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-slate-400 font-bold uppercase tracking-widest">Stav tréninku</span>
-                    <span className="text-green-500 font-black uppercase">DOKONČENO</span>
+                    <span className="text-slate-400 font-bold uppercase tracking-widest">Training Status</span>
+                    <span className="text-green-500 font-black uppercase">COMPLETED</span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-slate-400 font-bold uppercase tracking-widest">Objem logu</span>
-                    <span className="text-white font-black italic">140 OPAKOVÁNÍ</span>
+                    <span className="text-slate-400 font-bold uppercase tracking-widest">Log Volume</span>
+                    <span className="text-white font-black italic">140 REPS</span>
                   </div>
                 </div>
 
                 <div className="pt-6 border-t border-white/5">
                    <button className="w-full py-4 bg-cyan-500 text-black font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-cyan-400 transition-all shadow-[0_0_20px_rgba(34,211,238,0.3)]">
-                      Upravit data
+                      Edit Data
                    </button>
                 </div>
               </div>

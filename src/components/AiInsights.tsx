@@ -69,7 +69,7 @@ export const AiInsights: React.FC<AiInsightsProps> = ({ workouts }) => {
                   <Loader2 className="animate-spin text-purple-500" size={48} />
                   <div className="absolute inset-0 blur-xl bg-purple-500/20 animate-pulse"></div>
                 </div>
-                <p className="text-[10px] font-black uppercase tracking-[0.4em] animate-pulse">Dekóduji biologickou databázi...</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.4em] animate-pulse">Decoding biological database...</p>
               </motion.div>
             ) : advice ? (
               <motion.div 
@@ -97,7 +97,7 @@ export const AiInsights: React.FC<AiInsightsProps> = ({ workouts }) => {
             ) : (
               <div className="py-20 flex flex-col items-center justify-center text-slate-600 dark:text-slate-400 text-center">
                 <BrainCircuit size={48} className="mb-4 opacity-10" />
-                <p className="text-sm font-bold uppercase tracking-widest opacity-40 italic">Inaktivní stav: Vyžaduji vstupní data k analýze</p>
+                <p className="text-sm font-bold uppercase tracking-widest opacity-40 italic">Inactive state: Requiring data for analysis</p>
               </div>
             )}
           </AnimatePresence>

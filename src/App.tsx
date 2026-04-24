@@ -15,19 +15,19 @@ const DEFAULT_PROFILE: UserProfile = {
   name: 'Karel Operator',
   weight: 82,
   height: 185,
-  bio: 'Kalisthenický operativec se zaměřením na statické prvky a progresivní telemetrii.',
+  bio: 'Calisthenics operative focused on static elements and progressive telemetry.',
   posts: 124,
   followers: 1204,
   following: 85,
   favoriteExercises: ['pullups', 'planche'],
   goals: [
-    { exercise: 'Shyby', targetValue: 15, currentValue: 12, progress: 80, metric: 'opak' },
-    { exercise: 'Kliky', targetValue: 40, currentValue: 35, progress: 87, metric: 'opak' },
-    { exercise: 'Dipy', targetValue: 20, currentValue: 18, progress: 90, metric: 'opak' },
+    { exercise: 'Pull-ups', targetValue: 15, currentValue: 12, progress: 80, metric: 'reps' },
+    { exercise: 'Push-ups', targetValue: 40, currentValue: 35, progress: 87, metric: 'reps' },
+    { exercise: 'Dips', targetValue: 20, currentValue: 18, progress: 90, metric: 'reps' },
     { exercise: 'Planche', targetValue: 5, currentValue: 2, progress: 40, metric: 'sec' },
     { exercise: 'Front Lever', targetValue: 5, currentValue: 3, progress: 60, metric: 'sec' }
   ],
-  trophies: ['🥇 SHYBY PRO', '🎖️ PLANCHE SURVIVOR', '⚡ MUSCLEUP ELITE', '🛡️ IRON CORE']
+  trophies: ['🥇 PULL-UPS PRO', '🎖️ PLANCHE SURVIVOR', '⚡ MUSCLE-UP ELITE', '🛡️ IRON CORE']
 };
 
 export default function App() {
@@ -66,7 +66,7 @@ export default function App() {
     if (savedProfile) {
       try {
         const parsedProfile = JSON.parse(savedProfile);
-        // Migrace cílů z objektu na pole, pokud je potřeba
+        // Goal migration from object to array if needed
         if (parsedProfile && parsedProfile.goals && !Array.isArray(parsedProfile.goals)) {
           parsedProfile.goals = DEFAULT_PROFILE.goals;
         }
@@ -159,7 +159,7 @@ export default function App() {
   };
 
   const handleCancelWorkout = () => {
-    if (window.confirm('Opravdu chcete zrušit neuložený trénink?')) {
+    if (window.confirm('Are you sure you want to cancel the unsaved workout?')) {
       setCurrentWorkout(null);
     }
   };
@@ -246,15 +246,15 @@ export default function App() {
                               <span className="text-[11px] font-black text-white uppercase tracking-tighter italic truncate">{ex.type}</span>
                               <span className="text-[11px] font-black text-slate-700">/</span>
                               <span className="text-[10px] font-black text-cyan-500/80 uppercase tracking-widest bg-cyan-500/5 px-2 py-0.5 rounded-lg border border-cyan-500/10">
-                                {ex.loadType === 'bodyweight' ? 'Vlastní' : 
+                                {ex.loadType === 'bodyweight' ? 'Bodyweight' : 
                                  ex.loadType === 'weighted' ? `Weight+ (${ex.assistanceValue}kg)` : 
                                  `Weight- (${ex.assistanceValue})`}
                               </span>
                               {ex.loadType === 'assisted' && ex.assistanceDetails && (
                                 <span className="text-[8px] font-bold text-orange-500/60 uppercase">
-                                  {ex.assistanceDetails.loopType === 'double' ? 'Dvojitá' : 'Jednoduchá'} guma • 
+                                  {ex.assistanceDetails.loopType === 'double' ? 'Double' : 'Single'} band • 
                                   {(ex.assistanceDetails.placement as BandPlacement[] || []).map(p => 
-                                    p === 'one leg' ? 'Noha' : p === 'both legs' ? 'Nohy' : p === 'waist' ? 'Pas' : p === 'back' ? 'Záda' : 'Kolena'
+                                    p === 'one leg' ? 'Leg' : p === 'both legs' ? 'Legs' : p === 'waist' ? 'Waist' : p === 'back' ? 'Back' : 'Knees'
                                   ).join(', ')}
                                 </span>
                               )}
@@ -263,9 +263,9 @@ export default function App() {
                               {/* Physical Parameters */}
                               <div className="flex items-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
                                 <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">
-                                  {ex.executionStyle !== 'one arm' && (ex.gripWidth === 'wide' ? 'Široký ' : ex.gripWidth === 'narrow' ? 'Úzký ' : 'Šířka ramen ')}
+                                  {ex.executionStyle !== 'one arm' && (ex.gripWidth === 'wide' ? 'Wide ' : ex.gripWidth === 'narrow' ? 'Narrow ' : 'Shoulder-width ')}
                                   {ex.grip}
-                                  {ex.thumb && ` • ${ex.thumb === 'bottom' ? 'Standard' : 'Suicide'} palec`}
+                                  {ex.thumb && ` • ${ex.thumb === 'bottom' ? 'Standard' : 'Suicide'} thumb`}
                                   {ex.falseGrip && ` • False Grip`}
                                 </span>
                               </div>
@@ -329,7 +329,7 @@ export default function App() {
                       onClick={() => setEditingIndex(null)}
                       className="bg-white text-black px-6 py-2 rounded-full text-[9px] font-black uppercase tracking-[0.2em] shadow-xl hover:scale-105 transition-all"
                     >
-                      + Přidat nový blok místo editace
+                      + Add new block instead of editing
                     </button>
                  </div>
                )}
@@ -348,7 +348,7 @@ export default function App() {
       case 'stats':
         return (
           <div className="space-y-6 max-w-4xl mx-auto pb-20">
-            <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">Operační Historie</h2>
+            <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">Operation History</h2>
             <div className="grid gap-4">
               {workouts.length > 0 ? (
                 [...workouts].reverse().map((workout) => (
@@ -358,7 +358,7 @@ export default function App() {
                         <div className="w-10 h-10 rounded-xl bg-cyan-500 flex items-center justify-center text-black font-black italic">W</div>
                         <div>
                           <p className="text-[10px] text-[#94a3b8] font-bold uppercase tracking-[0.25em]">{new Date(workout.timestamp).toLocaleString()}</p>
-                          <p className="text-xs font-black text-white uppercase tracking-widest mt-0.5">{workout.exercises.length} CVÍKŮ • {workout.exercises.reduce((acc, ex) => acc + ex.sets.length, 0)} SÉRIÍ</p>
+                          <p className="text-xs font-black text-white uppercase tracking-widest mt-0.5">{workout.exercises.length} EXERCISES • {workout.exercises.reduce((acc, ex) => acc + ex.sets.length, 0)} SETS</p>
                         </div>
                       </div>
                       <Share2 size={16} className="text-slate-500 hover:text-cyan-400 cursor-pointer transition-colors" />
@@ -418,7 +418,7 @@ export default function App() {
                 ))
               ) : (
                 <div className="flex flex-col items-center justify-center py-20 bg-white/5 rounded-[40px] border border-dashed border-white/10">
-                  <p className="text-slate-500 font-black uppercase tracking-widest italic">Systémový archiv je prázdný</p>
+                  <p className="text-slate-500 font-black uppercase tracking-widest italic">System archive is empty</p>
                 </div>
               )}
             </div>
@@ -455,16 +455,16 @@ export default function App() {
             <h1 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tighter leading-none">
               {activeTab === 'dashboard' ? 'Monitor' : 
                activeTab === 'explorer' ? 'Explorer' :
-               activeTab === 'log' ? 'Operační log' : 
-               activeTab === 'stats' ? 'Analýza dat' : 
-               activeTab === 'profile' ? 'Konfigurace' : 'Meta-Processing'}
+               activeTab === 'log' ? 'Operation Log' : 
+               activeTab === 'stats' ? 'Data Analysis' : 
+               activeTab === 'profile' ? 'Configuration' : 'Meta-Processing'}
             </h1>
           </div>
           <div className="flex flex-col items-end gap-3">
             <button 
               onClick={() => setIsDark(!isDark)}
               className="p-3 bg-white/50 dark:bg-white/5 border border-black/5 dark:border-white/10 rounded-2xl hover:bg-white transition-all shadow-sm"
-              title="Přepnout režim"
+              title="Toggle theme"
             >
               {isDark ? <Sun size={18} className="text-yellow-400" /> : <Moon size={18} className="text-purple-600" />}
             </button>
@@ -472,7 +472,7 @@ export default function App() {
               <p className="text-[#94a3b8] text-[9px] uppercase font-bold tracking-widest leading-none mb-1">Status</p>
               <div className="flex items-center gap-2 text-cyan-500 text-xs font-black">
                 <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse shadow-[0_0_8px_rgba(34,211,238,0.8)]"></span>
-                AKTIVNÍ
+                ACTIVE
               </div>
             </div>
           </div>

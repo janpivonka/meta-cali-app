@@ -47,8 +47,8 @@ interface WorkoutFormProps {
 const GRIPS: GripType[] = ['pronated', 'supinated', 'neutral', 'mixed'];
 const GRIP_WIDTHS: GripWidth[] = ['narrow', 'shoulder-width', 'wide'];
 const THUMBS: { val: ThumbPosition; label: string }[] = [
-  { val: 'bottom', label: 'Standard (Palec dole)' },
-  { val: 'top', label: 'Suicide (Palec nahoře)' }
+  { val: 'bottom', label: 'Standard (Thumb below)' },
+  { val: 'top', label: 'Suicide (Thumb above)' }
 ];
 const EQUIPMENTS: EquipmentType[] = ['pull-up bar', 'low bar', 'dip bars', 'rings', 'floor', 'parallelettes', 'stall bars'];
 const EXECUTION_STYLES: ExecutionStyle[] = ['basic', 'one arm', 'archer', 'typewriter', 'commando', 'high', 'korean'];
@@ -57,18 +57,18 @@ const POSITIONS: BodyPosition[] = ['neutral', 'hollow body', 'arch back', 'L-sit
 const LEG_PROGRESSIONS: LegProgression[] = ['tuck', 'adv tuck', 'straddle', 'one leg', 'halflay', 'full', 'australian (bent legs)', 'australian (straight legs)'];
 const BAND_PLACEMENTS: BandPlacement[] = ['both legs', 'one leg', 'waist', 'knees', 'back'];
 const LOOP_TYPES: { val: BandLoopType; label: string }[] = [
-  { val: 'single', label: 'Jednoduché' },
-  { val: 'double', label: 'Dvojité (omotané)' }
+  { val: 'single', label: 'Single' },
+  { val: 'double', label: 'Double (wrapped)' }
 ];
 const SINGLE_LEG_POSITIONS: SingleLegPosition[] = ['tuck', 'adv tuck', 'halflay', 'full'];
 const ONE_ARM_POSITIONS: { val: OneArmHandPosition; label: string }[] = [
-  { val: 'wrist', label: 'Zápěstí' },
-  { val: 'forearm', label: 'Předloktí' },
-  { val: 'elbow', label: 'Loket' },
+  { val: 'wrist', label: 'Wrist' },
+  { val: 'forearm', label: 'Forearm' },
+  { val: 'elbow', label: 'Elbow' },
   { val: 'biceps', label: 'Biceps/Triceps' },
-  { val: 'shoulder', label: 'Rameno' },
-  { val: 'horizontal', label: 'Vodorovně/Prsa' },
-  { val: 'free', label: 'Volně podél těla' }
+  { val: 'shoulder', label: 'Shoulder' },
+  { val: 'horizontal', label: 'Horizontal/Chest' },
+  { val: 'free', label: 'Free along body' }
 ];
 
 export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, initialExerciseId, initialData }) => {
@@ -313,8 +313,8 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
           <PlusCircle size={32} />
         </div>
         <div className="text-center sm:text-left">
-          <h2 className="text-3xl font-black text-white tracking-tighter italic uppercase">Operační Protokol</h2>
-          <p className="text-[10px] text-cyan-500 font-black uppercase tracking-[0.4em]">Sekvenční záznam parametrů výkonu • v3.0</p>
+          <h2 className="text-3xl font-black text-white tracking-tighter italic uppercase">Operation Protocol</h2>
+          <p className="text-[10px] text-cyan-500 font-black uppercase tracking-[0.4em]">Sequential Log of Performance Parameters • v3.0</p>
         </div>
       </div>
 
@@ -323,13 +323,13 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
         <div className="space-y-6">
           <div className="flex items-center justify-between px-2">
             <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 flex items-center gap-2">
-              <Boxes size={14} className="text-cyan-500" /> Identifikace Cviků
+              <Boxes size={14} className="text-cyan-500" /> Exercise Identification
             </h3>
             <div className="relative w-48">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" />
               <input 
                 type="text"
-                placeholder="Hledat..."
+                placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-white/5 border border-white/5 rounded-full py-2 pl-9 pr-4 text-[10px] font-bold text-white focus:outline-none focus:border-cyan-500/30"
@@ -360,14 +360,13 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
               </button>
             ))}
           </div>
-        </div>
 
         {/* TAXONOMY: GRIP / EQUIPMENT / EXECUTION */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
            <div className="space-y-8 p-8 bg-white/5 rounded-[32px] border border-white/5">
               <div className="space-y-6">
                  <div>
-                   <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-500/60 block mb-3">Šířka Úchopu (Width)</label>
+                   <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-500/60 block mb-3">Grip Width</label>
                    <div className="flex flex-wrap gap-2">
                       {GRIP_WIDTHS.map(w => (
                         <button
@@ -379,14 +378,14 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                             gripWidth === w ? "bg-white text-black border-white shadow-lg" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
                           )}
                         >
-                          {w === 'shoulder-width' ? 'Šířka ramen' : w === 'narrow' ? 'Úzký' : 'Široký'}
+                          {w === 'shoulder-width' ? 'Shoulder-width' : w === 'narrow' ? 'Narrow' : 'Wide'}
                         </button>
                       ))}
                    </div>
                  </div>
 
                  <div>
-                   <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-500/60 block mb-3">Úchop (Grip)</label>
+                   <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-500/60 block mb-3">Grip Type</label>
                    <div className="flex flex-wrap gap-2">
                       {GRIPS.map(g => (
                         <button
@@ -406,7 +405,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
 
                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div>
-                      <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-500/60 block mb-3">Pozice palce (Thumb)</label>
+                      <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-500/60 block mb-3">Thumb Position</label>
                       <div className="flex flex-wrap gap-2">
                          {THUMBS.map(t => (
                            <button
@@ -434,13 +433,13 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                           falseGrip ? "bg-cyan-500 text-black border-cyan-400 shadow-lg shadow-cyan-500/20" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
                         )}
                       >
-                        {falseGrip ? 'AKTIVNÍ' : 'NEAKTIVNÍ'}
+                        {falseGrip ? 'ACTIVE' : 'INACTIVE'}
                       </button>
                     </div>
                  </div>
 
                  <div>
-                   <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-500/60 block mb-3">Vybavení (Equipment)</label>
+                   <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-500/60 block mb-3">Equipment</label>
                    <div className="flex flex-wrap gap-2">
                       {availableEquipment.map(eq => (
                         <button
@@ -463,7 +462,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
            <div className="space-y-8 p-8 bg-white/5 rounded-[32px] border border-white/5">
               <div className="space-y-6">
                  <div>
-                   <label className="text-[8px] font-black uppercase tracking-[0.3em] text-purple-500/60 block mb-3">Styl Cviku (Style)</label>
+                   <label className="text-[8px] font-black uppercase tracking-[0.3em] text-purple-500/60 block mb-3">Execution Style</label>
                    <div className="flex flex-wrap gap-2">
                       {availableExecutionStyles.map(style => (
                         <button
@@ -475,13 +474,13 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                             executionStyle === style ? "bg-purple-500 text-white border-purple-400 shadow-lg shadow-purple-500/20" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
                           )}
                         >
-                          {style === 'basic' ? 'Základní' : 
-                           style === 'one arm' ? 'Jedna ruka' : 
+                          {style === 'basic' ? 'Basic' : 
+                           style === 'one arm' ? 'One Arm' : 
                            style === 'archer' ? 'Archer' : 
                            style === 'typewriter' ? 'Typewriter' : 
                            style === 'commando' ? 'Commando' : 
-                           style === 'high' ? 'Vysoké' : 
-                           style === 'korean' ? 'Korejské' : 'Australské'}
+                           style === 'high' ? 'High' : 
+                           style === 'korean' ? 'Korean' : 'Australian'}
                         </button>
                       ))}
                    </div>
@@ -493,7 +492,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                       animate={{ opacity: 1, height: 'auto' }}
                       className="space-y-3 pt-4 border-t border-white/5 pb-4"
                     >
-                      <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-400 block mb-2">Pozice volné ruky (One-Arm Progress)</label>
+                      <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-400 block mb-2">One-Arm Progress (Free Hand Position)</label>
                       <div className="flex flex-wrap gap-2">
                          {ONE_ARM_POSITIONS.map(pos => (
                            <button
@@ -513,7 +512,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                   )}
 
                  <div>
-                   <label className="text-[8px] font-black uppercase tracking-[0.3em] text-purple-500/60 block mb-3">Metoda/Tempo (Method)</label>
+                   <label className="text-[8px] font-black uppercase tracking-[0.3em] text-purple-500/60 block mb-3">Method/Tempo</label>
                     <div className="flex flex-wrap gap-2">
                        {EXECUTION_METHODS.map(method => (
                          <button
@@ -525,18 +524,18 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                              executionMethod === method ? "bg-white/20 text-white border-white/20 shadow-lg" : "bg-black/20 text-slate-600 border-white/5 hover:border-white/20"
                            )}
                          >
-                           {method === 'standard' ? 'Standardní' : 
-                            method === 'explosive' ? 'Explozivní' : 
-                            method === 'partial' ? 'Částečné' : 
-                            method === 'negative' ? 'Negativní' : 
-                            method === 'scapula' ? 'Lopatkové' : 'Kontrolované'}
+                           {method === 'standard' ? 'Standard' : 
+                            method === 'explosive' ? 'Explosive' : 
+                            method === 'partial' ? 'Partial' : 
+                            method === 'negative' ? 'Negative' : 
+                            method === 'scapula' ? 'Scapula' : 'Controlled'}
                          </button>
                        ))}
                     </div>
                   </div>
 
                   <div>
-                   <label className="text-[8px] font-black uppercase tracking-[0.3em] text-purple-500/60 block mb-3">Tělesná Pozice (Core)</label>
+                   <label className="text-[8px] font-black uppercase tracking-[0.3em] text-purple-500/60 block mb-3">Core Position</label>
                    <div className="flex flex-wrap gap-2">
                       {POSITIONS.map(pos => (
                         <button
@@ -548,14 +547,14 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                             position === pos ? "bg-purple-500 text-white border-purple-400 shadow-lg shadow-purple-500/20" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
                           )}
                         >
-                          {pos === 'neutral' ? 'Neutrální' : pos}
+                          {pos === 'neutral' ? 'Neutral' : pos}
                         </button>
                       ))}
                    </div>
                   </div>
 
                   <div>
-                   <label className="text-[8px] font-black uppercase tracking-[0.3em] text-purple-500/60 block mb-3">Progrese Nohou (Legs)</label>
+                   <label className="text-[8px] font-black uppercase tracking-[0.3em] text-purple-500/60 block mb-3">Leg Progression</label>
                    <div className="flex flex-wrap gap-2">
                       {LEG_PROGRESSIONS.map(prog => (
                         <button
@@ -567,7 +566,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                             legProgression === prog ? "bg-purple-500 text-white border-purple-400 shadow-lg shadow-purple-500/20" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
                           )}
                         >
-                          {prog === 'full' ? 'Základní (Full)' : prog}
+                          {prog === 'full' ? 'Full' : prog}
                         </button>
                       ))}
                    </div>
@@ -596,7 +595,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                     >
                       <div className="space-y-2">
                         <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-400 block mb-2">
-                          {legProgression.toString().includes('australian') ? 'Pozice nohy ve vzduchu (Floating Leg)' : 'První noha (Primary Leg)'}
+                          {legProgression.toString().includes('australian') ? 'Floating Leg Position' : 'Primary Leg'}
                         </label>
                         <div className="flex flex-wrap gap-2">
                           {SINGLE_LEG_POSITIONS.map(p => (
@@ -623,7 +622,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
 
                       {legProgression === 'one leg' && (
                         <div className="space-y-2">
-                          <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-400/60 block mb-2">Druhá noha (Secondary Leg)</label>
+                          <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-400/60 block mb-2">Secondary Leg</label>
                           <div className="flex flex-wrap gap-2">
                             {SINGLE_LEG_POSITIONS.filter(p => p !== oneLegPrimaryPosition).map(p => (
                               <button
@@ -650,9 +649,8 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
         {/* LOAD & ASSISTANCE */}
         <div className="p-8 bg-orange-500/5 rounded-[32px] border border-orange-500/10">
            <div className="flex flex-col items-stretch gap-8">
-              <div className="space-y-4">
-                <label className="text-[10px] font-black uppercase tracking-[0.4em] text-orange-500 flex items-center gap-2">
-                   <Target size={14} /> Konfigurace Zátěže
+                 <label className="text-[10px] font-black uppercase tracking-[0.4em] text-orange-500 flex items-center gap-2">
+                   <Target size={14} /> Load Configuration
                 </label>
                 <div className="flex gap-2">
                    {(['bodyweight', 'weighted', 'assisted'] as LoadType[]).map(lt => (
@@ -665,7 +663,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                           loadType === lt ? "bg-orange-500 text-black border-orange-400 shadow-lg" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
                         )}
                      >
-                        {lt === 'bodyweight' ? 'Vlastní' : lt === 'weighted' ? 'Zatížení (+)' : 'Odlehčení (-)'}
+                        {lt === 'bodyweight' ? 'Bodyweight' : lt === 'weighted' ? 'Weighted (+)' : 'Assisted (-)'}
                      </button>
                    ))}
                 </div>
@@ -680,11 +678,11 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                   <div className="flex flex-col sm:flex-row items-end gap-4">
                     <div className="flex-1 space-y-4 w-full">
                       <label className="text-[8px] font-black uppercase tracking-[0.3em] text-orange-500/60 block px-2">
-                        {loadType === 'weighted' ? 'Extra Hmotnost (kg)' : 'Metoda Odlehčení (Guma/Stroj/Dopomoc)'}
+                        {loadType === 'weighted' ? 'Extra Weight (kg)' : 'Assistance Method (Band/Machine/Helper)'}
                       </label>
                       <input 
                         type="text"
-                        placeholder={loadType === 'weighted' ? "Např. 10..." : "Např. Červená guma..."}
+                        placeholder={loadType === 'weighted' ? "e.g. 10..." : "e.g. Red band..."}
                         value={assistanceValue}
                         onChange={(e) => setAssistanceValue(e.target.value)}
                         className="w-full bg-black/40 border border-orange-500/20 rounded-2xl p-4 text-sm font-bold text-white focus:outline-none focus:border-orange-500 italic"
@@ -700,7 +698,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                             bandLoopType === 'double' ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" : "bg-white/10 text-slate-400"
                           )}
                         >
-                          {bandLoopType === 'double' ? 'Dvojité' : 'Jednoduché'}
+                          {bandLoopType === 'double' ? 'Double' : 'Single'}
                         </button>
                       </div>
                     )}
@@ -708,7 +706,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
 
                   {loadType === 'assisted' && (
                     <div className="space-y-4">
-                      <label className="text-[8px] font-black uppercase tracking-[0.3em] text-orange-500/60 block px-2">Umístění Podpory</label>
+                      <label className="text-[8px] font-black uppercase tracking-[0.3em] text-orange-500/60 block px-2">Assistance Placement</label>
                       <div className="flex flex-wrap gap-2">
                          {BAND_PLACEMENTS.map(p => (
                            <button
@@ -720,7 +718,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                                bandPlacements.includes(p) ? "bg-orange-500 text-black border-orange-400" : "bg-black/40 text-slate-500 border-white/5"
                              )}
                            >
-                             {p === 'one leg' ? 'Jedna noha' : p === 'both legs' ? 'Obě nohy' : p === 'waist' ? 'Pas' : p === 'back' ? 'Záda' : 'Kolena'}
+                             {p === 'one leg' ? 'One Leg' : p === 'both legs' ? 'Both Legs' : p === 'waist' ? 'Waist' : p === 'back' ? 'Back' : 'Knees'}
                            </button>
                          ))}
                       </div>
@@ -734,7 +732,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
         {/* SETS CONFIGURATION */}
         <div className="space-y-8">
            <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-cyan-500 flex items-center gap-2 px-2">
-              <Zap size={14} className="text-cyan-500" /> Konfigurace Výkonových Bloků
+              <Zap size={14} className="text-cyan-500" /> Performance Block Configuration
            </h3>
            <div className="space-y-4">
               <AnimatePresence mode="popLayout">
@@ -751,7 +749,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                        <div className="w-12 h-12 rounded-[18px] bg-black/40 flex items-center justify-center border border-white/10 group-hover:border-cyan-500/40 transition-colors">
                           <span className="text-xl font-black text-white italic">{index + 1}</span>
                        </div>
-                       <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Série</span>
+                       <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Set</span>
                     </div>
 
                     <div className="flex-1 flex flex-col items-center gap-2">
@@ -774,7 +772,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                           ><Plus size={18} /></button>
                        </div>
                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-600 italic">
-                         {isHoldExercise(exerciseId) ? 'Sekund' : 'Opakování'}
+                         {isHoldExercise(exerciseId) ? 'Seconds' : 'Reps'}
                        </span>
                     </div>
 
@@ -795,7 +793,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
              onClick={addSet}
              className="w-full py-6 border-2 border-dashed border-white/5 rounded-[32px] text-slate-600 hover:text-cyan-500 hover:border-cyan-500/20 hover:bg-cyan-500/5 transition-all text-xs font-black uppercase tracking-[0.4em] flex items-center justify-center gap-3 active:scale-[0.99] group shadow-inner"
            >
-             <PlusCircle size={20} className="group-hover:rotate-90 transition-transform" /> Duplikovat Sekvenci
+             <PlusCircle size={20} className="group-hover:rotate-90 transition-transform" /> Duplicate Sequence
            </button>
         </div>
 
@@ -803,26 +801,26 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
            <div className="space-y-4">
               <label className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 flex items-center gap-2 px-2">
-                 <MessageSquare size={14} /> Taktické Poznámky
+                 <MessageSquare size={14} /> Tactical Notes
               </label>
               <textarea 
                  value={notes}
                  onChange={(e) => setNotes(e.target.value)}
-                 placeholder="Pocity, technické nedostatky, progresivní postřehy..."
+                 placeholder="Feelings, technical flaws, progressive insights..."
                  className="w-full h-32 bg-white/5 border border-white/5 rounded-[32px] p-6 text-sm font-medium text-slate-300 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/30 transition-all resize-none italic"
               />
            </div>
 
            <div className="space-y-4">
               <label className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 flex items-center gap-2 px-2">
-                 <Camera size={14} /> Vizuální Telemetrie
+                 <Camera size={14} /> Visual Telemetry
               </label>
               <div className="w-full h-32 border-2 border-dashed border-white/5 rounded-[32px] flex flex-col items-center justify-center gap-2 group hover:border-cyan-500/20 transition-all cursor-pointer">
                  <Camera size={24} className="text-slate-700 group-hover:text-cyan-500 transition-colors" />
-                 <span className="text-[8px] font-black text-slate-700 group-hover:text-slate-500 uppercase tracking-widest">Připojit záznam (Foto/Video)</span>
+                 <span className="text-[8px] font-black text-slate-700 group-hover:text-slate-500 uppercase tracking-widest">Attach recording (Photo/Video)</span>
               </div>
               <div className="flex items-center justify-between px-6 py-4 bg-white/5 rounded-2xl border border-white/5">
-                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Sdílet s komunitou</span>
+                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Share with community</span>
                  <button 
                   type="button"
                   onClick={() => setShared(!shared)}
@@ -848,7 +846,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                onClick={onDelete}
                className="flex-1 py-7 bg-red-500/10 text-red-500 text-sm font-black uppercase tracking-[0.5em] rounded-[32px] border border-red-500/20 hover:bg-red-500 hover:text-white transition-all"
              >
-               Smazat tento cvik
+               Delete this exercise
              </button>
            )}
            <button
@@ -861,7 +859,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
              <div className="flex items-center justify-center gap-4 relative z-10">
                {initialData ? <Edit3 size={24} /> : <Check size={24} />}
-               {initialData ? 'Aktualizovat Blok' : 'Uložit do tréninku'}
+               {initialData ? 'Update Block' : 'Save to workout'}
              </div>
            </button>
         </div>

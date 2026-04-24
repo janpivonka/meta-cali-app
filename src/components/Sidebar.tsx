@@ -12,10 +12,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
   const menuItems = [
     { id: 'dashboard', label: 'Monitor', icon: LayoutDashboard },
     { id: 'explorer', label: 'Explorer', icon: Search },
-    { id: 'log', label: 'Vstup', icon: PlusCircle },
+    { id: 'log', label: 'Log', icon: PlusCircle },
     { id: 'stats', label: 'Data', icon: TrendingUp },
-    { id: 'ai', label: 'Core', icon: BrainCircuit },
-    { id: 'profile', label: 'User', icon: User },
+    { id: 'ai', label: 'AI Core', icon: BrainCircuit },
+    { id: 'profile', label: 'Profile', icon: User },
   ];
 
   return (
