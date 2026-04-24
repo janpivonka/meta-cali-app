@@ -89,6 +89,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
   const [position, setPosition] = useState<BodyPosition | string>('neutral');
   const [legProgression, setLegProgression] = useState<LegProgression | string>('full');
   const [loadType, setLoadType] = useState<LoadType>('bodyweight');
+  const [weightUnit, setWeightUnit] = useState<'kg' | 'lbs'>('kg');
   const [assistanceValue, setAssistanceValue] = useState('');
   const [bandPlacements, setBandPlacements] = useState<BandPlacement[]>(['both feet']);
   const [bandLoopType, setBandLoopType] = useState<BandLoopType>('single');
@@ -156,14 +157,21 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
         setLoadType('bodyweight');
       }
 
+      setWeightUnit(active.weightUnit || 'kg');
+
       if (active.assistanceDetails) {
         setBandPlacements(active.assistanceDetails.placement as BandPlacement[] || ['both feet']);
         setBandLoopType(active.assistanceDetails.loopType || 'single');
         setAssistanceValue(active.assistanceDetails.resistance?.toString() || '');
+      } else if (active.loadType === 'weighted' || (active.weight && active.weight > 0)) {
+        setAssistanceValue(active.weight?.toString() || '');
+        setBandPlacements(['both feet']);
+        setBandLoopType('single');
       } else {
         // Clear if not present in active set
         setAssistanceValue('');
-        // We keep placements/loopType as they are largely exercise-wide defaults in UI
+        setBandPlacements(['both feet']);
+        setBandLoopType('single');
       }
     }
   }, [localEditingSetIndex, sets]);
@@ -190,6 +198,9 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
           updated.assistanceDetails = undefined;
         } else if (newType === 'assisted') {
           updated.weight = 0;
+          if (!updated.assistanceDetails) {
+            updated.assistanceDetails = { resistance: '', loopType: 'single', placement: ['both feet'] };
+          }
         }
         return updated;
       }));
@@ -234,7 +245,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     setNotes('');
     setSearchQuery('');
     setShared(false);
-    setLocalEditingSetIndex(null);
+    setLocalEditingSetIndex(0);
     if (!initialExerciseId) {
       setExerciseId(EXERCISE_LIBRARY[0].id);
     } else {
@@ -263,6 +274,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       setNotes(initialData.notes || '');
       setShared(initialData.shared || false);
       setLoadType(initialData.loadType || 'bodyweight');
+      setWeightUnit(initialData.weightUnit || 'kg');
       setAssistanceValue(initialData.assistanceValue?.toString() || '');
       if (initialData.assistanceDetails) {
         setBandPlacements(initialData.assistanceDetails.placement as BandPlacement[] || ['both feet']);
@@ -497,7 +509,13 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     if (field === 'placement') setBandPlacements(val);
 
     if (localEditingSetIndex !== null) {
-      const currentDetails = sets[localEditingSetIndex]?.assistanceDetails || { resistance: '', loopType: 'single', placement: [] };
+      if (field === 'unit') {
+        updateSet(localEditingSetIndex, 'weightUnit', val);
+        setWeightUnit(val);
+        return;
+      }
+
+      const currentDetails = sets[localEditingSetIndex]?.assistanceDetails || { resistance: '', loopType: 'single', placement: ['both feet'] };
       const updatedDetails = { ...currentDetails, [field]: val };
       
       // If we are in weighted mode, we actually update 'weight' instead of assistanceDetails.resistance
@@ -581,11 +599,12 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       position: consensusPosition ?? position,
       legProgression: consensusLegProg ?? legProgression,
       loadType: finalLoadType, 
+      weightUnit: weightUnit,
       assistanceValue: assistanceValue, 
       assistanceDetails: (finalLoadType === 'assisted') ? {
          resistance: assistanceValue || '',
          loopType: bandLoopType || 'single',
-         placement: bandPlacements || []
+         placement: (bandPlacements && bandPlacements.length > 0) ? bandPlacements : ['both feet']
       } : undefined,
       sets: validSets.map(s => ({
         ...s,
@@ -980,12 +999,38 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                 >
                   <div className="flex flex-col sm:flex-row items-end gap-4">
                     <div className="flex-1 space-y-4 w-full">
-                      <label className="text-[8px] font-black uppercase tracking-[0.3em] text-orange-500/60 block px-2">
-                        {loadType === 'weighted' ? 'Extra Weight (kg)' : 'Assistance Method (Band/Machine/Helper)'}
-                      </label>
+                      <div className="flex items-center justify-between px-2">
+                        <label className="text-[8px] font-black uppercase tracking-[0.3em] text-orange-500/60 block">
+                          {loadType === 'weighted' ? `Extra Weight (${weightUnit})` : 'Assistance Method (Band/Machine/Helper)'}
+                        </label>
+                        {loadType === 'weighted' && (
+                          <div className="flex bg-black/40 rounded-lg p-0.5 border border-white/5">
+                            <button
+                              type="button"
+                              onClick={() => updateActiveAssistance('unit', 'kg')}
+                              className={cn(
+                                "px-2 py-1 rounded-md text-[8px] font-black transition-all",
+                                weightUnit === 'kg' ? "bg-orange-500 text-black" : "text-slate-500"
+                              )}
+                            >
+                              KG
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => updateActiveAssistance('unit', 'lbs')}
+                              className={cn(
+                                "px-2 py-1 rounded-md text-[8px] font-black transition-all",
+                                weightUnit === 'lbs' ? "bg-orange-500 text-black" : "text-slate-500"
+                              )}
+                            >
+                              LBS
+                            </button>
+                          </div>
+                        )}
+                      </div>
                       <input 
                         type="text"
-                        placeholder={loadType === 'weighted' ? "e.g. 10..." : "e.g. Red band..."}
+                        placeholder={loadType === 'weighted' ? `e.g. 10...` : "e.g. Red band..."}
                         value={assistanceValue}
                         onChange={(e) => updateActiveAssistance('resistance', e.target.value)}
                         className="w-full bg-black/40 border border-orange-500/20 rounded-2xl p-4 text-sm font-bold text-white focus:outline-none focus:border-orange-500 italic"
@@ -1115,7 +1160,13 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                                   onClick={(e) => e.stopPropagation()}
                                   className="bg-transparent text-4xl font-black text-purple-400 w-20 text-center focus:outline-none font-mono tracking-tighter"
                                />
-                               <span className="text-xs font-black text-purple-600">KG</span>
+                               <button 
+                                 type="button"
+                                 onClick={(e) => { e.stopPropagation(); updateSet(index, 'weightUnit', set.weightUnit === 'lbs' ? 'kg' : 'lbs'); }}
+                                 className="text-[10px] font-black text-purple-600 hover:text-purple-400 transition-colors uppercase"
+                               >
+                                 {set.weightUnit || 'KG'}
+                               </button>
                              </div>
                              <button 
                                type="button" 

@@ -21,7 +21,8 @@ export interface WorkoutSet {
   id: string;
   reps?: number;
   time?: number; // duration in seconds
-  weight?: number; // extra weight in kg
+  weight?: number; // extra weight
+  weightUnit?: 'kg' | 'lbs';
   // Overrides for per-set configuration
   grip?: GripType;
   gripWidth?: GripWidth;
@@ -68,6 +69,7 @@ export interface ExerciseLog {
   loadType: LoadType;
   assistanceValue?: string | number; // e.g. "Red", 10 (kg)
   assistanceDetails?: AssistanceDetails;
+  weightUnit?: 'kg' | 'lbs';
   sets: WorkoutSet[];
   notes?: string;
   media?: ExerciseMedia[];

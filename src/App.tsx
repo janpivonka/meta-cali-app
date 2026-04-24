@@ -312,9 +312,10 @@ export default function App() {
                                     
                                     const loadTag = [];
                                     const effectiveLType = s.loadType || ex.loadType;
+                                    const effectiveUnit = s.weightUnit || ex.weightUnit || 'kg';
                                     const resTotal = s.assistanceDetails?.resistance || s.weight || (effectiveLType === 'weighted' ? s.weight : null) || ex.assistanceValue;
                                     if (effectiveLType === 'bodyweight') loadTag.push('BODYWEIGHT');
-                                    else if (effectiveLType === 'weighted') loadTag.push(`WEIGHT- (${s.weight || resTotal || 0}KG)`);
+                                    else if (effectiveLType === 'weighted') loadTag.push(`WEIGHT- (${s.weight || resTotal || 0}${effectiveUnit.toUpperCase()})`);
                                     else loadTag.push(`ASSIST- (${resTotal || '?'})`);
 
                                     const gripLine = [];
@@ -357,16 +358,16 @@ export default function App() {
                                         orangeLine.push((s.assistanceDetails?.loopType || ex.assistanceDetails?.loopType) === 'double' ? 'WRAP' : 'SINGLE');
                                       }
                                     }
-                                    if (s.weight && s.weight > 0) orangeLine.push(`+${s.weight}KG`);
+                                    if (s.weight && s.weight > 0) orangeLine.push(`+${s.weight}${effectiveUnit.toUpperCase()}`);
                                     
                                     const isHighlighted = editingIndex === i && editingSetIndex === si;
   
                                     const currentLoadLabel = (() => {
                                       const effectiveLoadType = s.loadType || ex.loadType;
                                       if (effectiveLoadType === 'bodyweight') return 'BODYWEIGHT';
-                                      if (s.weight && s.weight > 0) return `WEIGHTED (+${s.weight}KG)`;
+                                      if (s.weight && s.weight > 0) return `WEIGHTED (+${s.weight}${effectiveUnit.toUpperCase()})`;
                                       if (effectiveLoadType === 'assisted' && res) return `ASSISTED (${res})`;
-                                      if (effectiveLoadType === 'weighted') return `WEIGHTED (${res || 0}KG)`;
+                                      if (effectiveLoadType === 'weighted') return `WEIGHTED (${res || 0}${effectiveUnit.toUpperCase()})`;
                                       return 'BODYWEIGHT';
                                     })();
 
@@ -464,7 +465,7 @@ export default function App() {
                                               "text-[10px] font-black font-mono ml-1",
                                               isHighlighted ? "text-black" : "text-orange-400"
                                             )}>
-                                              +{s.weight}k
+                                              +{s.weight}{(s.weightUnit || ex.weightUnit || 'kg').toLowerCase() === 'kg' ? 'k' : 'lb'}
                                             </span>
                                           )}
                                         </div>
@@ -561,9 +562,10 @@ export default function App() {
                                   
                                   const loadTag = [];
                                   const effectiveLType = s.loadType || log.loadType;
+                                  const effectiveUnit = s.weightUnit || log.weightUnit || 'kg';
                                   const resTotal = s.assistanceDetails?.resistance || s.weight || (effectiveLType === 'weighted' ? s.weight : null) || log.assistanceValue;
                                   if (effectiveLType === 'bodyweight') loadTag.push('BODYWEIGHT');
-                                  else if (effectiveLType === 'weighted') loadTag.push(`WEIGHT- (${s.weight || resTotal || 0}KG)`);
+                                  else if (effectiveLType === 'weighted') loadTag.push(`WEIGHT- (${s.weight || resTotal || 0}${effectiveUnit.toUpperCase()})`);
                                   else loadTag.push(`ASSIST- (${resTotal || '?'})`);
 
                                   const gripLine = [];
@@ -605,13 +607,13 @@ export default function App() {
                                       orangeLine.push((s.assistanceDetails?.loopType || log.assistanceDetails?.loopType) === 'double' ? 'WRAP' : 'SINGLE');
                                     }
                                   }
-                                  if (s.weight && s.weight > 0) orangeLine.push(`+${s.weight}KG`);
+                                  if (s.weight && s.weight > 0) orangeLine.push(`+${s.weight}${effectiveUnit.toUpperCase()}`);
 
                                   const currentLoadLabel = (() => {
                                     if (effectiveLoadType === 'bodyweight') return 'BODYWEIGHT';
-                                    if (s.weight && s.weight > 0) return `WEIGHTED (+${s.weight}KG)`;
+                                    if (s.weight && s.weight > 0) return `WEIGHTED (+${s.weight}${effectiveUnit.toUpperCase()})`;
                                     if (effectiveLoadType === 'assisted' && res) return `ASSISTED (${res})`;
-                                    if (effectiveLoadType === 'weighted') return `WEIGHTED (${res || 0}KG)`;
+                                    if (effectiveLoadType === 'weighted') return `WEIGHTED (${res || 0}${effectiveUnit.toUpperCase()})`;
                                     return 'BODYWEIGHT';
                                   })();
 
@@ -676,7 +678,7 @@ export default function App() {
                                         </span>
                                         {s.weight !== undefined && s.weight > 0 && (
                                           <span className="text-[10px] font-black font-mono ml-1 text-orange-400">
-                                            +{s.weight}k
+                                            +{s.weight}{(s.weightUnit || log.weightUnit || 'kg').toLowerCase() === 'kg' ? 'k' : 'lb'}
                                           </span>
                                         )}
                                       </div>
