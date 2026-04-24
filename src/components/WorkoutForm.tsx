@@ -145,6 +145,17 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       setOneLegSecondaryPosition(active.oneLegSecondaryPosition || 'tuck');
       setIsOneLeg(active.isOneLeg !== undefined ? active.isOneLeg : false);
       
+      // Determine load mode for the UI based on set data
+      if (active.loadType) {
+        setLoadType(active.loadType);
+      } else if (active.assistanceDetails?.resistance) {
+        setLoadType('assisted');
+      } else if (active.weight && active.weight > 0) {
+        setLoadType('weighted');
+      } else {
+        setLoadType('bodyweight');
+      }
+
       if (active.assistanceDetails) {
         setBandPlacements(active.assistanceDetails.placement as BandPlacement[] || ['both feet']);
         setBandLoopType(active.assistanceDetails.loopType || 'single');
@@ -167,19 +178,22 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
   const setLoadTypeAndClean = (newType: LoadType) => {
     setLoadType(newType);
     
-    // Update all sets to have the correct weight/assistance cleared if needed
-    setSets(prev => prev.map(s => {
-      const updated = { ...s };
-      if (newType === 'bodyweight') {
-        updated.weight = 0;
-        updated.assistanceDetails = undefined;
-      } else if (newType === 'weighted') {
-        updated.assistanceDetails = undefined;
-      } else if (newType === 'assisted') {
-        updated.weight = 0;
-      }
-      return updated;
-    }));
+    // ONLY clean the currently active set, not all sets
+    if (localEditingSetIndex !== null) {
+      setSets(prev => prev.map((s, i) => {
+        if (i !== localEditingSetIndex) return s;
+        const updated = { ...s, loadType: newType };
+        if (newType === 'bodyweight') {
+          updated.weight = 0;
+          updated.assistanceDetails = undefined;
+        } else if (newType === 'weighted') {
+          updated.assistanceDetails = undefined;
+        } else if (newType === 'assisted') {
+          updated.weight = 0;
+        }
+        return updated;
+      }));
+    }
   };
 
   const resetForm = () => {
@@ -294,11 +308,31 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
   const updateSet = (index: number, field: keyof WorkoutSet, value: any) => {
     const newSets = [...sets];
     newSets[index] = { ...newSets[index], [field]: value };
+    
+    // Auto-update loadType field on the set itself
+    if (field === 'weight') {
+      if (value > 0) {
+        newSets[index].loadType = 'weighted';
+        newSets[index].assistanceDetails = undefined;
+      } else if (!newSets[index].assistanceDetails?.resistance) {
+        newSets[index].loadType = 'bodyweight';
+      }
+    } else if (field === 'assistanceDetails') {
+      if (value?.resistance) {
+        newSets[index].loadType = 'assisted';
+        newSets[index].weight = 0;
+      } else if (!newSets[index].weight || newSets[index].weight === 0) {
+        newSets[index].loadType = 'bodyweight';
+      }
+    }
+
     setSets(newSets);
 
-    // Auto-switch loadType if user adds weight or assistance
-    if (field === 'weight' && value > 0 && loadType === 'bodyweight') {
-      setLoadType('weighted');
+    // Sync global UI state IF this is the active set
+    if (index === localEditingSetIndex) {
+      if (newSets[index].loadType) {
+        setLoadType(newSets[index].loadType!);
+      }
     }
   };
 
@@ -340,8 +374,9 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     }
 
     if (localEditingSetIndex !== null) {
-      const currentDetails = activeSet?.assistanceDetails || {};
+      const currentDetails = sets[localEditingSetIndex]?.assistanceDetails || {};
       updateSet(localEditingSetIndex, 'assistanceDetails', { ...currentDetails, placement: next });
+      setBandPlacements(next); // Sync local state
     } else {
       setBandPlacements(next);
     }
@@ -442,7 +477,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       };
       setSets(prev => {
         const next = [...prev];
-        next[localEditingSetIndex] = newSetValues;
+        next[localEditingSetIndex] = newSetValues as any;
         return next;
       });
     } else {
@@ -462,12 +497,12 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     if (field === 'placement') setBandPlacements(val);
 
     if (localEditingSetIndex !== null) {
-      const currentDetails = sets[localEditingSetIndex]?.assistanceDetails || { resistance: '', loopType: 'single', placements: [] };
+      const currentDetails = sets[localEditingSetIndex]?.assistanceDetails || { resistance: '', loopType: 'single', placement: [] };
       const updatedDetails = { ...currentDetails, [field]: val };
       
       // If we are in weighted mode, we actually update 'weight' instead of assistanceDetails.resistance
       if (loadType === 'weighted' && field === 'resistance') {
-        updateSet(localEditingSetIndex, 'weight', parseInt(val) || 0);
+        updateSet(localEditingSetIndex, 'weight', parseFloat(val) || 0);
       } else if (loadType === 'assisted') {
         updateSet(localEditingSetIndex, 'assistanceDetails', updatedDetails);
       }
@@ -546,13 +581,17 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       position: consensusPosition ?? position,
       legProgression: consensusLegProg ?? legProgression,
       loadType: finalLoadType, 
-      assistanceValue: assistanceValue, // Keep as string/number based on user input
+      assistanceValue: assistanceValue, 
       assistanceDetails: (finalLoadType === 'assisted') ? {
          resistance: assistanceValue || '',
          loopType: bandLoopType || 'single',
          placement: bandPlacements || []
       } : undefined,
-      sets: validSets,
+      sets: validSets.map(s => ({
+        ...s,
+        // Ensure every set saved has its explicit load context to prevent "bleed" during display
+        loadType: s.loadType || (s.weight && s.weight > 0 ? 'weighted' : (s.assistanceDetails?.resistance ? 'assisted' : 'bodyweight'))
+      })),
       notes,
       shared,
       timestamp: Date.now(),

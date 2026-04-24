@@ -37,6 +37,7 @@ export interface WorkoutSet {
   oneLegSecondaryPosition?: SingleLegPosition;
   isOneLeg?: boolean;
   assistanceDetails?: AssistanceDetails;
+  loadType?: LoadType;
 }
 
 export type LoadType = 'bodyweight' | 'weighted' | 'assisted';

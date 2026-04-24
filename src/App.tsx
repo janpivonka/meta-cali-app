@@ -311,10 +311,10 @@ export default function App() {
                                     const exName = EXERCISE_LIBRARY.find(e => e.id === ex.exerciseId)?.name || ex.type;
                                     
                                     const loadTag = [];
-                                    const lType = ex.loadType;
-                                    const resTotal = s.assistanceDetails?.resistance || ex.assistanceValue;
-                                    if (lType === 'bodyweight') loadTag.push('BODYWEIGHT');
-                                    else if (lType === 'weighted') loadTag.push(`WEIGHT- (${resTotal || 0}KG)`);
+                                    const effectiveLType = s.loadType || ex.loadType;
+                                    const resTotal = s.assistanceDetails?.resistance || s.weight || (effectiveLType === 'weighted' ? s.weight : null) || ex.assistanceValue;
+                                    if (effectiveLType === 'bodyweight') loadTag.push('BODYWEIGHT');
+                                    else if (effectiveLType === 'weighted') loadTag.push(`WEIGHT- (${s.weight || resTotal || 0}KG)`);
                                     else loadTag.push(`ASSIST- (${resTotal || '?'})`);
 
                                     const gripLine = [];
@@ -348,7 +348,8 @@ export default function App() {
                                     const orangeLine = [];
                                     // Primary load display in header loadTag, but details here
                                     const res = s.assistanceDetails?.resistance || ex.assistanceValue;
-                                    if (ex.loadType === 'assisted' && res) {
+                                    const effectiveLoadType = s.loadType || ex.loadType;
+                                    if (effectiveLoadType === 'assisted' && res) {
                                       orangeLine.push(`${res} BAND`);
                                       const p = s.assistanceDetails?.placement || (ex.assistanceDetails?.placement as any);
                                       if (p) orangeLine.push(Array.isArray(p) ? p.join('/') : p);
@@ -361,9 +362,11 @@ export default function App() {
                                     const isHighlighted = editingIndex === i && editingSetIndex === si;
   
                                     const currentLoadLabel = (() => {
+                                      const effectiveLoadType = s.loadType || ex.loadType;
+                                      if (effectiveLoadType === 'bodyweight') return 'BODYWEIGHT';
                                       if (s.weight && s.weight > 0) return `WEIGHTED (+${s.weight}KG)`;
-                                      if (ex.loadType === 'assisted' && res) return `ASSISTED (${res})`;
-                                      if (ex.loadType === 'weighted') return `WEIGHTED (${res || 0}KG)`;
+                                      if (effectiveLoadType === 'assisted' && res) return `ASSISTED (${res})`;
+                                      if (effectiveLoadType === 'weighted') return `WEIGHTED (${res || 0}KG)`;
                                       return 'BODYWEIGHT';
                                     })();
 
@@ -557,10 +560,10 @@ export default function App() {
                                   const exName = EXERCISE_LIBRARY.find(e => e.id === log.exerciseId)?.name || log.type;
                                   
                                   const loadTag = [];
-                                  const lType = log.loadType;
-                                  const resTotal = s.assistanceDetails?.resistance || log.assistanceValue;
-                                  if (lType === 'bodyweight') loadTag.push('BODYWEIGHT');
-                                  else if (lType === 'weighted') loadTag.push(`WEIGHT- (${resTotal || 0}KG)`);
+                                  const effectiveLType = s.loadType || log.loadType;
+                                  const resTotal = s.assistanceDetails?.resistance || s.weight || (effectiveLType === 'weighted' ? s.weight : null) || log.assistanceValue;
+                                  if (effectiveLType === 'bodyweight') loadTag.push('BODYWEIGHT');
+                                  else if (effectiveLType === 'weighted') loadTag.push(`WEIGHT- (${s.weight || resTotal || 0}KG)`);
                                   else loadTag.push(`ASSIST- (${resTotal || '?'})`);
 
                                   const gripLine = [];
@@ -592,8 +595,9 @@ export default function App() {
                                   if (eOneLeg) execLine.push(`1L:${s.oneLegPrimaryPosition || log.oneLegPrimaryPosition || 'full'}`);
   
                                   const orangeLine = [];
+                                  const effectiveLoadType = s.loadType || log.loadType;
                                   const res = s.assistanceDetails?.resistance || log.assistanceValue;
-                                  if (log.loadType === 'assisted' && res) {
+                                  if (effectiveLoadType === 'assisted' && res) {
                                     orangeLine.push(`${res} BAND`);
                                     const p = s.assistanceDetails?.placement || (log.assistanceDetails?.placement as any);
                                     if (p) orangeLine.push(Array.isArray(p) ? p.join('/') : p);
@@ -604,9 +608,10 @@ export default function App() {
                                   if (s.weight && s.weight > 0) orangeLine.push(`+${s.weight}KG`);
 
                                   const currentLoadLabel = (() => {
+                                    if (effectiveLoadType === 'bodyweight') return 'BODYWEIGHT';
                                     if (s.weight && s.weight > 0) return `WEIGHTED (+${s.weight}KG)`;
-                                    if (log.loadType === 'assisted' && res) return `ASSISTED (${res})`;
-                                    if (log.loadType === 'weighted') return `WEIGHTED (${res || 0}KG)`;
+                                    if (effectiveLoadType === 'assisted' && res) return `ASSISTED (${res})`;
+                                    if (effectiveLoadType === 'weighted') return `WEIGHTED (${res || 0}KG)`;
                                     return 'BODYWEIGHT';
                                   })();
 
