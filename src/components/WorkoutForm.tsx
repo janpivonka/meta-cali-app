@@ -105,7 +105,11 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       executionStyle: 'basic', 
       executionMethod: 'standard', 
       position: 'neutral', 
-      legProgression: 'full' 
+      legProgression: 'full',
+      oneArmHandPosition: 'free',
+      isOneLeg: false,
+      oneLegPrimaryPosition: 'full',
+      oneLegSecondaryPosition: 'tuck'
     }
   ]);
   const [notes, setNotes] = useState('');
@@ -127,24 +131,28 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     if (localEditingSetIndex === null) return;
     const active = sets[localEditingSetIndex];
     if (active) {
-      if (active.grip) setGrip(active.grip);
-      if (active.gripWidth) setGripWidth(active.gripWidth);
-      if (active.thumb) setThumb(active.thumb);
-      if (active.falseGrip !== undefined) setFalseGrip(active.falseGrip);
-      if (active.equipment) setEquipment(active.equipment);
-      if (active.executionStyle) setExecutionStyle(active.executionStyle);
-      if (active.executionMethod) setExecutionMethod(active.executionMethod);
-      if (active.position) setPosition(active.position);
-      if (active.legProgression) setLegProgression(active.legProgression);
-      if (active.oneArmHandPosition) setOneArmHandPosition(active.oneArmHandPosition);
-      if (active.oneLegPrimaryPosition) setOneLegPrimaryPosition(active.oneLegPrimaryPosition);
-      if (active.oneLegSecondaryPosition) setOneLegSecondaryPosition(active.oneLegSecondaryPosition);
-      if (active.isOneLeg !== undefined) setIsOneLeg(active.isOneLeg);
+      setGrip(active.grip || 'pronated');
+      setGripWidth(active.gripWidth || 'shoulder-width');
+      setThumb(active.thumb || 'under');
+      setFalseGrip(active.falseGrip !== undefined ? active.falseGrip : false);
+      setEquipment(active.equipment || 'pull-up bar');
+      setExecutionStyle(active.executionStyle || 'basic');
+      setExecutionMethod(active.executionMethod || 'standard');
+      setPosition(active.position || 'neutral');
+      setLegProgression(active.legProgression || 'full');
+      setOneArmHandPosition(active.oneArmHandPosition || 'free');
+      setOneLegPrimaryPosition(active.oneLegPrimaryPosition || 'full');
+      setOneLegSecondaryPosition(active.oneLegSecondaryPosition || 'tuck');
+      setIsOneLeg(active.isOneLeg !== undefined ? active.isOneLeg : false);
       
       if (active.assistanceDetails) {
         setBandPlacements(active.assistanceDetails.placement as BandPlacement[] || ['both feet']);
         setBandLoopType(active.assistanceDetails.loopType || 'single');
         setAssistanceValue(active.assistanceDetails.resistance?.toString() || '');
+      } else {
+        // Clear if not present in active set
+        setAssistanceValue('');
+        // We keep placements/loopType as they are largely exercise-wide defaults in UI
       }
     }
   }, [localEditingSetIndex, sets]);
@@ -192,7 +200,23 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     setAssistanceValue('');
     setBandPlacements(['both feet']);
     setBandLoopType('single');
-    setSets([{ reps: 10 }]);
+    setSets([{ 
+      id: crypto.randomUUID(), 
+      reps: 10, 
+      grip: 'pronated', 
+      gripWidth: 'shoulder-width', 
+      thumb: 'under', 
+      falseGrip: false, 
+      equipment: 'pull-up bar', 
+      executionStyle: 'basic', 
+      executionMethod: 'standard', 
+      position: 'neutral', 
+      legProgression: 'full',
+      oneArmHandPosition: 'free',
+      isOneLeg: false,
+      oneLegPrimaryPosition: 'full',
+      oneLegSecondaryPosition: 'tuck'
+    }]);
     setNotes('');
     setSearchQuery('');
     setShared(false);
@@ -253,7 +277,10 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     const newSet = { 
       ...lastSet, 
       id: crypto.randomUUID(),
-      // Optional: reset reps for new set if preferred, or keep them
+      assistanceDetails: lastSet.assistanceDetails ? { 
+        ...lastSet.assistanceDetails,
+        placement: lastSet.assistanceDetails.placement ? [...(Array.isArray(lastSet.assistanceDetails.placement) ? lastSet.assistanceDetails.placement : [lastSet.assistanceDetails.placement])] : undefined
+      } : undefined
     };
     setSets([...sets, newSet]);
     setLocalEditingSetIndex(sets.length);
@@ -268,6 +295,11 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     const newSets = [...sets];
     newSets[index] = { ...newSets[index], [field]: value };
     setSets(newSets);
+
+    // Auto-switch loadType if user adds weight or assistance
+    if (field === 'weight' && value > 0 && loadType === 'bodyweight') {
+      setLoadType('weighted');
+    }
   };
 
   const toggleBandPlacement = (p: BandPlacement) => {
@@ -468,14 +500,15 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       return firstVal;
     };
 
-    const consensusLoadType = (() => {
-      const types = validSets.map(s => {
-        if (s.assistanceDetails?.resistance) return 'assisted';
-        if (s.weight && s.weight > 0) return 'weighted';
-        return 'bodyweight';
-      });
-      const first = types[0];
-      return types.every(t => t === first) ? (first as LoadType) : 'bodyweight';
+    const finalLoadType = (() => {
+      // If user manually chose assisted or weighted, keep it
+      if (loadType !== 'bodyweight') return loadType;
+      // Otherwise check if any set has weight/assistance
+      const hasWeight = validSets.some(s => s.weight && s.weight > 0);
+      const hasAssistance = validSets.some(s => s.assistanceDetails?.resistance);
+      if (hasWeight) return 'weighted';
+      if (hasAssistance) return 'assisted';
+      return 'bodyweight';
     })();
 
     const consensusGrip = getConsensus('grip') as GripType | undefined;
@@ -512,9 +545,9 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       isOneLeg: consensusIsOneLeg || (legProgression === 'one leg') || isOneLeg,
       position: consensusPosition ?? position,
       legProgression: consensusLegProg ?? legProgression,
-      loadType: loadType, // Use the state directly to follow user intent
+      loadType: finalLoadType, 
       assistanceValue: assistanceValue, // Keep as string/number based on user input
-      assistanceDetails: (loadType === 'assisted') ? {
+      assistanceDetails: (finalLoadType === 'assisted') ? {
          resistance: assistanceValue || '',
          loopType: bandLoopType || 'single',
          placement: bandPlacements || []
@@ -977,7 +1010,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    key={index}
+                    key={set.id}
                     id={`set-item-${index}`}
                     className={cn(
                       "glass-card flex flex-col md:flex-row items-center gap-6 p-8 border-white/5 bg-white/5 rounded-[40px] group transition-all shadow-xl",

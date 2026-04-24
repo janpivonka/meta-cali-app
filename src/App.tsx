@@ -342,7 +342,7 @@ export default function App() {
                                     execLine.push(eMethod);
                                     execLine.push(ePos);
                                     execLine.push(eLeg);
-                                    if (eHand) execLine.push(`H:${eHand}`);
+                                    if (eStyle === 'one arm' && eHand && eHand !== 'free') execLine.push(`H:${eHand}`);
                                     if (eOneLeg) execLine.push(`1L:${s.oneLegPrimaryPosition || ex.oneLegPrimaryPosition || 'full'}`);
   
                                     const orangeLine = [];
@@ -360,6 +360,13 @@ export default function App() {
                                     
                                     const isHighlighted = editingIndex === i && editingSetIndex === si;
   
+                                    const currentLoadLabel = (() => {
+                                      if (s.weight && s.weight > 0) return `WEIGHTED (+${s.weight}KG)`;
+                                      if (ex.loadType === 'assisted' && res) return `ASSISTED (${res})`;
+                                      if (ex.loadType === 'weighted') return `WEIGHTED (${res || 0}KG)`;
+                                      return 'BODYWEIGHT';
+                                    })();
+
                                     return (
                                       <button 
                                         key={si} 
@@ -384,7 +391,7 @@ export default function App() {
                                             "text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md border",
                                             isHighlighted ? "bg-black/10 border-black/10 text-black/60" : "bg-cyan-500/5 border-cyan-500/10 text-cyan-400"
                                           )}>
-                                            {loadTag[0]}
+                                            {currentLoadLabel}
                                           </div>
                                         </div>
 
@@ -581,7 +588,7 @@ export default function App() {
                                   execLine.push(eMethod);
                                   execLine.push(ePos);
                                   execLine.push(eLeg);
-                                  if (eHand) execLine.push(`H:${eHand}`);
+                                  if (eStyle === 'one arm' && eHand && eHand !== 'free') execLine.push(`H:${eHand}`);
                                   if (eOneLeg) execLine.push(`1L:${s.oneLegPrimaryPosition || log.oneLegPrimaryPosition || 'full'}`);
   
                                   const orangeLine = [];
@@ -595,6 +602,14 @@ export default function App() {
                                     }
                                   }
                                   if (s.weight && s.weight > 0) orangeLine.push(`+${s.weight}KG`);
+
+                                  const currentLoadLabel = (() => {
+                                    if (s.weight && s.weight > 0) return `WEIGHTED (+${s.weight}KG)`;
+                                    if (log.loadType === 'assisted' && res) return `ASSISTED (${res})`;
+                                    if (log.loadType === 'weighted') return `WEIGHTED (${res || 0}KG)`;
+                                    return 'BODYWEIGHT';
+                                  })();
+
                                        return (
                                     <div 
                                       key={si} 
@@ -607,7 +622,7 @@ export default function App() {
                                         </span>
                                         <span className="text-[9px] font-black text-slate-800/30">/</span>
                                         <div className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md border bg-cyan-500/5 border-cyan-500/10 text-cyan-400">
-                                          {loadTag[0]}
+                                          {currentLoadLabel}
                                         </div>
                                       </div>
 
