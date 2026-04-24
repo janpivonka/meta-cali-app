@@ -167,6 +167,23 @@ export default function App() {
   const handleStartExercise = (ex: ExerciseDefinition) => {
     setPreSelectedExerciseId(ex.id);
     setActiveTab('log');
+    // Scroll to grip section after tab change
+    setTimeout(() => {
+      document.getElementById('grip-width-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 400);
+  };
+
+  const handleEditExercise = (index: number) => {
+    setActiveTab('log');
+    if (editingIndex === index) {
+      setEditingIndex(null);
+    } else {
+      setEditingIndex(index);
+      // Scroll to grip section
+      setTimeout(() => {
+        document.getElementById('grip-width-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 400);
+    }
   };
 
   const handleUpdateProfile = (newProfile: UserProfile) => {
@@ -226,7 +243,7 @@ export default function App() {
                       className="relative overflow-visible"
                     >
                       <button 
-                        onClick={() => setEditingIndex(i)}
+                        onClick={() => handleEditExercise(i)}
                         className={cn(
                           "w-full text-left p-4 rounded-[24px] border transition-all group flex items-center justify-between gap-4 cursor-grab active:cursor-grabbing",
                           editingIndex === i 

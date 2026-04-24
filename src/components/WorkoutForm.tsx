@@ -400,7 +400,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
            <div className="space-y-8 p-8 bg-white/5 rounded-[32px] border border-white/5">
               <div className="space-y-6">
-                 <div>
+                 <div id="grip-width-section">
                    <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-500/60 block mb-3">Grip Width</label>
                    <div className="flex flex-wrap gap-2">
                       {GRIP_WIDTHS.map(w => (
