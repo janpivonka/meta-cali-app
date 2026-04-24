@@ -273,6 +273,7 @@ export default function App() {
                                   {(ex.assistanceDetails.placement as BandPlacement[] || []).map(p => 
                                     p === 'one foot' ? 'One Foot' : 
                                     p === 'both feet' ? 'Both Feet' : 
+                                    p === 'knees' ? 'Knees' : 
                                     p === 'waist' ? 'Waist' : 
                                     p === 'buttocks' ? 'Buttocks' : 'Chest'
                                   ).join(', ')}
@@ -283,8 +284,12 @@ export default function App() {
                               {/* Physical Parameters */}
                               <div className="flex items-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
                                 <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">
-                                  {ex.executionStyle !== 'one arm' && (ex.gripWidth === 'wide' ? 'Wide ' : ex.gripWidth === 'narrow' ? 'Narrow ' : 'Shoulder-width ')}
-                                  {ex.grip}
+                                  {ex.executionStyle === 'commando' ? 'Commando' : (
+                                    <>
+                                      {ex.executionStyle !== 'one arm' && (ex.gripWidth === 'wide' ? 'Wide ' : ex.gripWidth === 'narrow' ? 'Narrow ' : 'Shoulder-width ')}
+                                      {ex.grip}
+                                    </>
+                                  )}
                                   {ex.thumb && ` • ${ex.thumb === 'under' ? 'Under' : 'Over'} thumb`}
                                   {ex.falseGrip && ` • False Grip`}
                                 </span>
@@ -293,7 +298,7 @@ export default function App() {
                               {/* Tactical Params */}
                               <div className="flex items-center gap-1.5 border-l border-white/10 pl-3">
                                 <span className="text-[8px] font-black text-purple-400 uppercase tracking-tighter italic">
-                                  {ex.executionStyle !== 'basic' && `${ex.executionStyle} • `}
+                                  {ex.executionStyle !== 'basic' && ex.executionStyle !== 'commando' && `${ex.executionStyle} • `}
                                   {ex.oneArmHandPosition && ex.executionStyle === 'one arm' && `(${ex.oneArmHandPosition}) • `}
                                   {ex.executionMethod}
                                   {ex.position && ex.position !== 'neutral' && ex.position !== 'standard' && ` • ${ex.position}`}

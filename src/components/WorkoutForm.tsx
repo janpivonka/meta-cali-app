@@ -55,7 +55,7 @@ const EXECUTION_STYLES: ExecutionStyle[] = ['basic', 'one arm', 'archer', 'typew
 const EXECUTION_METHODS: ExecutionMethod[] = ['standard', 'explosive', 'partial', 'negative', 'scapula', 'controlled'];
 const POSITIONS: BodyPosition[] = ['neutral', 'hollow body', 'arch back', 'L-sit'];
 const LEG_PROGRESSIONS: LegProgression[] = ['tuck', 'adv tuck', 'straddle', 'one leg', 'halflay', 'full', 'australian (bent legs)', 'australian (straight legs)'];
-const BAND_PLACEMENTS: BandPlacement[] = ['both feet', 'one foot', 'buttocks', 'waist', 'chest'];
+const BAND_PLACEMENTS: BandPlacement[] = ['both feet', 'one foot', 'knees', 'buttocks', 'waist', 'chest'];
 const LOOP_TYPES: { val: BandLoopType; label: string }[] = [
   { val: 'single', label: 'Single' },
   { val: 'double', label: 'Double (wrapped)' }
@@ -180,32 +180,41 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
 
   const toggleBandPlacement = (p: BandPlacement) => {
     setBandPlacements(prev => {
-      // Logic: Allowed combinations are (Feet/Foot) + (Waist/Buttocks)
+      // Logic: Allowed combinations are (Feet/Foot/Knees) + (Waist/Buttocks)
       // Otherwise only one selection
       
-      const isFoot = p === 'both feet' || p === 'one foot';
-      const isSupport = p === 'waist' || p === 'buttocks';
-      const isAlone = p === 'chest';
+      const isFoot = (item: BandPlacement) => item === 'both feet' || item === 'one foot';
+      const isSupport = (item: BandPlacement) => item === 'waist' || item === 'buttocks';
+      const isKnees = (item: BandPlacement) => item === 'knees';
+      
+      const pIsFoot = isFoot(p);
+      const pIsSupport = isSupport(p);
+      const pIsKnees = isKnees(p);
+      const pIsChest = p === 'chest';
 
       if (prev.includes(p)) {
+        // Custom rule: if we have (feet/knees + support) and click support again, keep only support
+        if (pIsSupport && prev.some(item => isFoot(item) || isKnees(item))) {
+          return [p];
+        }
         const next = prev.filter(item => item !== p);
         return next.length === 0 ? ['both feet'] : next;
       }
 
-      if (isAlone) return [p];
+      if (pIsChest) return [p];
 
-      // If we are selecting a foot one
-      if (isFoot) {
-        // Can coexist with support, but not with another foot or chest
-        const currentSupport = prev.find(item => item === 'waist' || item === 'buttocks');
+      // If we are selecting a foot one or knees
+      if (pIsFoot || pIsKnees) {
+        // Can coexist with support, but not with another lower body point or chest
+        const currentSupport = prev.find(isSupport);
         return currentSupport ? [p, currentSupport as BandPlacement] : [p];
       }
 
       // If we are selecting a support one
-      if (isSupport) {
-        // Can coexist with foot, but not with another support or chest
-        const currentFoot = prev.find(item => item === 'both feet' || item === 'one foot');
-        return currentFoot ? [currentFoot as BandPlacement, p] : [p];
+      if (pIsSupport) {
+        // Can coexist with foot/knees, but not with another support or chest
+        const currentLower = prev.find(item => isFoot(item) || isKnees(item));
+        return currentLower ? [currentLower as BandPlacement, p] : [p];
       }
 
       return [p];
@@ -755,6 +764,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                            >
                              {p === 'one foot' ? 'One Foot' : 
                               p === 'both feet' ? 'Both Feet' : 
+                              p === 'knees' ? 'Knees' :
                               p === 'waist' ? 'Waist (Lumbar)' : 
                               p === 'buttocks' ? 'Buttocks' : 'Chest'}
                            </button>
