@@ -180,41 +180,37 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
 
   const toggleBandPlacement = (p: BandPlacement) => {
     setBandPlacements(prev => {
-      // Logic: Allowed combinations are (Feet/Foot/Knees) + (Waist/Buttocks)
-      // Otherwise only one selection
-      
       const isFoot = (item: BandPlacement) => item === 'both feet' || item === 'one foot';
-      const isSupport = (item: BandPlacement) => item === 'waist' || item === 'buttocks';
-      const isKnees = (item: BandPlacement) => item === 'knees';
+      const isSupport = (item: BandPlacement) => item === 'waist' || item === 'buttocks' || item === 'knees' || item === 'chest';
       
       const pIsFoot = isFoot(p);
       const pIsSupport = isSupport(p);
-      const pIsKnees = isKnees(p);
-      const pIsChest = p === 'chest';
 
       if (prev.includes(p)) {
-        // Custom rule: if we have (feet/knees + support) and click support again, keep only support
-        if (pIsSupport && prev.some(item => isFoot(item) || isKnees(item))) {
+        // When mixed groups are active, clicking an active item deselects the other group
+        const hasFoot = prev.some(isFoot);
+        const hasSupport = prev.some(isSupport);
+
+        if (hasFoot && hasSupport) {
           return [p];
         }
+        
+        // Normal toggle off
         const next = prev.filter(item => item !== p);
         return next.length === 0 ? ['both feet'] : next;
       }
 
-      if (pIsChest) return [p];
-
-      // If we are selecting a foot one or knees
-      if (pIsFoot || pIsKnees) {
-        // Can coexist with support, but not with another lower body point or chest
-        const currentSupport = prev.find(isSupport);
-        return currentSupport ? [p, currentSupport as BandPlacement] : [p];
+      // Adding p
+      if (pIsFoot) {
+        // Keep support, replace other foot elements
+        const support = prev.filter(isSupport);
+        return [...support, p];
       }
-
-      // If we are selecting a support one
+      
       if (pIsSupport) {
-        // Can coexist with foot/knees, but not with another support or chest
-        const currentLower = prev.find(item => isFoot(item) || isKnees(item));
-        return currentLower ? [currentLower as BandPlacement, p] : [p];
+        // Keep foot, replace other support elements
+        const foot = prev.filter(isFoot);
+        return [...foot, p];
       }
 
       return [p];
@@ -764,7 +760,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                            >
                              {p === 'one foot' ? 'One Foot' : 
                               p === 'both feet' ? 'Both Feet' : 
-                              p === 'knees' ? 'Knees' :
+                              p === 'knees' ? 'Knee/s' :
                               p === 'waist' ? 'Waist (Lumbar)' : 
                               p === 'buttocks' ? 'Buttocks' : 'Chest'}
                            </button>

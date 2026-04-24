@@ -273,7 +273,7 @@ export default function App() {
                                   {(ex.assistanceDetails.placement as BandPlacement[] || []).map(p => 
                                     p === 'one foot' ? 'One Foot' : 
                                     p === 'both feet' ? 'Both Feet' : 
-                                    p === 'knees' ? 'Knees' : 
+                                    p === 'knees' ? 'Knee/s' : 
                                     p === 'waist' ? 'Waist' : 
                                     p === 'buttocks' ? 'Buttocks' : 'Chest'
                                   ).join(', ')}
