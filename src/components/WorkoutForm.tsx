@@ -10,6 +10,8 @@ import {
   Edit3, 
   Search,
   Camera,
+  Video,
+  X,
   MessageSquare,
   ChevronDown,
   ChevronUp,
@@ -113,16 +115,17 @@ const WorkoutSetItem: React.FC<WorkoutSetItemProps> = ({
       dragControls={controls}
       id={`set-item-${index}`}
       className={cn(
-        "glass-card flex flex-col md:flex-row items-center gap-4 p-4 md:p-6 border-white/5 bg-white/5 rounded-[32px] group transition-all shadow-lg relative",
+        "glass-card flex flex-col items-center p-4 md:p-6 border-white/5 bg-white/5 rounded-[32px] group transition-all shadow-lg relative",
         (highlightedSetIndex === index || localEditingSetIndex === index) ? "border-cyan-500/50 bg-cyan-500/5 ring-1 ring-cyan-500/20" : "hover:border-white/10"
       )}
       onClick={() => setLocalEditingSetIndex(index)}
     >
-      <div 
-        onPointerDown={(e) => controls.start(e)}
-        className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col items-center justify-center w-10 h-10 cursor-grab active:cursor-grabbing hover:bg-white/5 rounded-xl transition-all"
-        style={{ touchAction: 'none' }}
-      >
+      <div className="w-full flex flex-col md:flex-row items-center gap-4">
+        <div 
+          onPointerDown={(e) => controls.start(e)}
+          className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col items-center justify-center w-10 h-10 cursor-grab active:cursor-grabbing hover:bg-white/5 rounded-xl transition-all"
+          style={{ touchAction: 'none' }}
+        >
          <div className="flex flex-col gap-1 items-center">
            <div className="w-[3px] h-[3px] rounded-full bg-slate-600 group-hover:bg-cyan-500" />
            <div className="w-[3px] h-[3px] rounded-full bg-slate-600 group-hover:bg-cyan-500" />
@@ -132,10 +135,13 @@ const WorkoutSetItem: React.FC<WorkoutSetItemProps> = ({
 
       <div className="flex flex-col items-center gap-1 min-w-[30px] md:min-w-[80px]">
          <div className={cn(
-           "w-10 h-10 rounded-xl bg-black/40 flex items-center justify-center border transition-all",
+           "w-10 h-10 rounded-xl bg-black/40 flex items-center justify-center border transition-all relative",
            (highlightedSetIndex === index || localEditingSetIndex === index) ? "border-cyan-400 text-cyan-400 scale-105 shadow-[0_0_10px_rgba(34,211,238,0.1)]" : "border-white/10 text-white italic"
          )}>
             <span className="text-lg font-black">{index + 1}</span>
+            {(set.notes || (set.media && set.media.length > 0)) && (
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full border border-black shadow-[0_0_5px_rgba(249,115,22,0.5)]" />
+            )}
          </div>
       </div>
 
@@ -290,6 +296,82 @@ const WorkoutSetItem: React.FC<WorkoutSetItemProps> = ({
            className="w-8 h-8 rounded-xl bg-red-500/5 text-slate-700 hover:text-red-500 hover:bg-red-500/10 transition-all p-1.5 flex items-center justify-center"
          ><Minus size={16} /></button>
       </div>
+    </div>
+
+    <AnimatePresence>
+        {localEditingSetIndex === index && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="w-full flex flex-col gap-5 mt-6 pt-6 border-t border-white/5 px-2 md:px-10 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex flex-col gap-2">
+              <label className="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-400/60 flex items-center gap-2">
+                <MessageSquare size={12} className="text-cyan-500" /> Commentary / Internal Cues
+              </label>
+              <textarea 
+                value={set.notes || ''}
+                onChange={(e) => updateSet(index, 'notes', e.target.value)}
+                placeholder="How did it feel? Technical cues to remember..."
+                className="w-full bg-black/30 border border-white/5 rounded-2xl p-4 text-xs font-medium text-slate-300 focus:outline-none focus:border-cyan-500/30 transition-all min-h-[80px] leading-relaxed placeholder:text-slate-700"
+              />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-400/60 flex items-center gap-2">
+                <Camera size={12} className="text-cyan-500" /> Session Media
+              </label>
+              <div className="flex flex-wrap gap-3">
+                <AnimatePresence mode="popLayout">
+                  {set.media?.map((m, mIdx) => (
+                    <motion.div 
+                      key={mIdx}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      className="relative group/media"
+                    >
+                      <div className="w-16 h-16 rounded-2xl overflow-hidden border border-white/10 bg-black/40">
+                        {m.type === 'image' ? (
+                          <img src={m.url} className="w-full h-full object-cover" referrerPolicy="no-referrer" alt={`Set media ${mIdx}`} />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-cyan-500"><Video size={24} /></div>
+                        )}
+                      </div>
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          const newMedia = [...(set.media || [])];
+                          newMedia.splice(mIdx, 1);
+                          updateSet(index, 'media', newMedia);
+                        }}
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-600 transition-colors z-10"
+                      ><X size={12} /></button>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+                
+                <button 
+                  type="button"
+                  onClick={() => {
+                    const url = prompt("Enter Image/Video URL (demo placeholder):", "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&q=80");
+                    if (url) {
+                      const type = url.match(/\.(mp4|webm|mov)$/i) ? 'video' : 'image';
+                      updateSet(index, 'media', [...(set.media || []), { type, url }]);
+                    }
+                  }}
+                  className="w-16 h-16 rounded-2xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-1 text-slate-500 hover:border-cyan-500/50 hover:text-cyan-400 transition-all bg-white/2"
+                >
+                  <Plus size={20} />
+                  <span className="text-[7px] font-black">ADD</span>
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </Reorder.Item>
   );
 };

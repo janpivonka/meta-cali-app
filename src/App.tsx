@@ -7,7 +7,7 @@ import { AiInsights } from './components/AiInsights';
 import { Profile } from './components/Profile';
 import { ExerciseLog, UserProfile, Workout, ExerciseDefinition, BandPlacement } from './types';
 import { motion, AnimatePresence, Reorder, useDragControls } from 'framer-motion';
-import { Activity, Github, Twitter, Instagram, Sun, Moon, Share2, Edit3, MessageSquare, GripVertical } from 'lucide-react';
+import { Activity, Github, Twitter, Instagram, Sun, Moon, Share2, Edit3, MessageSquare, GripVertical, Video, Camera } from 'lucide-react';
 import { EXERCISE_LIBRARY } from './data/exerciseLibrary';
 import { cn } from './lib/utils';
 
@@ -196,6 +196,33 @@ function SetReorderItem({ s, si, i, ex, editingIndex, editingSetIndex, handleEdi
             </div>
           )}
         </div>
+
+        {/* Set Notes and Media Preview */}
+        {(s.notes || (s.media && s.media.length > 0)) && (
+          <div className="mt-2 pr-14 flex flex-col gap-1.5 pointer-events-none">
+            {s.notes && (
+              <p className={cn(
+                "text-[7px] italic font-medium leading-tight",
+                isHighlighted ? "text-black/70" : "text-slate-400"
+              )}>
+                "{s.notes}"
+              </p>
+            )}
+            {s.media && s.media.length > 0 && (
+              <div className="flex gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
+                {s.media.map((m, midx) => (
+                  <div key={midx} className="w-8 h-8 rounded-lg overflow-hidden border border-white/5 bg-black/40 shrink-0">
+                    {m.type === 'image' ? (
+                      <img src={m.url} className="w-full h-full object-cover opacity-80" referrerPolicy="no-referrer" alt="" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-cyan-500/60"><Video size={10} /></div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Reps Badge - Shifted slightly for handle */}
         <div className={cn(

@@ -40,6 +40,8 @@ export interface WorkoutSet {
   isOneLeg?: boolean;
   assistanceDetails?: AssistanceDetails;
   loadType?: LoadType;
+  notes?: string;
+  media?: ExerciseMedia[];
 }
 
 export type LoadType = 'bodyweight' | 'weighted' | 'assisted';
