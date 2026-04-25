@@ -49,10 +49,10 @@ function SetReorderItem({ s, si, i, ex, editingIndex, editingSetIndex, handleEdi
   const loadTag = [];
   const effectiveLType = s.loadType || ex.loadType;
   const effectiveUnit = s.weightUnit || ex.weightUnit || 'kg';
-  const resTotal = s.assistanceDetails?.resistance || s.weight || (effectiveLType === 'weighted' ? s.weight : null) || ex.assistanceValue;
+  const resTotal = s.assistanceDetails?.resistance || (effectiveLType === 'weighted' ? s.weight : null) || ex.assistanceValue;
   if (effectiveLType === 'bodyweight') loadTag.push('BODYWEIGHT');
-  else if (effectiveLType === 'weighted') loadTag.push(`WEIGHT- (${s.weight || resTotal || 0}${effectiveUnit.toUpperCase()})`);
-  else loadTag.push(`ASSIST- (${resTotal || '?'})`);
+  else if (effectiveLType === 'weighted') loadTag.push(`WEIGHTED (+${s.weight || resTotal || 0}${effectiveUnit.toUpperCase()})`);
+  else loadTag.push(`ASSISTED (-${resTotal || '?'}${effectiveUnit.toUpperCase()})`);
 
   const gripLine = [];
   const gWidth = s.gripWidth || ex.gripWidth || 'shoulder-width';
@@ -92,7 +92,7 @@ function SetReorderItem({ s, si, i, ex, editingIndex, editingSetIndex, handleEdi
   const res = s.assistanceDetails?.resistance || ex.assistanceValue;
   const effectiveLoadType = s.loadType || ex.loadType;
   if (effectiveLoadType === 'assisted' && res) {
-    orangeLine.push(`${res} BAND`);
+    orangeLine.push(`${res}${effectiveUnit.toUpperCase()} BAND`);
     const p = s.assistanceDetails?.placement || (ex.assistanceDetails?.placement as any);
     if (p) orangeLine.push(Array.isArray(p) ? p.join('/') : p);
     if (s.assistanceDetails?.loopType || ex.assistanceDetails?.loopType) {
@@ -105,8 +105,8 @@ function SetReorderItem({ s, si, i, ex, editingIndex, editingSetIndex, handleEdi
     const effectiveLoadType = s.loadType || ex.loadType;
     if (effectiveLoadType === 'bodyweight') return 'BODYWEIGHT';
     if (s.weight && s.weight > 0) return `WEIGHTED (+${s.weight}${effectiveUnit.toUpperCase()})`;
-    if (effectiveLoadType === 'assisted' && res) return `ASSISTED (${res})`;
-    if (effectiveLoadType === 'weighted') return `WEIGHTED (${res || 0}${effectiveUnit.toUpperCase()})`;
+    if (effectiveLoadType === 'assisted' && res) return `ASSISTED (-${res}${effectiveUnit.toUpperCase()})`;
+    if (effectiveLoadType === 'weighted') return `WEIGHTED (+${res || 0}${effectiveUnit.toUpperCase()})`;
     return 'BODYWEIGHT';
   })();
 
