@@ -910,7 +910,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                         <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-400 block mb-2">
                           {legProgression.toString().includes('australian') ? 'Floating Leg Position' : 'Primary Leg'}
                         </label>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                           {SINGLE_LEG_POSITIONS.map(p => (
                             <button
                               key={p}
@@ -932,8 +932,8 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                                 }
                               }}
                               className={cn(
-                                "px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest border transition-all flex-1 text-center min-w-[80px]",
-                                oneLegPrimaryPosition === p ? "bg-cyan-500 text-black border-cyan-400" : "bg-black/40 text-slate-500 border-white/5"
+                                "px-3 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest border transition-all text-center",
+                                oneLegPrimaryPosition === p ? "bg-cyan-500 text-black border-cyan-400 shadow-lg shadow-cyan-500/20" : "bg-black/40 text-slate-500 border-white/5 hover:border-white/20"
                               )}
                             >
                               {p}
@@ -945,15 +945,15 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                       {legProgression === 'one leg' && (
                         <div className="space-y-2">
                           <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-400/60 block mb-2">Secondary Leg</label>
-                          <div className="flex flex-wrap gap-2">
+                          <div className="grid grid-cols-3 gap-2">
                             {SINGLE_LEG_POSITIONS.filter(p => p !== oneLegPrimaryPosition).map(p => (
                               <button
                                 key={p}
                                 type="button"
                                 onClick={() => updateActiveValue('oneLegSecondaryPosition', setOneLegSecondaryPosition, p)}
                                 className={cn(
-                                  "px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest border transition-all flex-1 text-center min-w-[80px]",
-                                  oneLegSecondaryPosition === p ? "bg-cyan-500 text-black border-cyan-400" : "bg-black/40 text-slate-500 border-white/5"
+                                  "px-3 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest border transition-all text-center",
+                                  oneLegSecondaryPosition === p ? "bg-cyan-500 text-black border-cyan-400 shadow-lg shadow-cyan-500/20" : "bg-black/40 text-slate-500 border-white/5 hover:border-white/20"
                                 )}
                               >
                                 {p}

@@ -358,7 +358,7 @@ export default function App() {
                                         orangeLine.push((s.assistanceDetails?.loopType || ex.assistanceDetails?.loopType) === 'double' ? 'WRAP' : 'SINGLE');
                                       }
                                     }
-                                    if (s.weight && s.weight > 0) orangeLine.push(`+${s.weight}${effectiveUnit.toUpperCase()}`);
+                                    if (s.weight && s.weight > 0 && effectiveLoadType !== 'weighted') orangeLine.push(`+${s.weight}${effectiveUnit.toUpperCase()}`);
                                     
                                     const isHighlighted = editingIndex === i && editingSetIndex === si;
   
@@ -460,7 +460,7 @@ export default function App() {
                                           )}>
                                             {s.reps ? 'r' : 's'}
                                           </span>
-                                          {s.weight !== undefined && s.weight > 0 && (
+                                          {s.weight !== undefined && s.weight > 0 && effectiveLoadType !== 'weighted' && (
                                             <span className={cn(
                                               "text-[10px] font-black font-mono ml-1",
                                               isHighlighted ? "text-black" : "text-orange-400"
@@ -607,7 +607,7 @@ export default function App() {
                                       orangeLine.push((s.assistanceDetails?.loopType || log.assistanceDetails?.loopType) === 'double' ? 'WRAP' : 'SINGLE');
                                     }
                                   }
-                                  if (s.weight && s.weight > 0) orangeLine.push(`+${s.weight}${effectiveUnit.toUpperCase()}`);
+                                  if (s.weight && s.weight > 0 && effectiveLoadType !== 'weighted') orangeLine.push(`+${s.weight}${effectiveUnit.toUpperCase()}`);
 
                                   const currentLoadLabel = (() => {
                                     if (effectiveLoadType === 'bodyweight') return 'BODYWEIGHT';
@@ -676,7 +676,7 @@ export default function App() {
                                         <span className="text-[7px] font-black uppercase text-slate-500">
                                           {s.reps ? 'r' : 's'}
                                         </span>
-                                        {s.weight !== undefined && s.weight > 0 && (
+                                        {s.weight !== undefined && s.weight > 0 && effectiveLoadType !== 'weighted' && (
                                           <span className="text-[10px] font-black font-mono ml-1 text-orange-400">
                                             +{s.weight}{(s.weightUnit || log.weightUnit || 'kg').toLowerCase() === 'kg' ? 'k' : 'lb'}
                                           </span>
