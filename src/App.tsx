@@ -129,16 +129,16 @@ function SetReorderItem({ s, si, i, ex, editingIndex, editingSetIndex, handleEdi
         )}
       >
         {/* Set Header: Exercise + Load Tag */}
-        <div className="flex items-center gap-2 mb-0.5 pr-20">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1.5 pr-14">
           <span className={cn(
-            "text-[10px] font-black italic uppercase tracking-tighter truncate",
+            "text-[10px] font-black italic uppercase tracking-tighter shrink-0",
             isHighlighted ? "text-black" : "text-white"
           )}>
             {exName}
           </span>
-          <span className="text-[9px] font-black text-slate-800/30">/</span>
+          <span className="text-[9px] font-black text-slate-800/30 shrink-0">/</span>
           <div className={cn(
-            "text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded border shrink-0",
+            "text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded border shrink-0",
             isHighlighted ? "bg-black/10 border-black/10 text-black/60" : "bg-cyan-500/5 border-cyan-500/10 text-cyan-400"
           )}>
             {currentLoadLabel}
@@ -275,9 +275,8 @@ function ExerciseReorderItem({
               </div>
               <div className="flex flex-col">
                 <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.4em] italic leading-none">
-                  Session Fragment Execution
+                  Session Fragment
                 </span>
-                <span className="text-white font-black text-sm uppercase mt-1">{(EXERCISE_LIBRARY.find(el => el.id === ex.exerciseId)?.name || ex.type).toUpperCase()}</span>
               </div>
             </div>
 
