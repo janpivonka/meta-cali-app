@@ -14,7 +14,8 @@ import {
   ChevronDown,
   ChevronUp,
   Boxes,
-  Waves
+  Waves,
+  GripVertical
 } from 'lucide-react';
 import { 
   WorkoutSet, 
@@ -35,7 +36,7 @@ import {
   AssistanceDetails
 } from '../types';
 import { cn } from '../lib/utils';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, Reorder, useDragControls } from 'framer-motion';
 import { EXERCISE_LIBRARY } from '../data/exerciseLibrary';
 
 interface WorkoutFormProps {
@@ -72,6 +73,163 @@ const ONE_ARM_POSITIONS: { val: OneArmHandPosition; label: string }[] = [
   { val: 'horizontal', label: 'Horizontal/Chest' },
   { val: 'free', label: 'Free along body' }
 ];
+
+interface WorkoutSetItemProps {
+  set: WorkoutSet;
+  index: number;
+  highlightedSetIndex: number | null;
+  localEditingSetIndex: number | null;
+  exerciseId: string;
+  loadType: LoadType;
+  setLocalEditingSetIndex: (i: number) => void;
+  updateSet: (index: number, field: keyof WorkoutSet, value: any) => void;
+  removeSet: (index: number) => void;
+  isHoldExercise: (id: string) => boolean;
+}
+
+const WorkoutSetItem: React.FC<WorkoutSetItemProps> = ({ 
+  set, 
+  index, 
+  highlightedSetIndex, 
+  localEditingSetIndex, 
+  exerciseId, 
+  loadType,
+  setLocalEditingSetIndex,
+  updateSet,
+  removeSet,
+  isHoldExercise
+}) => {
+  const controls = useDragControls();
+
+  return (
+    <Reorder.Item 
+      layout
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      key={set.id}
+      value={set}
+      dragListener={false}
+      dragControls={controls}
+      id={`set-item-${index}`}
+      className={cn(
+        "glass-card flex flex-col md:flex-row items-center gap-4 p-4 md:p-6 border-white/5 bg-white/5 rounded-[32px] group transition-all shadow-lg relative",
+        (highlightedSetIndex === index || localEditingSetIndex === index) ? "border-cyan-500/50 bg-cyan-500/5 ring-1 ring-cyan-500/20" : "hover:border-white/10"
+      )}
+      onClick={() => setLocalEditingSetIndex(index)}
+    >
+      <div 
+        onPointerDown={(e) => controls.start(e)}
+        className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col items-center justify-center w-10 h-10 cursor-grab active:cursor-grabbing hover:bg-white/5 rounded-xl transition-all"
+        style={{ touchAction: 'none' }}
+      >
+         <div className="flex flex-col gap-1 items-center">
+           <div className="w-[3px] h-[3px] rounded-full bg-slate-600 group-hover:bg-cyan-500" />
+           <div className="w-[3px] h-[3px] rounded-full bg-slate-600 group-hover:bg-cyan-500" />
+           <div className="w-[3px] h-[3px] rounded-full bg-slate-600 group-hover:bg-cyan-500" />
+         </div>
+      </div>
+
+      <div className="flex flex-col items-center gap-1 min-w-[30px] md:min-w-[80px]">
+         <div className={cn(
+           "w-10 h-10 rounded-xl bg-black/40 flex items-center justify-center border transition-all",
+           (highlightedSetIndex === index || localEditingSetIndex === index) ? "border-cyan-400 text-cyan-400 scale-105 shadow-[0_0_10px_rgba(34,211,238,0.1)]" : "border-white/10 text-white italic"
+         )}>
+            <span className="text-lg font-black">{index + 1}</span>
+         </div>
+      </div>
+
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 w-full pr-10">
+        {/* Reps/Time */}
+        <div className="flex flex-col items-center gap-1">
+          <div className="flex items-center gap-3">
+             <button 
+               type="button" 
+               onClick={(e) => { e.stopPropagation(); updateSet(index, isHoldExercise(exerciseId) ? 'time' : 'reps', Math.max(0, (isHoldExercise(exerciseId) ? (set.time || 0) : (set.reps || 0)) - 1)); }}
+               className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all active:scale-90"
+             ><Minus size={16} /></button>
+             <input 
+                 type="number"
+                 value={isHoldExercise(exerciseId) ? (set.time || 0) : (set.reps || 0)}
+                 onChange={(e) => updateSet(index, isHoldExercise(exerciseId) ? 'time' : 'reps', parseInt(e.target.value) || 0)}
+                 onClick={(e) => e.stopPropagation()}
+                 className="bg-transparent text-3xl font-black text-white w-16 text-center focus:outline-none font-mono tracking-tighter"
+             />
+             <button 
+               type="button" 
+               onClick={(e) => { e.stopPropagation(); updateSet(index, isHoldExercise(exerciseId) ? 'time' : 'reps', (isHoldExercise(exerciseId) ? (set.time || 0) : (set.reps || 0)) + 1); }}
+               className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all active:scale-90"
+             ><Plus size={16} /></button>
+          </div>
+          <span className="text-[8px] font-black uppercase tracking-widest text-slate-600 italic">
+            {isHoldExercise(exerciseId) ? 'Time' : 'Reps'}
+          </span>
+        </div>
+
+        {/* Weight */}
+        {(set.weight !== undefined || loadType === 'weighted' || localEditingSetIndex === index) && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex flex-col items-center gap-1"
+          >
+            <div className="flex items-center gap-3">
+               <button 
+                 type="button" 
+                 onClick={(e) => { e.stopPropagation(); updateSet(index, 'weight', Math.max(0, (set.weight || 0) - 1)); }}
+                 className="w-7 h-7 rounded-full flex items-center justify-center bg-white/5 text-slate-400 hover:text-purple-400 hover:bg-purple-500/10 transition-all active:scale-90"
+               ><Minus size={12} /></button>
+               <div className="flex flex-col items-center">
+                 <input 
+                    type="number"
+                    value={set.weight || 0}
+                    onChange={(e) => updateSet(index, 'weight', parseInt(e.target.value) || 0)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="bg-transparent text-2xl font-black text-purple-400 w-14 text-center focus:outline-none font-mono tracking-tighter"
+                 />
+                 <div className="flex bg-black/40 rounded-lg p-0.5 border border-white/5" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); updateSet(index, 'weightUnit', 'kg'); }}
+                      className={cn(
+                        "px-1.5 py-0.5 rounded-md text-[7px] font-black transition-all",
+                        (set.weightUnit || 'kg') === 'kg' ? "bg-purple-500 text-white" : "text-slate-500"
+                      )}
+                    >
+                      KG
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); updateSet(index, 'weightUnit', 'lbs'); }}
+                      className={cn(
+                        "px-1.5 py-0.5 rounded-md text-[7px] font-black transition-all",
+                        set.weightUnit === 'lbs' ? "bg-purple-500 text-white" : "text-slate-500"
+                      )}
+                    >
+                      LB
+                    </button>
+                  </div>
+               </div>
+               <button 
+                 type="button" 
+                 onClick={(e) => { e.stopPropagation(); updateSet(index, 'weight', (set.weight || 0) + 1); }}
+                 className="w-7 h-7 rounded-full flex items-center justify-center bg-white/5 text-slate-400 hover:text-purple-400 hover:bg-purple-500/10 transition-all active:scale-90"
+               ><Plus size={12} /></button>
+            </div>
+          </motion.div>
+        )}
+      </div>
+
+      <div className="flex flex-row md:flex-col justify-end gap-2 pr-10 md:pr-0">
+         <button 
+           type="button" 
+           onClick={(e) => { e.stopPropagation(); removeSet(index); }}
+           className="w-8 h-8 rounded-xl bg-red-500/5 text-slate-700 hover:text-red-500 hover:bg-red-500/10 transition-all p-1.5 flex items-center justify-center"
+         ><Minus size={16} /></button>
+      </div>
+    </Reorder.Item>
+  );
+};
 
 export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, initialExerciseId, initialData, highlightedSetIndex }) => {
   const [exerciseId, setExerciseId] = useState<string>(initialData?.exerciseId || initialExerciseId || EXERCISE_LIBRARY[0].id);
@@ -619,6 +777,8 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     resetForm();
   };
 
+  const setControls = useDragControls();
+
   return (
     <div id="workout-form-container" className="glass-card p-6 md:p-10 max-w-5xl mx-auto border-cyan-500/10 bg-black/40 rounded-[40px]">
       <div className="flex flex-col sm:flex-row items-center gap-6 mb-12">
@@ -1087,120 +1247,28 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
               <Zap size={14} className="text-cyan-500" /> Performance Block Configuration
            </h3>
            <div className="space-y-4">
-              <AnimatePresence mode="popLayout">
+              <Reorder.Group 
+                axis="y"
+                values={sets}
+                onReorder={setSets}
+                className="space-y-3"
+              >
                 {sets.map((set, index) => (
-                  <motion.div 
-                    layout
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
+                  <WorkoutSetItem
                     key={set.id}
-                    id={`set-item-${index}`}
-                    className={cn(
-                      "glass-card flex flex-col md:flex-row items-center gap-6 p-8 border-white/5 bg-white/5 rounded-[40px] group transition-all shadow-xl",
-                      (highlightedSetIndex === index || localEditingSetIndex === index) ? "border-cyan-500/50 bg-cyan-500/5 ring-1 ring-cyan-500/20" : "hover:border-white/10"
-                    )}
-                    onClick={() => setLocalEditingSetIndex(index)}
-                  >
-                    <div className="flex flex-col items-center gap-2 min-w-[120px]">
-                       <div className={cn(
-                         "w-12 h-12 rounded-[18px] bg-black/40 flex items-center justify-center border transition-all",
-                         (highlightedSetIndex === index || localEditingSetIndex === index) ? "border-cyan-400 text-cyan-400 scale-110 shadow-[0_0_15px_rgba(34,211,238,0.2)]" : "border-white/10 text-white italic"
-                       )}>
-                          <span className="text-xl font-black">{index + 1}</span>
-                       </div>
-                       <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Sequence</span>
-                    </div>
-
-                    <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
-                      {/* Reps/Time */}
-                      <div className="flex flex-col items-center gap-2">
-                        <div className="flex items-center gap-4">
-                           <button 
-                             type="button" 
-                             onClick={(e) => { e.stopPropagation(); updateSet(index, isHoldExercise(exerciseId) ? 'time' : 'reps', Math.max(0, (isHoldExercise(exerciseId) ? (set.time || 0) : (set.reps || 0)) - 1)); }}
-                             className="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all active:scale-90"
-                           ><Minus size={18} /></button>
-                           <input 
-                              type="number"
-                              value={isHoldExercise(exerciseId) ? (set.time || 0) : (set.reps || 0)}
-                              onChange={(e) => updateSet(index, isHoldExercise(exerciseId) ? 'time' : 'reps', parseInt(e.target.value) || 0)}
-                              onClick={(e) => e.stopPropagation()}
-                              className="bg-transparent text-5xl font-black text-white w-24 text-center focus:outline-none font-mono tracking-tighter"
-                           />
-                           <button 
-                             type="button" 
-                             onClick={(e) => { e.stopPropagation(); updateSet(index, isHoldExercise(exerciseId) ? 'time' : 'reps', (isHoldExercise(exerciseId) ? (set.time || 0) : (set.reps || 0)) + 1); }}
-                             className="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all active:scale-90"
-                           ><Plus size={18} /></button>
-                        </div>
-                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-600 italic">
-                          {isHoldExercise(exerciseId) ? 'Duration (Seconds)' : 'Repetitions'}
-                        </span>
-                      </div>
-
-                      {/* Weight (Visible if set has it, if loadType is weighted, or if editing) */}
-                      {(set.weight !== undefined || loadType === 'weighted' || localEditingSetIndex === index) && (
-                        <motion.div 
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          className="flex flex-col items-center gap-2"
-                        >
-                          <div className="flex items-center gap-4">
-                             <button 
-                               type="button" 
-                               onClick={(e) => { e.stopPropagation(); updateSet(index, 'weight', Math.max(0, (set.weight || 0) - 1)); }}
-                               className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 text-slate-400 hover:text-purple-400 hover:bg-purple-500/10 transition-all active:scale-90"
-                             ><Minus size={14} /></button>
-                             <div className="flex items-baseline gap-1">
-                               <input 
-                                  type="number"
-                                  value={set.weight || 0}
-                                  onChange={(e) => updateSet(index, 'weight', parseInt(e.target.value) || 0)}
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="bg-transparent text-4xl font-black text-purple-400 w-20 text-center focus:outline-none font-mono tracking-tighter"
-                               />
-                               <button 
-                                 type="button"
-                                 onClick={(e) => { e.stopPropagation(); updateSet(index, 'weightUnit', set.weightUnit === 'lbs' ? 'kg' : 'lbs'); }}
-                                 className="text-[10px] font-black text-purple-600 hover:text-purple-400 transition-colors uppercase"
-                               >
-                                 {set.weightUnit || 'KG'}
-                               </button>
-                             </div>
-                             <button 
-                               type="button" 
-                               onClick={(e) => { e.stopPropagation(); updateSet(index, 'weight', (set.weight || 0) + 1); }}
-                               className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 text-slate-400 hover:text-purple-400 hover:bg-purple-500/10 transition-all active:scale-90"
-                             ><Plus size={14} /></button>
-                          </div>
-                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-600 italic">Extra Load</span>
-                        </motion.div>
-                      )}
-                    </div>
-
-                    <div className="flex flex-row md:flex-col justify-end gap-3 min-w-[60px]">
-                       {sets.length >= 2 && (
-                         <button 
-                           type="button" 
-                           onClick={(e) => { e.stopPropagation(); setLocalEditingSetIndex(index === localEditingSetIndex ? null : index); }}
-                           className={cn(
-                             "w-10 h-10 rounded-xl transition-all p-2 flex items-center justify-center",
-                             localEditingSetIndex === index ? "bg-cyan-500 text-black shadow-lg" : "bg-white/5 text-slate-500 hover:text-cyan-500 hover:bg-cyan-500/10"
-                           )}
-                         >
-                           <Edit3 size={20} />
-                         </button>
-                       )}
-                       <button 
-                        type="button" 
-                        onClick={(e) => { e.stopPropagation(); removeSet(index); }}
-                        className="w-10 h-10 rounded-xl bg-red-500/5 text-slate-700 hover:text-red-500 hover:bg-red-500/10 transition-all p-2 flex items-center justify-center"
-                       ><Minus size={20} /></button>
-                    </div>
-                  </motion.div>
+                    set={set}
+                    index={index}
+                    highlightedSetIndex={highlightedSetIndex}
+                    localEditingSetIndex={localEditingSetIndex}
+                    exerciseId={exerciseId}
+                    loadType={loadType}
+                    setLocalEditingSetIndex={setLocalEditingSetIndex}
+                    updateSet={updateSet}
+                    removeSet={removeSet}
+                    isHoldExercise={isHoldExercise}
+                  />
                 ))}
-              </AnimatePresence>
+              </Reorder.Group>
            </div>
            
            <button

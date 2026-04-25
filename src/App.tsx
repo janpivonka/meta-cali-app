@@ -6,8 +6,8 @@ import { WorkoutForm } from './components/WorkoutForm';
 import { AiInsights } from './components/AiInsights';
 import { Profile } from './components/Profile';
 import { ExerciseLog, UserProfile, Workout, ExerciseDefinition, BandPlacement } from './types';
-import { motion, AnimatePresence, Reorder } from 'motion/react';
-import { Activity, Github, Twitter, Instagram, Sun, Moon, Share2, Edit3, MessageSquare } from 'lucide-react';
+import { motion, AnimatePresence, Reorder, useDragControls } from 'framer-motion';
+import { Activity, Github, Twitter, Instagram, Sun, Moon, Share2, Edit3, MessageSquare, GripVertical } from 'lucide-react';
 import { EXERCISE_LIBRARY } from './data/exerciseLibrary';
 import { cn } from './lib/utils';
 
@@ -29,6 +29,314 @@ const DEFAULT_PROFILE: UserProfile = {
   ],
   trophies: ['🥇 PULL-UPS PRO', '🎖️ PLANCHE SURVIVOR', '⚡ MUSCLE-UP ELITE', '🛡️ IRON CORE']
 };
+
+interface SetReorderItemProps {
+  s: any;
+  si: number;
+  i: number;
+  ex: any;
+  editingIndex: number | null;
+  editingSetIndex: number | null;
+  handleEditSet: (exIndex: number, setIndex: number, e: React.MouseEvent) => void;
+  key?: React.Key;
+}
+
+function SetReorderItem({ s, si, i, ex, editingIndex, editingSetIndex, handleEditSet }: SetReorderItemProps) {
+  const controls = useDragControls();
+  const isHighlighted = editingIndex === i && editingSetIndex === si;
+  const exName = EXERCISE_LIBRARY.find(e => e.id === ex.exerciseId)?.name || ex.type;
+                                    
+  const loadTag = [];
+  const effectiveLType = s.loadType || ex.loadType;
+  const effectiveUnit = s.weightUnit || ex.weightUnit || 'kg';
+  const resTotal = s.assistanceDetails?.resistance || s.weight || (effectiveLType === 'weighted' ? s.weight : null) || ex.assistanceValue;
+  if (effectiveLType === 'bodyweight') loadTag.push('BODYWEIGHT');
+  else if (effectiveLType === 'weighted') loadTag.push(`WEIGHT- (${s.weight || resTotal || 0}${effectiveUnit.toUpperCase()})`);
+  else loadTag.push(`ASSIST- (${resTotal || '?'})`);
+
+  const gripLine = [];
+  const gWidth = s.gripWidth || ex.gripWidth || 'shoulder-width';
+  const gType = s.grip || ex.grip || 'pronated';
+  const gThumb = s.thumb || ex.thumb || 'under';
+  const gFalse = (s.falseGrip !== undefined ? s.falseGrip : ex.falseGrip) ? 'FALSE GRIP' : null;
+  const gEquip = s.equipment || ex.equipment || 'pull-up bar';
+
+  gripLine.push(gWidth);
+  gripLine.push(gType);
+  gripLine.push(`${gThumb} THUMB`);
+  if (gFalse) gripLine.push(gFalse);
+  gripLine.push(`@ ${gEquip}`);
+
+  const execLine = [];
+  const eStyle = s.executionStyle || ex.executionStyle || 'basic';
+  const eMethod = s.executionMethod || ex.executionMethod || 'standard';
+  const ePos = s.position || ex.position || 'neutral';
+  const eLeg = s.legProgression || ex.legProgression || 'full';
+  const eHand = s.oneArmHandPosition || ex.oneArmHandPosition;
+
+  execLine.push(eStyle);
+  execLine.push(eMethod);
+  execLine.push(ePos);
+  
+  if (eLeg === 'one leg') {
+    const p1 = s.oneLegPrimaryPosition || ex.oneLegPrimaryPosition || 'full';
+    const p2 = s.oneLegSecondaryPosition || ex.oneLegSecondaryPosition || 'tuck';
+    execLine.push(`ONE LEG (${p1.toUpperCase()}/${p2.toUpperCase()})`);
+  } else {
+    execLine.push(eLeg);
+  }
+
+  if (eStyle === 'one arm' && eHand && eHand !== 'free') execLine.push(`H:${eHand}`);
+
+  const orangeLine = [];
+  const res = s.assistanceDetails?.resistance || ex.assistanceValue;
+  const effectiveLoadType = s.loadType || ex.loadType;
+  if (effectiveLoadType === 'assisted' && res) {
+    orangeLine.push(`${res} BAND`);
+    const p = s.assistanceDetails?.placement || (ex.assistanceDetails?.placement as any);
+    if (p) orangeLine.push(Array.isArray(p) ? p.join('/') : p);
+    if (s.assistanceDetails?.loopType || ex.assistanceDetails?.loopType) {
+      orangeLine.push((s.assistanceDetails?.loopType || ex.assistanceDetails?.loopType) === 'double' ? 'WRAP' : 'SINGLE');
+    }
+  }
+  if (s.weight && s.weight > 0 && effectiveLoadType !== 'weighted') orangeLine.push(`+${s.weight}${effectiveUnit.toUpperCase()}`);
+
+  const currentLoadLabel = (() => {
+    const effectiveLoadType = s.loadType || ex.loadType;
+    if (effectiveLoadType === 'bodyweight') return 'BODYWEIGHT';
+    if (s.weight && s.weight > 0) return `WEIGHTED (+${s.weight}${effectiveUnit.toUpperCase()})`;
+    if (effectiveLoadType === 'assisted' && res) return `ASSISTED (${res})`;
+    if (effectiveLoadType === 'weighted') return `WEIGHTED (${res || 0}${effectiveUnit.toUpperCase()})`;
+    return 'BODYWEIGHT';
+  })();
+
+  return (
+    <Reorder.Item 
+      value={s} 
+      key={s.id}
+      id={s.id}
+      dragListener={false}
+      dragControls={controls}
+      className="flex items-start gap-2 relative group-reorder"
+    >
+      <button 
+        onClick={(e) => handleEditSet(i, si, e)}
+        className={cn(
+          "flex-1 p-3.5 pb-2 rounded-2xl border transition-all text-left flex flex-col gap-1.5 relative group/set overflow-hidden",
+          isHighlighted
+            ? "bg-cyan-500 border-cyan-400 shadow-xl"
+            : "bg-black/40 border-white/5 text-white hover:border-white/10"
+        )}
+      >
+        {/* Set Header: Exercise + Load Tag */}
+        <div className="flex items-center gap-2 mb-0.5 pr-20">
+          <span className={cn(
+            "text-[10px] font-black italic uppercase tracking-tighter truncate",
+            isHighlighted ? "text-black" : "text-white"
+          )}>
+            {exName}
+          </span>
+          <span className="text-[9px] font-black text-slate-800/30">/</span>
+          <div className={cn(
+            "text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded border shrink-0",
+            isHighlighted ? "bg-black/10 border-black/10 text-black/60" : "bg-cyan-500/5 border-cyan-500/10 text-cyan-400"
+          )}>
+            {currentLoadLabel}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-1 pr-14">
+          {/* Orange Line: Assistance */}
+          {orangeLine.length > 0 && (
+            <div className="flex flex-wrap gap-x-2">
+              {orangeLine.map((p, pidx) => (
+                <span key={pidx} className={cn(
+                  "text-[7px] font-black uppercase italic",
+                  isHighlighted ? "text-black/70" : "text-orange-400"
+                )}>
+                  {pidx > 0 && "• "}{p}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Gray Line: Grip */}
+          {gripLine.length > 0 && (
+            <div className="flex flex-wrap gap-x-2">
+              {gripLine.map((p, pidx) => (
+                <span key={pidx} className={cn(
+                  "text-[7px] font-bold uppercase",
+                  isHighlighted ? "text-black/60" : "text-slate-500"
+                )}>
+                  {pidx > 0 && "• "}{p}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Purple Line: Execution */}
+          {execLine.length > 0 && (
+            <div className="flex flex-wrap gap-x-2">
+              {execLine.map((p, pidx) => (
+                <span key={pidx} className={cn(
+                  "text-[7px] font-black uppercase italic",
+                  isHighlighted ? "text-black" : "text-purple-400"
+                )}>
+                  {pidx > 0 && "• "}{p}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Reps Badge - Shifted slightly for handle */}
+        <div className={cn(
+          "absolute top-2 right-2 px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-md border border-white/5 flex items-baseline gap-1 shadow-sm",
+          isHighlighted && "bg-black/20 border-black/10"
+        )}>
+          <span className={cn(
+            "text-[10px] font-black font-mono",
+            isHighlighted ? "text-black" : "text-white"
+          )}>
+            {s.reps || s.time}
+          </span>
+          <span className={cn(
+            "text-[7px] font-black uppercase",
+            isHighlighted ? "text-black/60" : "text-slate-500"
+          )}>
+            {s.reps ? 'r' : 's'}
+          </span>
+        </div>
+      </button>
+
+      {/* Drag Handle */}
+      <div 
+        onPointerDown={(e) => controls.start(e)}
+        className="w-10 h-full min-h-[50px] cursor-grab active:cursor-grabbing flex items-center justify-center group/handle shrink-0"
+        style={{ touchAction: 'none' }}
+      >
+        <div className="w-6 h-10 rounded-xl bg-white/5 group-hover/handle:bg-white/10 transition-all flex flex-col justify-center gap-1 items-center">
+           <div className="w-[3px] h-[3px] rounded-full bg-slate-600 group-hover/handle:bg-cyan-500 transition-colors" />
+           <div className="w-[3px] h-[3px] rounded-full bg-slate-600 group-hover/handle:bg-cyan-500 transition-colors" />
+           <div className="w-[3px] h-[3px] rounded-full bg-slate-600 group-hover/handle:bg-cyan-500 transition-colors" />
+        </div>
+      </div>
+    </Reorder.Item>
+  );
+}
+
+interface ExerciseReorderItemProps {
+  ex: any;
+  i: number;
+  editingIndex: number | null;
+  editingSetIndex: number | null;
+  handleEditExercise: (index: number) => void;
+  handleEditSet: (exIndex: number, setIndex: number, e: React.MouseEvent) => void;
+  handleReorderSets: (exerciseId: string, newSets: any[]) => void;
+  key?: React.Key;
+}
+
+function ExerciseReorderItem({ 
+  ex, 
+  i, 
+  editingIndex, 
+  editingSetIndex, 
+  handleEditExercise, 
+  handleEditSet, 
+  handleReorderSets 
+}: ExerciseReorderItemProps) {
+  const exerciseControls = useDragControls();
+  
+  return (
+    <Reorder.Item 
+      value={ex} 
+      key={ex.id}
+      dragListener={false}
+      dragControls={exerciseControls}
+      className="relative overflow-visible"
+    >
+      <div 
+        className={cn(
+          "w-full text-left p-6 rounded-[32px] border transition-all group flex flex-col gap-6",
+          editingIndex === i 
+            ? "bg-cyan-500/10 border-cyan-500/30 shadow-2xl shadow-cyan-500/10" 
+            : "bg-black/40 border-white/5 hover:border-white/10"
+        )}
+      >
+        <div className="flex flex-col gap-6 w-full">
+          {/* Top row with number and actions handle */}
+          <div className="flex items-center justify-between gap-4 w-full">
+            <div className="flex items-center gap-4 flex-1" onClick={() => handleEditExercise(i)}>
+              <div className={cn(
+                "w-8 h-8 rounded-xl flex items-center justify-center text-[10px] font-black italic shrink-0",
+                editingIndex === i ? "bg-cyan-500 text-black" : "bg-white/5 text-slate-400 group-hover:text-white transition-colors"
+              )}>
+                {i + 1}
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.4em] italic leading-none">
+                  Session Fragment Execution
+                </span>
+                <span className="text-white font-black text-sm uppercase mt-1">{(EXERCISE_LIBRARY.find(el => el.id === ex.exerciseId)?.name || ex.type).toUpperCase()}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0">
+              <button 
+                onClick={() => handleEditExercise(i)}
+                className={cn(
+                  "p-2 rounded-xl transition-all",
+                  editingIndex === i ? "bg-cyan-500 text-black scale-110" : "bg-white/5 text-slate-700 hover:text-white"
+                )}
+              >
+                <Edit3 size={16} />
+              </button>
+              
+              <div 
+                onPointerDown={(e) => exerciseControls.start(e)}
+                className="w-10 h-10 rounded-xl bg-white/5 flex flex-col justify-center gap-1 items-center cursor-grab active:cursor-grabbing hover:bg-white/10 transition-all shadow-inner"
+                style={{ touchAction: 'none' }}
+              >
+                 <div className="w-[3px] h-[3px] rounded-full bg-slate-600 transition-colors group-hover:bg-cyan-500" />
+                 <div className="w-[3px] h-[3px] rounded-full bg-slate-600 transition-colors group-hover:bg-cyan-500" />
+                 <div className="w-[3px] h-[3px] rounded-full bg-slate-600 transition-colors group-hover:bg-cyan-500" />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-4">
+            <Reorder.Group 
+              axis="y"
+              values={ex.sets}
+              onReorder={(newSets) => handleReorderSets(ex.id, newSets)}
+              className="flex flex-col gap-3 w-full"
+            >
+                {ex.sets.map((s, si) => (
+                  <SetReorderItem 
+                    key={s.id}
+                    s={s}
+                    si={si}
+                    i={i}
+                    ex={ex}
+                    editingIndex={editingIndex}
+                    editingSetIndex={editingSetIndex}
+                    handleEditSet={handleEditSet}
+                  />
+                ))}
+            </Reorder.Group>
+          </div>
+              
+          {ex.notes && (
+            <div className="mt-2 flex items-start gap-2 bg-white/5 p-3 rounded-2xl border border-white/5 opacity-80 group-hover:opacity-100 transition-opacity">
+              <MessageSquare size={12} className="text-cyan-500 shrink-0 mt-0.5" />
+              <p className="text-[10px] font-medium text-slate-300 italic whitespace-normal leading-relaxed">{ex.notes}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </Reorder.Item>
+  );
+}
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -144,6 +452,15 @@ export default function App() {
   const handleReorderExercises = (newExercises: ExerciseLog[]) => {
     if (currentWorkout) {
       setCurrentWorkout({ ...currentWorkout, exercises: newExercises });
+    }
+  };
+
+  const handleReorderSets = (exerciseId: string, newSets: any[]) => {
+    if (currentWorkout) {
+      const updatedExercises = currentWorkout.exercises.map(ex => 
+        ex.id === exerciseId ? { ...ex, sets: newSets } : ex
+      );
+      setCurrentWorkout({ ...currentWorkout, exercises: updatedExercises });
     }
   };
 
@@ -267,236 +584,16 @@ export default function App() {
                   className="space-y-3"
                 >
                   {currentWorkout.exercises.map((ex, i) => (
-                    <Reorder.Item 
-                      value={ex} 
+                    <ExerciseReorderItem
                       key={ex.id}
-                      className="relative overflow-visible"
-                    >
-                      <div 
-                        onClick={() => handleEditExercise(i)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            handleEditExercise(i);
-                          }
-                        }}
-                        tabIndex={0}
-                        role="button"
-                        aria-label={`Edit ${ex.type}`}
-                        className={cn(
-                          "w-full text-left p-4 rounded-[24px] border transition-all group flex items-center justify-between gap-4 cursor-pointer",
-                          editingIndex === i 
-                            ? "bg-cyan-500/20 border-cyan-500/40 translate-x-1 shadow-lg shadow-cyan-500/5" 
-                            : "bg-black/40 border-white/5 hover:border-white/10"
-                        )}
-                      >
-                        <div className="flex flex-col gap-4 flex-1 overflow-hidden">
-                          <div className="flex items-center gap-4">
-                            <div className={cn(
-                              "w-8 h-8 rounded-xl flex items-center justify-center text-[10px] font-black italic shrink-0",
-                              editingIndex === i ? "bg-cyan-500 text-black" : "bg-white/5 text-slate-400 group-hover:text-white transition-colors"
-                            )}>
-                              {i + 1}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                               <div className="flex items-baseline gap-2">
-                                 <span className="text-[12px] font-black text-white/50 uppercase tracking-widest italic py-2">
-                                   Session Fragment Execution
-                                 </span>
-                               </div>
-
-                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                  {ex.sets.map((s, si) => {
-                                    // Categories for set-specific display
-                                    const exName = EXERCISE_LIBRARY.find(e => e.id === ex.exerciseId)?.name || ex.type;
-                                    
-                                    const loadTag = [];
-                                    const effectiveLType = s.loadType || ex.loadType;
-                                    const effectiveUnit = s.weightUnit || ex.weightUnit || 'kg';
-                                    const resTotal = s.assistanceDetails?.resistance || s.weight || (effectiveLType === 'weighted' ? s.weight : null) || ex.assistanceValue;
-                                    if (effectiveLType === 'bodyweight') loadTag.push('BODYWEIGHT');
-                                    else if (effectiveLType === 'weighted') loadTag.push(`WEIGHT- (${s.weight || resTotal || 0}${effectiveUnit.toUpperCase()})`);
-                                    else loadTag.push(`ASSIST- (${resTotal || '?'})`);
-
-                                    const gripLine = [];
-                                    const gWidth = s.gripWidth || ex.gripWidth || 'shoulder-width';
-                                    const gType = s.grip || ex.grip || 'pronated';
-                                    const gThumb = s.thumb || ex.thumb || 'under';
-                                    const gFalse = (s.falseGrip !== undefined ? s.falseGrip : ex.falseGrip) ? 'FALSE GRIP' : null;
-                                    const gEquip = s.equipment || ex.equipment || 'pull-up bar';
-
-                                    gripLine.push(gWidth);
-                                    gripLine.push(gType);
-                                    gripLine.push(`${gThumb} THUMB`);
-                                    if (gFalse) gripLine.push(gFalse);
-                                    gripLine.push(`@ ${gEquip}`);
-  
-                                    const execLine = [];
-                                    const eStyle = s.executionStyle || ex.executionStyle || 'basic';
-                                    const eMethod = s.executionMethod || ex.executionMethod || 'standard';
-                                    const ePos = s.position || ex.position || 'neutral';
-                                    const eLeg = s.legProgression || ex.legProgression || 'full';
-                                    const eHand = s.oneArmHandPosition || ex.oneArmHandPosition;
-                                    const eOneLeg = s.isOneLeg || ex.isOneLeg;
-
-                                    execLine.push(eStyle);
-                                    execLine.push(eMethod);
-                                    execLine.push(ePos);
-                                    execLine.push(eLeg);
-                                    if (eStyle === 'one arm' && eHand && eHand !== 'free') execLine.push(`H:${eHand}`);
-                                    if (eOneLeg) execLine.push(`1L:${s.oneLegPrimaryPosition || ex.oneLegPrimaryPosition || 'full'}`);
-  
-                                    const orangeLine = [];
-                                    // Primary load display in header loadTag, but details here
-                                    const res = s.assistanceDetails?.resistance || ex.assistanceValue;
-                                    const effectiveLoadType = s.loadType || ex.loadType;
-                                    if (effectiveLoadType === 'assisted' && res) {
-                                      orangeLine.push(`${res} BAND`);
-                                      const p = s.assistanceDetails?.placement || (ex.assistanceDetails?.placement as any);
-                                      if (p) orangeLine.push(Array.isArray(p) ? p.join('/') : p);
-                                      if (s.assistanceDetails?.loopType || ex.assistanceDetails?.loopType) {
-                                        orangeLine.push((s.assistanceDetails?.loopType || ex.assistanceDetails?.loopType) === 'double' ? 'WRAP' : 'SINGLE');
-                                      }
-                                    }
-                                    if (s.weight && s.weight > 0 && effectiveLoadType !== 'weighted') orangeLine.push(`+${s.weight}${effectiveUnit.toUpperCase()}`);
-                                    
-                                    const isHighlighted = editingIndex === i && editingSetIndex === si;
-  
-                                    const currentLoadLabel = (() => {
-                                      const effectiveLoadType = s.loadType || ex.loadType;
-                                      if (effectiveLoadType === 'bodyweight') return 'BODYWEIGHT';
-                                      if (s.weight && s.weight > 0) return `WEIGHTED (+${s.weight}${effectiveUnit.toUpperCase()})`;
-                                      if (effectiveLoadType === 'assisted' && res) return `ASSISTED (${res})`;
-                                      if (effectiveLoadType === 'weighted') return `WEIGHTED (${res || 0}${effectiveUnit.toUpperCase()})`;
-                                      return 'BODYWEIGHT';
-                                    })();
-
-                                    return (
-                                      <button 
-                                        key={si} 
-                                        onClick={(e) => handleEditSet(i, si, e)}
-                                        className={cn(
-                                          "w-full p-3.5 rounded-2xl border transition-all text-left flex flex-col gap-2 relative group/set overflow-hidden",
-                                          isHighlighted
-                                            ? "bg-cyan-500 border-cyan-400 shadow-xl"
-                                            : "bg-black/40 border-white/5 text-white hover:border-white/10"
-                                        )}
-                                      >
-                                        {/* Set Header: Exercise + Load Tag */}
-                                        <div className="flex items-center gap-2 mb-0.5">
-                                          <span className={cn(
-                                            "text-[10px] font-black italic uppercase tracking-tighter",
-                                            isHighlighted ? "text-black" : "text-white"
-                                          )}>
-                                            {exName}
-                                          </span>
-                                          <span className="text-[9px] font-black text-slate-800/30">/</span>
-                                          <div className={cn(
-                                            "text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md border",
-                                            isHighlighted ? "bg-black/10 border-black/10 text-black/60" : "bg-cyan-500/5 border-cyan-500/10 text-cyan-400"
-                                          )}>
-                                            {currentLoadLabel}
-                                          </div>
-                                        </div>
-
-                                        <div className="flex flex-col gap-1.5">
-                                          {/* Orange Line: Assistance */}
-                                          {orangeLine.length > 0 && (
-                                            <div className="flex flex-wrap gap-x-2 gap-y-1">
-                                              {orangeLine.map((p, pidx) => (
-                                                <span key={pidx} className={cn(
-                                                  "text-[7px] font-black uppercase italic",
-                                                  isHighlighted ? "text-black/70" : "text-orange-400"
-                                                )}>
-                                                  {pidx > 0 && "• "}{p}
-                                                </span>
-                                              ))}
-                                            </div>
-                                          )}
-
-                                          {/* Gray Line: Grip */}
-                                          {gripLine.length > 0 && (
-                                            <div className="flex flex-wrap gap-x-2 gap-y-1">
-                                              {gripLine.map((p, pidx) => (
-                                                <span key={pidx} className={cn(
-                                                  "text-[7px] font-bold uppercase",
-                                                  isHighlighted ? "text-black/60" : "text-slate-500"
-                                                )}>
-                                                  {pidx > 0 && "• "}{p}
-                                                </span>
-                                              ))}
-                                            </div>
-                                          )}
-
-                                          {/* Purple Line: Execution */}
-                                          {execLine.length > 0 && (
-                                            <div className="flex flex-wrap gap-x-2 gap-y-1">
-                                              {execLine.map((p, pidx) => (
-                                                <span key={pidx} className={cn(
-                                                  "text-[7px] font-black uppercase italic",
-                                                  isHighlighted ? "text-black" : "text-purple-400"
-                                                )}>
-                                                  {pidx > 0 && "• "}{p}
-                                                </span>
-                                              ))}
-                                            </div>
-                                          )}
-                                        </div>
-
-                                        {/* Bottom Right Reps Badge */}
-                                        <div className={cn(
-                                          "absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/40 border border-white/5 flex items-baseline gap-0.5",
-                                          isHighlighted && "bg-black/20 border-black/10"
-                                        )}>
-                                          <span className={cn(
-                                            "text-[10px] font-black font-mono",
-                                            isHighlighted ? "text-black" : "text-white"
-                                          )}>
-                                            {s.reps || s.time}
-                                          </span>
-                                          <span className={cn(
-                                            "text-[7px] font-black uppercase",
-                                            isHighlighted ? "text-black/60" : "text-slate-500"
-                                          )}>
-                                            {s.reps ? 'r' : 's'}
-                                          </span>
-                                          {s.weight !== undefined && s.weight > 0 && effectiveLoadType !== 'weighted' && (
-                                            <span className={cn(
-                                              "text-[10px] font-black font-mono ml-1",
-                                              isHighlighted ? "text-black" : "text-orange-400"
-                                            )}>
-                                              +{s.weight}{(s.weightUnit || ex.weightUnit || 'kg').toLowerCase() === 'kg' ? 'k' : 'lb'}
-                                            </span>
-                                          )}
-                                        </div>
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              
-                                {ex.notes && (
-                                  <div className="mt-4 flex items-start gap-2 bg-white/5 p-3 rounded-2xl border border-white/5 opacity-80 group-hover:opacity-100 transition-opacity">
-                                    <MessageSquare size={12} className="text-cyan-500 shrink-0 mt-0.5" />
-                                    <p className="text-[10px] font-medium text-slate-300 italic whitespace-normal leading-relaxed">{ex.notes}</p>
-                                  </div>
-                                )}
-                              </div>
-
-                              <div className="flex items-center gap-3 shrink-0">
-                          <div className="w-1 h-8 rounded-full bg-white/5 flex flex-col justify-center gap-1 items-center px-[1px]">
-                             <div className="w-[2px] h-[2px] rounded-full bg-slate-600" />
-                             <div className="w-[2px] h-[2px] rounded-full bg-slate-600" />
-                             <div className="w-[2px] h-[2px] rounded-full bg-slate-600" />
-                          </div>
-                          <Edit3 size={14} className={cn(
-                            "transition-all",
-                            editingIndex === i ? "text-cyan-500 scale-125" : "text-slate-700 opacity-0 group-hover:opacity-100"
-                          )} />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </Reorder.Item>
+                      ex={ex}
+                      i={i}
+                      editingIndex={editingIndex}
+                      editingSetIndex={editingSetIndex}
+                      handleEditExercise={handleEditExercise}
+                      handleEditSet={handleEditSet}
+                      handleReorderSets={handleReorderSets}
+                    />
                   ))}
                 </Reorder.Group>
               </div>
@@ -587,14 +684,21 @@ export default function App() {
                                   const ePos = s.position || log.position || 'neutral';
                                   const eLeg = s.legProgression || log.legProgression || 'full';
                                   const eHand = s.oneArmHandPosition || log.oneArmHandPosition;
-                                  const eOneLeg = s.isOneLeg || log.isOneLeg;
+                                  const eOneLeg = s.isOneLeg || log.isOneLeg || (eLeg === 'one leg');
   
                                   execLine.push(eStyle);
                                   execLine.push(eMethod);
                                   execLine.push(ePos);
-                                  execLine.push(eLeg);
+                                  
+                                  if (eLeg === 'one leg') {
+                                    const p1 = s.oneLegPrimaryPosition || log.oneLegPrimaryPosition || 'full';
+                                    const p2 = s.oneLegSecondaryPosition || log.oneLegSecondaryPosition || 'tuck';
+                                    execLine.push(`ONE LEG (${p1.toUpperCase()}/${p2.toUpperCase()})`);
+                                  } else {
+                                    execLine.push(eLeg);
+                                  }
+
                                   if (eStyle === 'one arm' && eHand && eHand !== 'free') execLine.push(`H:${eHand}`);
-                                  if (eOneLeg) execLine.push(`1L:${s.oneLegPrimaryPosition || log.oneLegPrimaryPosition || 'full'}`);
   
                                   const orangeLine = [];
                                   const effectiveLoadType = s.loadType || log.loadType;
