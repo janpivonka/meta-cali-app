@@ -1026,14 +1026,16 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                         </button>
                       ))}
                    </div>
-                 </div>                  {executionStyle === 'one arm' && (
+                 </div>                 {(executionStyle === 'one arm' || executionStyle === 'commando') && (
                     <motion.div 
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       className="space-y-5 pt-4 border-t border-white/5 pb-4"
                     >
                       <div className="space-y-2">
-                        <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-400 block mb-2">Working Arm</label>
+                        <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-400 block mb-2">
+                          {executionStyle === 'one arm' ? 'Working Arm' : 'Front Hand Position'}
+                        </label>
                         <div className="flex gap-2">
                           {(['left', 'right', 'alternating'] as const).map(side => (
                             <button
@@ -1051,24 +1053,26 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                         </div>
                       </div>
 
-                      <div className="space-y-2">
-                        <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-400 block mb-2">Free Hand Position (Second Arm)</label>
-                        <div className="flex flex-wrap gap-2">
-                           {ONE_ARM_POSITIONS.map(pos => (
-                             <button
-                               key={pos.val}
-                               type="button"
-                               onClick={() => updateActiveValue('oneArmHandPosition', setOneArmHandPosition, pos.val)}
-                               className={cn(
-                                 "px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest border transition-all flex-1 text-center min-w-[80px]",
-                                 oneArmHandPosition === pos.val ? "bg-cyan-500 text-black border-cyan-400 shadow-lg shadow-cyan-500/10" : "bg-black/40 text-slate-500 border-white/5"
-                               )}
-                             >
-                               {pos.label}
-                             </button>
-                           ))}
+                      {executionStyle === 'one arm' && (
+                        <div className="space-y-2">
+                          <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-400 block mb-2">Free Hand Position (Second Arm)</label>
+                          <div className="flex flex-wrap gap-2">
+                             {ONE_ARM_POSITIONS.map(pos => (
+                               <button
+                                 key={pos.val}
+                                 type="button"
+                                 onClick={() => updateActiveValue('oneArmHandPosition', setOneArmHandPosition, pos.val)}
+                                 className={cn(
+                                   "px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest border transition-all flex-1 text-center min-w-[80px]",
+                                   oneArmHandPosition === pos.val ? "bg-cyan-500 text-black border-cyan-400 shadow-lg shadow-cyan-500/10" : "bg-black/40 text-slate-500 border-white/5"
+                                 )}
+                               >
+                                 {pos.label}
+                               </button>
+                             ))}
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </motion.div>
                   )}
 

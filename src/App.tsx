@@ -62,7 +62,7 @@ function SetReorderItem({ s, si, i, ex, editingIndex, editingSetIndex, handleEdi
   const gFalse = (s.falseGrip !== undefined ? s.falseGrip : ex.falseGrip) ? 'FALSE GRIP' : null;
   const gEquip = s.equipment || ex.equipment || 'pull-up bar';
 
-  if (eStyle !== 'one arm') {
+  if (eStyle !== 'one arm' && eStyle !== 'commando') {
     gripLine.push(gWidth);
     gripLine.push(gType);
   }
@@ -77,10 +77,11 @@ function SetReorderItem({ s, si, i, ex, editingIndex, editingSetIndex, handleEdi
   const eHand = s.oneArmHandPosition || ex.oneArmHandPosition;
   const eSide = s.oneArmSide || ex.oneArmSide;
 
-  if (eStyle === 'one arm') {
+  if (eStyle === 'one arm' || eStyle === 'commando') {
     const sideLabel = eSide ? ` - ${eSide.toUpperCase()}` : '';
-    const handLabel = (eHand && eHand !== 'free') ? ` (H:${eHand.toUpperCase()})` : '';
-    execLine.push(`ONE ARM${sideLabel}${handLabel}`);
+    const handLabel = (eStyle === 'one arm' && eHand && eHand !== 'free') ? ` (H:${eHand.toUpperCase()})` : '';
+    const prefix = eStyle === 'one arm' ? 'ONE ARM' : 'COMMANDO';
+    execLine.push(`${prefix}${sideLabel}${handLabel}`);
   } else {
     execLine.push(eStyle);
   }
