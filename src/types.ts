@@ -34,6 +34,7 @@ export interface WorkoutSet {
   legProgression?: LegProgression | string;
   equipment?: EquipmentType;
   oneArmHandPosition?: OneArmHandPosition | string;
+  oneArmSide?: 'left' | 'right' | 'alternating';
   oneLegPrimaryPosition?: SingleLegPosition;
   oneLegSecondaryPosition?: SingleLegPosition;
   isOneLeg?: boolean;
@@ -61,6 +62,7 @@ export interface ExerciseLog {
   executionStyle?: ExecutionStyle | string;
   executionMethod?: ExecutionMethod | string;
   oneArmHandPosition?: OneArmHandPosition | string;
+  oneArmSide?: 'left' | 'right' | 'alternating';
   oneLegPrimaryPosition?: SingleLegPosition;
   oneLegSecondaryPosition?: SingleLegPosition;
   isOneLeg?: boolean;

@@ -304,6 +304,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
   const [executionStyle, setExecutionStyle] = useState<ExecutionStyle | string>('basic');
   const [executionMethod, setExecutionMethod] = useState<ExecutionMethod | string>('standard');
   const [oneArmHandPosition, setOneArmHandPosition] = useState<OneArmHandPosition | string>('free');
+  const [oneArmSide, setOneArmSide] = useState<'left' | 'right' | 'alternating'>('right');
   const [oneLegPrimaryPosition, setOneLegPrimaryPosition] = useState<SingleLegPosition>('full');
   const [oneLegSecondaryPosition, setOneLegSecondaryPosition] = useState<SingleLegPosition>('tuck');
   const [isOneLeg, setIsOneLeg] = useState(false);
@@ -363,6 +364,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       setPosition(active.position || 'neutral');
       setLegProgression(active.legProgression || 'full');
       setOneArmHandPosition(active.oneArmHandPosition || 'free');
+      setOneArmSide(active.oneArmSide || 'right');
       setOneLegPrimaryPosition(active.oneLegPrimaryPosition || 'full');
       setOneLegSecondaryPosition(active.oneLegSecondaryPosition || 'tuck');
       setIsOneLeg(active.isOneLeg !== undefined ? active.isOneLeg : false);
@@ -437,6 +439,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     setExecutionStyle('basic');
     setExecutionMethod('standard');
     setOneArmHandPosition('free');
+    setOneArmSide('right');
     setOneLegPrimaryPosition('full');
     setOneLegSecondaryPosition('tuck');
     setIsOneLeg(false);
@@ -486,6 +489,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       setExecutionStyle(initialData.executionStyle || 'basic');
       setExecutionMethod(initialData.executionMethod || 'standard');
       setOneArmHandPosition(initialData.oneArmHandPosition || 'free');
+      setOneArmSide(initialData.oneArmSide || 'right');
       setOneLegPrimaryPosition(initialData.oneLegPrimaryPosition || 'full');
       setOneLegSecondaryPosition(initialData.oneLegSecondaryPosition || 'tuck');
       setIsOneLeg(initialData.isOneLeg || false);
@@ -793,6 +797,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     const consensusExecStyle = getConsensus('executionStyle') as ExecutionStyle | undefined;
     const consensusExecMethod = getConsensus('executionMethod') as ExecutionMethod | undefined;
     const consensusOneArmPos = getConsensus('oneArmHandPosition') as OneArmHandPosition | undefined;
+    const consensusOneArmSide = getConsensus('oneArmSide') as 'left' | 'right' | 'alternating' | undefined;
     const consensusIsOneLeg = getConsensus('isOneLeg') as boolean | undefined;
     const consensusPrimaryLegPos = getConsensus('oneLegPrimaryPosition') as SingleLegPosition | undefined;
     const consensusSecondaryLegPos = getConsensus('oneLegSecondaryPosition') as SingleLegPosition | undefined;
@@ -814,6 +819,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       executionStyle: consensusExecStyle ?? executionStyle,
       executionMethod: consensusExecMethod ?? executionMethod,
       oneArmHandPosition: consensusOneArmPos ?? oneArmHandPosition,
+      oneArmSide: consensusOneArmSide ?? oneArmSide,
       oneLegPrimaryPosition: consensusPrimaryLegPos ?? oneLegPrimaryPosition,
       oneLegSecondaryPosition: consensusSecondaryLegPos ?? oneLegSecondaryPosition,
       isOneLeg: consensusIsOneLeg || (legProgression === 'one leg') || isOneLeg,
@@ -1020,34 +1026,53 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                         </button>
                       ))}
                    </div>
-                 </div>
-
-                 {executionStyle === 'one arm' && (
+                 </div>                  {executionStyle === 'one arm' && (
                     <motion.div 
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
-                      className="space-y-3 pt-4 border-t border-white/5 pb-4"
+                      className="space-y-5 pt-4 border-t border-white/5 pb-4"
                     >
-                      <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-400 block mb-2">One-Arm Progress (Free Hand Position)</label>
-                      <div className="flex flex-wrap gap-2">
-                         {ONE_ARM_POSITIONS.map(pos => (
-                           <button
-                             key={pos.val}
-                             type="button"
-                             onClick={() => updateActiveValue('oneArmHandPosition', setOneArmHandPosition, pos.val)}
-                             className={cn(
-                               "px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest border transition-all flex-1 text-center min-w-[80px]",
-                               oneArmHandPosition === pos.val ? "bg-cyan-500 text-black border-cyan-400" : "bg-black/40 text-slate-500 border-white/5"
-                             )}
-                           >
-                             {pos.label}
-                           </button>
-                         ))}
+                      <div className="space-y-2">
+                        <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-400 block mb-2">Working Arm</label>
+                        <div className="flex gap-2">
+                          {(['left', 'right', 'alternating'] as const).map(side => (
+                            <button
+                              key={side}
+                              type="button"
+                              onClick={() => updateActiveValue('oneArmSide', setOneArmSide, side)}
+                              className={cn(
+                                "flex-1 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest border transition-all",
+                                oneArmSide === side ? "bg-cyan-500 text-black border-cyan-400" : "bg-black/40 text-slate-500 border-white/5"
+                              )}
+                            >
+                              {side}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-400 block mb-2">Free Hand Position (Second Arm)</label>
+                        <div className="flex flex-wrap gap-2">
+                           {ONE_ARM_POSITIONS.map(pos => (
+                             <button
+                               key={pos.val}
+                               type="button"
+                               onClick={() => updateActiveValue('oneArmHandPosition', setOneArmHandPosition, pos.val)}
+                               className={cn(
+                                 "px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest border transition-all flex-1 text-center min-w-[80px]",
+                                 oneArmHandPosition === pos.val ? "bg-cyan-500 text-black border-cyan-400 shadow-lg shadow-cyan-500/10" : "bg-black/40 text-slate-500 border-white/5"
+                               )}
+                             >
+                               {pos.label}
+                             </button>
+                           ))}
+                        </div>
                       </div>
                     </motion.div>
                   )}
 
-                 <div>
+                  <div>
                    <label className="text-[8px] font-black uppercase tracking-[0.3em] text-purple-500/60 block mb-3">Method/Tempo</label>
                     <div className="flex flex-wrap gap-2">
                        {EXECUTION_METHODS.map(method => (

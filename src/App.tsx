@@ -55,26 +55,35 @@ function SetReorderItem({ s, si, i, ex, editingIndex, editingSetIndex, handleEdi
   else loadTag.push(`ASSISTED (-${resTotal || '?'}${effectiveUnit.toUpperCase()})`);
 
   const gripLine = [];
+  const eStyle = s.executionStyle || ex.executionStyle || 'basic';
   const gWidth = s.gripWidth || ex.gripWidth || 'shoulder-width';
   const gType = s.grip || ex.grip || 'pronated';
   const gThumb = s.thumb || ex.thumb || 'under';
   const gFalse = (s.falseGrip !== undefined ? s.falseGrip : ex.falseGrip) ? 'FALSE GRIP' : null;
   const gEquip = s.equipment || ex.equipment || 'pull-up bar';
 
-  gripLine.push(gWidth);
-  gripLine.push(gType);
+  if (eStyle !== 'one arm') {
+    gripLine.push(gWidth);
+    gripLine.push(gType);
+  }
   gripLine.push(`${gThumb} THUMB`);
   if (gFalse) gripLine.push(gFalse);
   gripLine.push(`@ ${gEquip}`);
 
   const execLine = [];
-  const eStyle = s.executionStyle || ex.executionStyle || 'basic';
   const eMethod = s.executionMethod || ex.executionMethod || 'standard';
   const ePos = s.position || ex.position || 'neutral';
   const eLeg = s.legProgression || ex.legProgression || 'full';
   const eHand = s.oneArmHandPosition || ex.oneArmHandPosition;
+  const eSide = s.oneArmSide || ex.oneArmSide;
 
-  execLine.push(eStyle);
+  if (eStyle === 'one arm') {
+    const sideLabel = eSide ? ` - ${eSide.toUpperCase()}` : '';
+    const handLabel = (eHand && eHand !== 'free') ? ` (H:${eHand.toUpperCase()})` : '';
+    execLine.push(`ONE ARM${sideLabel}${handLabel}`);
+  } else {
+    execLine.push(eStyle);
+  }
   execLine.push(eMethod);
   execLine.push(ePos);
   
@@ -85,8 +94,6 @@ function SetReorderItem({ s, si, i, ex, editingIndex, editingSetIndex, handleEdi
   } else {
     execLine.push(eLeg);
   }
-
-  if (eStyle === 'one arm' && eHand && eHand !== 'free') execLine.push(`H:${eHand}`);
 
   const orangeLine = [];
   const res = s.assistanceDetails?.resistance || ex.assistanceValue;
