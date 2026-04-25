@@ -17,7 +17,8 @@ import {
   ChevronUp,
   Boxes,
   Waves,
-  GripVertical
+  GripVertical,
+  Share2
 } from 'lucide-react';
 import { 
   WorkoutSet, 
@@ -35,11 +36,13 @@ import {
   LoadType,
   LegProgression,
   SingleLegPosition,
-  AssistanceDetails
+  AssistanceDetails,
+  ExerciseMedia
 } from '../types';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence, Reorder, useDragControls } from 'framer-motion';
 import { EXERCISE_LIBRARY } from '../data/exerciseLibrary';
+import { MediaPreviewModal } from './MediaPreviewModal';
 
 interface WorkoutFormProps {
   onSave: (log: ExerciseLog) => void;
@@ -87,6 +90,8 @@ interface WorkoutSetItemProps {
   updateSet: (index: number, field: keyof WorkoutSet, value: any) => void;
   removeSet: (index: number) => void;
   isHoldExercise: (id: string) => boolean;
+  onFileUpload: (e: React.ChangeEvent<HTMLInputElement>, index?: number) => void;
+  onMediaClick: (media: ExerciseMedia[], index: number) => void;
 }
 
 const WorkoutSetItem: React.FC<WorkoutSetItemProps> = ({ 
@@ -99,9 +104,12 @@ const WorkoutSetItem: React.FC<WorkoutSetItemProps> = ({
   setLocalEditingSetIndex,
   updateSet,
   removeSet,
-  isHoldExercise
+  isHoldExercise,
+  onFileUpload,
+  onMediaClick
 }) => {
   const controls = useDragControls();
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   return (
     <Reorder.Item 
@@ -120,6 +128,14 @@ const WorkoutSetItem: React.FC<WorkoutSetItemProps> = ({
       )}
       onClick={() => setLocalEditingSetIndex(index)}
     >
+      <input 
+        type="file" 
+        accept="image/*,video/*"
+        ref={fileInputRef}
+        className="hidden"
+        onChange={(e) => onFileUpload(e, index)}
+      />
+
       <div className="w-full flex flex-col md:flex-row items-center gap-4">
         <div 
           onPointerDown={(e) => controls.start(e)}
@@ -319,56 +335,122 @@ const WorkoutSetItem: React.FC<WorkoutSetItemProps> = ({
               />
             </div>
 
-            <div className="flex flex-col gap-2">
-              <label className="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-400/60 flex items-center gap-2">
-                <Camera size={12} className="text-cyan-500" /> Session Media
-              </label>
-              <div className="flex flex-wrap gap-3">
-                <AnimatePresence mode="popLayout">
-                  {set.media?.map((m, mIdx) => (
-                    <motion.div 
-                      key={mIdx}
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.8 }}
-                      className="relative group/media"
-                    >
-                      <div className="w-16 h-16 rounded-2xl overflow-hidden border border-white/10 bg-black/40">
-                        {m.type === 'image' ? (
-                          <img src={m.url} className="w-full h-full object-cover" referrerPolicy="no-referrer" alt={`Set media ${mIdx}`} />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-cyan-500"><Video size={24} /></div>
-                        )}
-                      </div>
-                      <button 
-                        type="button"
-                        onClick={() => {
-                          const newMedia = [...(set.media || [])];
-                          newMedia.splice(mIdx, 1);
-                          updateSet(index, 'media', newMedia);
-                        }}
-                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-600 transition-colors z-10"
-                      ><X size={12} /></button>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-                
-                <button 
-                  type="button"
-                  onClick={() => {
-                    const url = prompt("Enter Image/Video URL (demo placeholder):", "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&q=80");
-                    if (url) {
-                      const type = url.match(/\.(mp4|webm|mov)$/i) ? 'video' : 'image';
-                      updateSet(index, 'media', [...(set.media || []), { type, url }]);
-                    }
-                  }}
-                  className="w-16 h-16 rounded-2xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-1 text-slate-500 hover:border-cyan-500/50 hover:text-cyan-400 transition-all bg-white/2"
-                >
-                  <Plus size={20} />
-                  <span className="text-[7px] font-black">ADD</span>
-                </button>
+              <div className="flex flex-col gap-2">
+                <label className="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-400/60 flex items-center gap-2">
+                  <Camera size={12} className="text-cyan-500" /> Session Media
+                </label>
+                <div className="flex flex-wrap gap-3">
+                  <AnimatePresence mode="popLayout">
+                    {set.media?.map((m, mIdx) => (
+                      <motion.div 
+                        key={mIdx}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        className="relative group/media"
+                      >
+                        <div 
+                          className="w-16 h-16 rounded-2xl overflow-hidden border border-white/10 bg-black/40 cursor-pointer hover:border-cyan-500/50 transition-all"
+                          onClick={() => onMediaClick(set.media!, mIdx)}
+                        >
+                          {m.type === 'image' ? (
+                            <img src={m.url} className="w-full h-full object-cover" referrerPolicy="no-referrer" alt={`Set media ${mIdx}`} />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-cyan-500"><Video size={24} /></div>
+                          )}
+                        </div>
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            const newMedia = [...(set.media || [])];
+                            newMedia.splice(mIdx, 1);
+                            updateSet(index, 'media', newMedia);
+                          }}
+                          className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-600 transition-colors z-10"
+                        ><X size={12} /></button>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                  
+                  <button 
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      fileInputRef.current?.click();
+                    }}
+                    className="w-16 h-16 rounded-2xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-1 text-slate-500 hover:border-cyan-500/50 hover:text-cyan-400 transition-all bg-white/2"
+                  >
+                    <Plus size={20} />
+                    <span className="text-[7px] font-black">ADD</span>
+                  </button>
+                </div>
               </div>
-            </div>
+
+              {/* Hand/Leg selection for specific styles */}
+              {(set.executionStyle === 'one arm' || set.executionStyle === 'commando') && (
+                <div className="flex flex-col gap-2">
+                  <label className="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-400/60">
+                    {set.executionStyle === 'one arm' ? 'Active Arm' : 'Front Hand'}
+                  </label>
+                  <div className="flex bg-black/40 p-1 rounded-2xl border border-white/5">
+                    {(['left', 'right', 'alternating'] as const).map((side) => (
+                      <button
+                        key={side}
+                        type="button"
+                        onClick={() => updateSet(index, 'oneArmSide', side)}
+                        className={cn(
+                          "flex-1 py-3 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all",
+                          (set.oneArmSide || 'right') === side ? "bg-cyan-500 text-black shadow-lg shadow-cyan-500/20" : "text-slate-500 hover:text-white"
+                        )}
+                      >
+                        {side}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {set.executionStyle === 'one arm' && (
+                <div className="flex flex-col gap-2">
+                  <label className="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-400/60">Passive Arm Support</label>
+                  <div className="grid grid-cols-4 gap-1 bg-black/40 p-1 rounded-2xl border border-white/5">
+                    {ONE_ARM_POSITIONS.map((pos) => (
+                      <button
+                        key={pos.val}
+                        type="button"
+                        onClick={() => updateSet(index, 'oneArmHandPosition', pos.val)}
+                        className={cn(
+                          "py-2 rounded-xl text-[7px] font-black uppercase tracking-tighter transition-all",
+                          (set.oneArmHandPosition || 'free') === pos.val ? "bg-purple-600 text-white shadow-lg shadow-purple-500/20" : "text-slate-500 hover:text-white"
+                        )}
+                      >
+                        {pos.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {set.legProgression === 'one leg' && (
+                <div className="flex flex-col gap-2">
+                  <label className="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-400/60">Leg Selection</label>
+                  <div className="flex bg-black/40 p-1 rounded-2xl border border-white/5">
+                    {(['left', 'right', 'alternating'] as const).map((side) => (
+                      <button
+                        key={side}
+                        type="button"
+                        onClick={() => updateSet(index, 'oneArmSide', side)} // Using oneArmSide as proxy for side, or should add oneLegSide to types?
+                        className={cn(
+                          "flex-1 py-3 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all",
+                          (set.oneArmSide || 'right') === side ? "bg-cyan-500 text-black shadow-lg shadow-cyan-500/20" : "text-slate-500 hover:text-white"
+                        )}
+                      >
+                        {side}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -398,31 +480,71 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
   const [bandPlacements, setBandPlacements] = useState<BandPlacement[]>(['both feet']);
   const [bandLoopType, setBandLoopType] = useState<BandLoopType>('single');
   const [falseGrip, setFalseGrip] = useState(false);
-  const [sets, setSets] = useState<WorkoutSet[]>([
-    { 
-      id: crypto.randomUUID(), 
-      reps: 10, 
-      grip: 'pronated', 
-      gripWidth: 'shoulder-width', 
-      thumb: 'under', 
-      falseGrip: false, 
-      equipment: 'pull-up bar', 
-      executionStyle: 'basic', 
-      executionMethod: 'standard', 
-      position: 'neutral', 
-      legProgression: 'full',
-      oneArmHandPosition: 'free',
-      isOneLeg: false,
-      oneLegPrimaryPosition: 'full',
-      oneLegSecondaryPosition: 'tuck'
-    }
-  ]);
+  const [sets, setSets] = useState<WorkoutSet[]>(() => {
+    const safeUUID = () => {
+      if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+      }
+      return Math.random().toString(36).substring(2, 15);
+    };
+    return [
+      { 
+        id: safeUUID(), 
+        reps: 10, 
+        grip: 'pronated', 
+        gripWidth: 'shoulder-width', 
+        thumb: 'under', 
+        falseGrip: false, 
+        equipment: 'pull-up bar', 
+        executionStyle: 'basic', 
+        executionMethod: 'standard', 
+        position: 'neutral', 
+        legProgression: 'full',
+        oneArmHandPosition: 'free',
+        isOneLeg: false,
+        oneLegPrimaryPosition: 'full',
+        oneLegSecondaryPosition: 'tuck'
+      }
+    ];
+  });
   const [notes, setNotes] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [shared, setShared] = useState(false);
   const [localEditingSetIndex, setLocalEditingSetIndex] = useState<number | null>(0);
+  const [exerciseMedia, setExerciseMedia] = useState<ExerciseMedia[]>(initialData?.media || []);
+  const [previewMedia, setPreviewMedia] = useState<ExerciseMedia[]>([]);
+  const [previewIndex, setPreviewIndex] = useState(0);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const activeSet = localEditingSetIndex !== null ? sets[localEditingSetIndex] : null;
+
+  const handleMediaClick = (media: ExerciseMedia[], index: number) => {
+    setPreviewMedia(media);
+    setPreviewIndex(index);
+    setIsPreviewOpen(true);
+  };
+
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const exerciseFileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, setIndex?: number) => {
+    const files = Array.from(e.target.files || []) as File[];
+    if (files.length === 0) return;
+
+    for (const file of files) {
+      const processed = await processFile(file);
+      if (processed) {
+        if (setIndex !== undefined) {
+          const currentMedia = sets[setIndex].media || [];
+          updateSet(setIndex, 'media', [...currentMedia, processed]);
+        } else {
+          setExerciseMedia(prev => [...prev, processed]);
+        }
+      }
+    }
+    // Reset input
+    e.target.value = '';
+  };
 
   // Sync local editing index with parent highlight
   React.useEffect(() => {
@@ -531,8 +653,15 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     setAssistanceValue('');
     setBandPlacements(['both feet']);
     setBandLoopType('single');
+    const safeUUID = () => {
+      if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+      }
+      return Math.random().toString(36).substring(2, 15);
+    };
+
     setSets([{ 
-      id: crypto.randomUUID(), 
+      id: safeUUID(), 
       reps: 10, 
       grip: 'pronated', 
       gripWidth: 'shoulder-width', 
@@ -549,6 +678,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       oneLegSecondaryPosition: 'tuck'
     }]);
     setNotes('');
+    setExerciseMedia([]);
     setSearchQuery('');
     setShared(false);
     setLocalEditingSetIndex(0);
@@ -579,6 +709,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       setLegProgression(initialData.legProgression || 'full');
       setSets(initialData.sets);
       setNotes(initialData.notes || '');
+      setExerciseMedia(initialData.media || []);
       setShared(initialData.shared || false);
       setLoadType(initialData.loadType || 'bodyweight');
       setWeightUnit(initialData.weightUnit || 'kg');
@@ -606,10 +737,17 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
   };
 
   const addSet = () => {
+    const safeUUID = () => {
+      if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+      }
+      return Math.random().toString(36).substring(2, 15);
+    };
+
     const lastSet = sets[sets.length - 1];
     const newSet = { 
       ...lastSet, 
-      id: crypto.randomUUID(),
+      id: safeUUID(),
       assistanceDetails: lastSet.assistanceDetails ? { 
         ...lastSet.assistanceDetails,
         placement: lastSet.assistanceDetails.placement ? [...(Array.isArray(lastSet.assistanceDetails.placement) ? lastSet.assistanceDetails.placement : [lastSet.assistanceDetails.placement])] : undefined
@@ -622,6 +760,68 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     setSets(sets.filter((_, i) => i !== index));
     if (localEditingSetIndex === index) setLocalEditingSetIndex(null);
     else if (localEditingSetIndex !== null && localEditingSetIndex > index) setLocalEditingSetIndex(localEditingSetIndex - 1);
+  };
+
+  const processFile = (file: File): Promise<ExerciseMedia | null> => {
+    return new Promise((resolve) => {
+      const isVideo = file.type.startsWith('video');
+      const maxSize = isVideo ? 100 * 1024 * 1024 : 10 * 1024 * 1024; // 100MB video, 10MB image
+
+      if (file.size > maxSize) {
+        alert(`Soubor ${file.name} je příliš velký (max ${isVideo ? '100MB' : '10MB'}).`);
+        resolve(null);
+        return;
+      }
+
+      if (isVideo) {
+        const reader = new FileReader();
+        reader.onerror = () => resolve(null);
+        reader.onload = (e) => {
+          const result = e.target?.result as string;
+          if (result) {
+            resolve({ type: 'video', url: result });
+          } else {
+            resolve(null);
+          }
+        };
+        reader.readAsDataURL(file);
+      } else {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 800;
+            const MAX_HEIGHT = 800;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+              if (width > MAX_WIDTH) {
+                height *= MAX_WIDTH / width;
+                width = MAX_WIDTH;
+              }
+            } else {
+              if (height > MAX_HEIGHT) {
+                width *= MAX_HEIGHT / height;
+                height = MAX_HEIGHT;
+              }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(img, 0, 0, width, height);
+            
+            // Compress to JPEG for smaller storage
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+            resolve({ type: 'image', url: dataUrl });
+          };
+          img.src = e.target?.result as string;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
   };
 
   const updateSet = (index: number, field: keyof WorkoutSet, value: any) => {
@@ -851,10 +1051,10 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
 
     const getConsensusAssistanceField = (field: keyof AssistanceDetails) => {
       if (validSets.length === 0) return undefined;
-      const firstVal = validSets[0].assistanceDetails?.[field];
+      const firstVal = (validSets[0].assistanceDetails as any)?.[field];
       const first = JSON.stringify(firstVal);
       for (let i = 1; i < validSets.length; i++) {
-        const currentVal = validSets[i].assistanceDetails?.[field];
+        const currentVal = (validSets[i].assistanceDetails as any)?.[field];
         if (JSON.stringify(currentVal) !== first) return undefined;
       }
       return firstVal;
@@ -870,6 +1070,13 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       if (hasAssistance) return 'assisted';
       return 'bodyweight';
     })();
+
+    const safeUUID = () => {
+      if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+      }
+      return Math.random().toString(36).substring(2, 15);
+    };
 
     const consensusGrip = getConsensus('grip') as GripType | undefined;
     const consensusGripWidth = getConsensus('gripWidth') as GripWidth | undefined;
@@ -887,10 +1094,10 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     const consensusLegProg = getConsensus('legProgression') as LegProgression | undefined;
     const consensusAssistanceValue = getConsensusAssistanceField('resistance') as string | undefined;
     const consensusLoopType = getConsensusAssistanceField('loopType') as BandLoopType | undefined;
-    const consensusPlacements = getConsensusAssistanceField('placements') as BandPlacement[] | undefined;
+    const consensusPlacement = getConsensusAssistanceField('placement') as BandPlacement[] | undefined;
 
     onSave({
-      id: initialData?.id || crypto.randomUUID(),
+      id: initialData?.id || safeUUID(),
       exerciseId,
       type: currentExercise?.name || 'Unknown',
       grip: consensusGrip ?? grip,
@@ -921,6 +1128,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
         loadType: s.loadType || (s.weight && s.weight > 0 ? 'weighted' : (s.assistanceDetails?.resistance ? 'assisted' : 'bodyweight'))
       })),
       notes,
+      media: exerciseMedia,
       shared,
       timestamp: Date.now(),
     });
@@ -985,47 +1193,120 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
             ))}
           </div>
 
+          {/* New prominent Exercise Media section */}
+          <div className="p-8 bg-cyan-500/5 rounded-[32px] border border-cyan-500/10">
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between px-2">
+                <label className="text-[10px] font-black uppercase tracking-[0.4em] text-cyan-500 flex items-center gap-2">
+                  <Camera size={14} /> Exercise Media (Fragments)
+                </label>
+                <button 
+                  type="button"
+                  onClick={() => exerciseFileInputRef.current?.click()}
+                  className="px-4 py-2 rounded-xl bg-cyan-500 text-black text-[9px] font-black uppercase tracking-widest hover:bg-cyan-400 transition-all shadow-lg shadow-cyan-500/20"
+                >
+                  Add Media
+                </button>
+              </div>
+              
+              <input 
+                type="file"
+                accept="image/*,video/*"
+                multiple
+                className="hidden"
+                ref={exerciseFileInputRef}
+                onChange={(e) => handleFileUpload(e)}
+              />
+
+              {exerciseMedia.length > 0 ? (
+                <div className="flex flex-wrap gap-3 mt-2">
+                  <AnimatePresence mode="popLayout">
+                    {exerciseMedia.map((m, mIdx) => (
+                      <motion.div 
+                        key={mIdx}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        className="relative group/media"
+                      >
+                        <div 
+                          className="w-20 h-20 rounded-2xl overflow-hidden border border-white/10 bg-black/40 cursor-pointer hover:border-cyan-500/50 transition-all flex items-center justify-center"
+                          onClick={() => handleMediaClick(exerciseMedia, mIdx)}
+                        >
+                          {m.type === 'image' ? (
+                            <img src={m.url} className="w-full h-full object-cover" referrerPolicy="no-referrer" alt={`Media ${mIdx}`} />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-cyan-500"><Video size={32} /></div>
+                          )}
+                        </div>
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            setExerciseMedia(prev => prev.filter((_, i) => i !== mIdx));
+                          }}
+                          className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-600 transition-colors z-10"
+                        ><X size={12} /></button>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
+              ) : (
+                <div 
+                  className="w-full py-8 border-2 border-dashed border-white/5 rounded-[24px] flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-cyan-500/20 transition-all"
+                  onClick={() => exerciseFileInputRef.current?.click()}
+                >
+                   <Camera size={24} className="text-slate-700" />
+                   <span className="text-[8px] font-black text-slate-700 uppercase tracking-widest italic">No media attached to this fragment</span>
+                </div>
+              )}
+            </div>
+          </div>
+
         {/* TAXONOMY: GRIP / EQUIPMENT / EXECUTION */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
            <div className="space-y-8 p-8 bg-white/5 rounded-[32px] border border-white/5">
               <div className="space-y-6">
-                 <div id="grip-width-section">
-                   <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-500/60 block mb-3">Grip Width</label>
-                   <div className="flex flex-wrap gap-2">
-                      {GRIP_WIDTHS.map(w => (
-                        <button
-                          key={w}
-                          type="button"
-                          onClick={() => updateActiveValue('gripWidth', setGripWidth, w)}
-                          className={cn(
-                            "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all",
-                            gripWidth === w ? "bg-white text-black border-white shadow-lg" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
-                          )}
-                        >
-                          {w === 'shoulder-width' ? 'Shoulder-width' : w === 'narrow' ? 'Narrow' : 'Wide'}
-                        </button>
-                      ))}
-                   </div>
-                 </div>
+                 {executionStyle !== 'one arm' && executionStyle !== 'commando' && (
+                   <>
+                     <div id="grip-width-section">
+                       <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-500/60 block mb-3">Grip Width</label>
+                       <div className="flex flex-wrap gap-2">
+                          {GRIP_WIDTHS.map(w => (
+                            <button
+                              key={w}
+                              type="button"
+                              onClick={() => updateActiveValue('gripWidth', setGripWidth, w)}
+                              className={cn(
+                                "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all",
+                                gripWidth === w ? "bg-white text-black border-white shadow-lg" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
+                              )}
+                            >
+                              {w === 'shoulder-width' ? 'Shoulder-width' : w === 'narrow' ? 'Narrow' : 'Wide'}
+                            </button>
+                          ))}
+                       </div>
+                     </div>
 
-                 <div>
-                   <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-500/60 block mb-3">Grip Type</label>
-                   <div className="flex flex-wrap gap-2">
-                      {GRIPS.map(g => (
-                        <button
-                          key={g}
-                          type="button"
-                          onClick={() => updateActiveValue('grip', setGrip, g)}
-                          className={cn(
-                            "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all",
-                            grip === g ? "bg-white text-black border-white shadow-lg" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
-                          )}
-                        >
-                          {g}
-                        </button>
-                      ))}
-                   </div>
-                 </div>
+                     <div>
+                       <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-500/60 block mb-3">Grip Type</label>
+                       <div className="flex flex-wrap gap-2">
+                          {GRIPS.map(g => (
+                            <button
+                              key={g}
+                              type="button"
+                              onClick={() => updateActiveValue('grip', setGrip, g)}
+                              className={cn(
+                                "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all",
+                                grip === g ? "bg-white text-black border-white shadow-lg" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
+                              )}
+                            >
+                              {g}
+                            </button>
+                          ))}
+                       </div>
+                     </div>
+                   </>
+                 )}
 
                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div>
@@ -1438,6 +1719,8 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                     updateSet={updateSet}
                     removeSet={removeSet}
                     isHoldExercise={isHoldExercise}
+                    onFileUpload={handleFileUpload}
+                    onMediaClick={handleMediaClick}
                   />
                 ))}
               </Reorder.Group>
@@ -1452,30 +1735,26 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
            </button>
         </div>
 
-        {/* NOTES & MEDIA */}
+        {/* NOTES & SUBMIT */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
            <div className="space-y-4">
-              <label className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 flex items-center gap-2 px-2">
-                 <MessageSquare size={14} /> Tactical Notes
+              <label className="text-[10px] font-black uppercase tracking-[0.4em] text-cyan-500 flex items-center gap-2 px-2">
+                 <MessageSquare size={14} /> Exercise Protocol Notes
               </label>
               <textarea 
                  value={notes}
                  onChange={(e) => setNotes(e.target.value)}
-                 placeholder="Feelings, technical flaws, progressive insights..."
+                 placeholder="Global insights, general feelings, or session summary..."
                  className="w-full h-32 bg-white/5 border border-white/5 rounded-[32px] p-6 text-sm font-medium text-slate-300 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/30 transition-all resize-none italic"
               />
            </div>
 
            <div className="space-y-4">
-              <label className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 flex items-center gap-2 px-2">
-                 <Camera size={14} /> Visual Telemetry
+              <label className="text-[10px] font-black uppercase tracking-[0.4em] text-cyan-500 flex items-center gap-2 px-2">
+                 <Share2 size={14} /> Operation Logistics
               </label>
-              <div className="w-full h-32 border-2 border-dashed border-white/5 rounded-[32px] flex flex-col items-center justify-center gap-2 group hover:border-cyan-500/20 transition-all cursor-pointer">
-                 <Camera size={24} className="text-slate-700 group-hover:text-cyan-500 transition-colors" />
-                 <span className="text-[8px] font-black text-slate-700 group-hover:text-slate-500 uppercase tracking-widest">Attach recording (Photo/Video)</span>
-              </div>
-              <div className="flex items-center justify-between px-6 py-4 bg-white/5 rounded-2xl border border-white/5">
-                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Share with community</span>
+              <div className="flex items-center justify-between px-6 py-6 bg-white/5 rounded-[32px] border border-white/5">
+                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Mark as verified execution</span>
                  <button 
                   type="button"
                   onClick={() => setShared(!shared)}
@@ -1519,6 +1798,13 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
            </button>
         </div>
       </form>
+
+      <MediaPreviewModal 
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        media={previewMedia}
+        initialIndex={previewIndex}
+      />
     </div>
   );
 };

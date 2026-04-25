@@ -12,7 +12,7 @@ export type BandPlacement = 'both feet' | 'one foot' | 'buttocks' | 'waist' | 'c
 export type BandLoopType = 'single' | 'double';
 
 export interface AssistanceDetails {
-  placements?: BandPlacement[] | string;
+  placement?: BandPlacement[] | string;
   loopType?: BandLoopType;
   resistance?: string | number;
 }

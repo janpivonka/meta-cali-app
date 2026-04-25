@@ -5,11 +5,13 @@ import { Explorer } from './components/Explorer';
 import { WorkoutForm } from './components/WorkoutForm';
 import { AiInsights } from './components/AiInsights';
 import { Profile } from './components/Profile';
-import { ExerciseLog, UserProfile, Workout, ExerciseDefinition, BandPlacement } from './types';
+import { MediaPreviewModal } from './components/MediaPreviewModal';
+import { ExerciseLog, UserProfile, Workout, ExerciseDefinition, BandPlacement, ExerciseMedia } from './types';
 import { motion, AnimatePresence, Reorder, useDragControls } from 'framer-motion';
-import { Activity, Github, Twitter, Instagram, Sun, Moon, Share2, Edit3, MessageSquare, GripVertical, Video, Camera } from 'lucide-react';
+import { Activity, Github, Twitter, Instagram, Sun, Moon, Share2, Edit3, MessageSquare, GripVertical, Video, Camera, ArrowUp } from 'lucide-react';
 import { EXERCISE_LIBRARY } from './data/exerciseLibrary';
 import { cn } from './lib/utils';
+import { getWorkoutsFromDB, saveWorkoutsToDB, getCurrentWorkoutFromDB, saveCurrentWorkoutToDB } from './lib/db';
 
 const DEFAULT_PROFILE: UserProfile = {
   name: 'Karel Operator',
@@ -41,7 +43,7 @@ interface SetReorderItemProps {
   key?: React.Key;
 }
 
-function SetReorderItem({ s, si, i, ex, editingIndex, editingSetIndex, handleEditSet }: SetReorderItemProps) {
+function SetReorderItem({ s, si, i, ex, editingIndex, editingSetIndex, handleEditSet, onMediaClick }: any) {
   const controls = useDragControls();
   const isHighlighted = editingIndex === i && editingSetIndex === si;
   const exName = EXERCISE_LIBRARY.find(e => e.id === ex.exerciseId)?.name || ex.type;
@@ -211,7 +213,14 @@ function SetReorderItem({ s, si, i, ex, editingIndex, editingSetIndex, handleEdi
             {s.media && s.media.length > 0 && (
               <div className="flex gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
                 {s.media.map((m, midx) => (
-                  <div key={midx} className="w-8 h-8 rounded-lg overflow-hidden border border-white/5 bg-black/40 shrink-0">
+                  <div 
+                    key={midx} 
+                    className="w-8 h-8 rounded-lg overflow-hidden border border-white/5 bg-black/40 shrink-0 cursor-pointer pointer-events-auto hover:border-cyan-500/50 transition-all"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onMediaClick(s.media, midx);
+                    }}
+                  >
                     {m.type === 'image' ? (
                       <img src={m.url} className="w-full h-full object-cover opacity-80" referrerPolicy="no-referrer" alt="" />
                     ) : (
@@ -278,8 +287,9 @@ function ExerciseReorderItem({
   editingSetIndex, 
   handleEditExercise, 
   handleEditSet, 
-  handleReorderSets 
-}: ExerciseReorderItemProps) {
+  handleReorderSets,
+  onMediaClick
+}: any) {
   const exerciseControls = useDragControls();
   
   return (
@@ -308,10 +318,31 @@ function ExerciseReorderItem({
               )}>
                 {i + 1}
               </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.4em] italic leading-none">
+              <div className="flex flex-col flex-1">
+                <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.4em] italic leading-none mb-2">
                   Session Fragment
                 </span>
+                {/* Exercise-level Media moved to "top bar" area for prominence */}
+                {ex.media && ex.media.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pointer-events-auto">
+                    {ex.media.map((m: any, midx: number) => (
+                      <div 
+                        key={midx} 
+                        className="w-10 h-10 rounded-xl overflow-hidden border border-white/10 bg-black/40 cursor-pointer hover:border-cyan-500/50 transition-all"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onMediaClick(ex.media, midx);
+                        }}
+                      >
+                        {m.type === 'image' ? (
+                          <img src={m.url} className="w-full h-full object-cover" referrerPolicy="no-referrer" alt="" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-cyan-500"><Video size={14} /></div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -355,11 +386,12 @@ function ExerciseReorderItem({
                     editingIndex={editingIndex}
                     editingSetIndex={editingSetIndex}
                     handleEditSet={handleEditSet}
+                    onMediaClick={onMediaClick}
                   />
                 ))}
             </Reorder.Group>
           </div>
-              
+
           {ex.notes && (
             <div className="mt-2 flex items-start gap-2 bg-white/5 p-3 rounded-2xl border border-white/5 opacity-80 group-hover:opacity-100 transition-opacity">
               <MessageSquare size={12} className="text-cyan-500 shrink-0 mt-0.5" />
@@ -381,47 +413,99 @@ export default function App() {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingSetIndex, setEditingSetIndex] = useState<number | null>(null);
   const [isDark, setIsDark] = useState(true);
+  const [previewMedia, setPreviewMedia] = useState<ExerciseMedia[]>([]);
+  const [previewIndex, setPreviewIndex] = useState(0);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const builderRef = useRef<HTMLDivElement>(null);
+  const topRef = useRef<HTMLElement>(null);
 
-  // Load data from localStorage on mount
+  const handleMediaClick = (media: ExerciseMedia[], index: number) => {
+    setPreviewMedia(media);
+    setPreviewIndex(index);
+    setIsPreviewOpen(true);
+  };
+
+  // Load data from IndexedDB on mount, with migration from localStorage
   useEffect(() => {
-    const savedWorkouts = localStorage.getItem('meta-cali-workouts');
-    const savedProfile = localStorage.getItem('meta-cali-profile');
-    const savedTheme = localStorage.getItem('meta-cali-theme');
-    const savedCurrentWorkout = localStorage.getItem('meta-cali-current-workout');
-    
-    if (savedWorkouts) {
-      try {
-        setWorkouts(JSON.parse(savedWorkouts));
-      } catch (e) {
-        console.error("Failed to parse workouts", e);
-      }
-    }
+    const loadData = async () => {
+      setIsLoading(true);
+      
+      // 1. Check for legacy localStorage data
+      const savedWorkouts = localStorage.getItem('meta-cali-workouts');
+      const savedCurrentWorkout = localStorage.getItem('meta-cali-current-workout');
+      
+      let workoutsToUse: Workout[] = [];
+      let currentWorkoutToUse: Workout | null = null;
 
-    if (savedCurrentWorkout) {
+      // 2. Load from IndexedDB
       try {
-        setCurrentWorkout(JSON.parse(savedCurrentWorkout));
-      } catch (e) {
-        console.error("Failed to parse current workout", e);
-      }
-    }
+        const dbWorkouts = await getWorkoutsFromDB();
+        const dbCurrent = await getCurrentWorkoutFromDB();
+        
+        workoutsToUse = dbWorkouts || [];
+        currentWorkoutToUse = dbCurrent;
 
-    if (savedProfile) {
-      try {
-        const parsedProfile = JSON.parse(savedProfile);
-        // Goal migration from object to array if needed
-        if (parsedProfile && parsedProfile.goals && !Array.isArray(parsedProfile.goals)) {
-          parsedProfile.goals = DEFAULT_PROFILE.goals;
+        // 3. Migration logic: if DB is empty but localStorage has data, migrate it
+        if (workoutsToUse.length === 0 && savedWorkouts) {
+          try {
+            const parsed = JSON.parse(savedWorkouts);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              workoutsToUse = parsed;
+              await saveWorkoutsToDB(workoutsToUse);
+              console.log("Migrated workouts to IDB");
+            }
+          } catch (e) {
+            console.error("Migration failed", e);
+          }
         }
-        setProfile(parsedProfile);
-      } catch (e) {
-        console.error("Failed to parse profile", e);
-      }
-    }
 
-    if (savedTheme !== null) {
-      setIsDark(savedTheme === 'true');
-    }
+        if (!currentWorkoutToUse && savedCurrentWorkout) {
+          try {
+            const parsed = JSON.parse(savedCurrentWorkout);
+            if (parsed) {
+              currentWorkoutToUse = parsed;
+              await saveCurrentWorkoutToDB(currentWorkoutToUse);
+              console.log("Migrated current workout to IDB");
+            }
+          } catch (e) {
+            console.error("Current workout migration failed", e);
+          }
+        }
+
+        setWorkouts(workoutsToUse);
+        setCurrentWorkout(currentWorkoutToUse);
+      } catch (e) {
+        console.error("Error loading from IDB", e);
+        // Fallback to localStorage if IDB fails
+        if (savedWorkouts) setWorkouts(JSON.parse(savedWorkouts));
+        if (savedCurrentWorkout) setCurrentWorkout(JSON.parse(savedCurrentWorkout));
+      }
+
+      // Load Profile and Theme (still in localStorage as they are small)
+      const savedProfile = localStorage.getItem('meta-cali-profile');
+      const savedTheme = localStorage.getItem('meta-cali-theme');
+      
+      if (savedProfile) {
+        try {
+          const parsedProfile = JSON.parse(savedProfile);
+          if (parsedProfile && parsedProfile.goals && !Array.isArray(parsedProfile.goals)) {
+            parsedProfile.goals = DEFAULT_PROFILE.goals;
+          }
+          setProfile(parsedProfile);
+        } catch (e) {
+          console.error("Failed to parse profile", e);
+        }
+      }
+
+      if (savedTheme !== null) {
+        setIsDark(savedTheme === 'true');
+      }
+      
+      setIsLoading(false);
+    };
+
+    loadData();
   }, []);
 
   // Sync theme class
@@ -434,53 +518,66 @@ export default function App() {
     localStorage.setItem('meta-cali-theme', String(isDark));
   }, [isDark]);
 
-  // Save data to localStorage on change
+  // Save data to IndexedDB on change
   useEffect(() => {
-    localStorage.setItem('meta-cali-workouts', JSON.stringify(workouts));
-  }, [workouts]);
+    if (isLoading) return;
+    saveWorkoutsToDB(workouts).catch(e => console.error("Failed to save workouts to IDB", e));
+  }, [workouts, isLoading]);
 
   useEffect(() => {
-    localStorage.setItem('meta-cali-current-workout', JSON.stringify(currentWorkout));
-  }, [currentWorkout]);
+    if (isLoading) return;
+    saveCurrentWorkoutToDB(currentWorkout).catch(e => console.error("Failed to save current workout to IDB", e));
+  }, [currentWorkout, isLoading]);
 
   useEffect(() => {
-    localStorage.setItem('meta-cali-profile', JSON.stringify(profile));
+    try {
+      localStorage.setItem('meta-cali-profile', JSON.stringify(profile));
+    } catch (e) {
+      console.error("Failed to save profile", e);
+    }
   }, [profile]);
 
   const handleAddExerciseToWorkout = (log: ExerciseLog) => {
+    const safeUUID = () => {
+      if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+      }
+      return Math.random().toString(36).substring(2, 15);
+    };
+
     setCurrentWorkout(prev => {
       if (!prev) {
         return {
-          id: crypto.randomUUID(),
+          id: safeUUID(),
           exercises: [log],
           timestamp: Date.now(),
         };
       }
-
+      
+      const updatedExercises = [...(prev.exercises || [])];
       // Check by ID first to be absolutely sure we don't duplicate
-      const existingByIdIndex = prev.exercises.findIndex(ex => ex.id === log.id);
+      const existingByIdIndex = updatedExercises.findIndex(ex => ex.id === log.id);
       
       if (editingIndex !== null || existingByIdIndex !== -1) {
         const indexToUpdate = editingIndex !== null ? editingIndex : existingByIdIndex;
-        const updatedExercises = [...prev.exercises];
         updatedExercises[indexToUpdate] = log;
-        return { ...prev, exercises: updatedExercises };
       } else {
-        return {
-          ...prev,
-          exercises: [...prev.exercises, log]
-        };
+        updatedExercises.push(log);
       }
+      return { ...prev, exercises: updatedExercises };
     });
 
     setEditingIndex(null);
     setEditingSetIndex(null);
     setPreSelectedExerciseId(null);
 
-    // Scroll to builder after saving
+    // Explicit scroll to top after saving
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Also scroll builder into view to be sure
     setTimeout(() => {
       builderRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 100);
+    }, 400);
   };
 
   const handleReorderExercises = (newExercises: ExerciseLog[]) => {
@@ -627,6 +724,7 @@ export default function App() {
                       handleEditExercise={handleEditExercise}
                       handleEditSet={handleEditSet}
                       handleReorderSets={handleReorderSets}
+                      onMediaClick={handleMediaClick}
                     />
                   ))}
                 </Reorder.Group>
@@ -671,7 +769,7 @@ export default function App() {
                         <div className="w-10 h-10 rounded-xl bg-cyan-500 flex items-center justify-center text-black font-black italic">W</div>
                         <div>
                           <p className="text-[10px] text-[#94a3b8] font-bold uppercase tracking-[0.25em]">{new Date(workout.timestamp).toLocaleString()}</p>
-                          <p className="text-xs font-black text-white uppercase tracking-widest mt-0.5">{workout.exercises.length} EXERCISES • {workout.exercises.reduce((acc, ex) => acc + ex.sets.length, 0)} SETS</p>
+                          <p className="text-xs font-black text-white uppercase tracking-widest mt-0.5">{(workout.exercises || []).length} EXERCISES • {(workout.exercises || []).reduce((acc, ex) => acc + (ex.sets || []).length, 0)} SETS</p>
                         </div>
                       </div>
                       <Share2 size={16} className="text-slate-500 hover:text-cyan-400 cursor-pointer transition-colors" />
@@ -755,18 +853,18 @@ export default function App() {
                                     return 'BODYWEIGHT';
                                   })();
 
-                                       return (
+                                  return (
                                     <div 
                                       key={si} 
                                       className="p-4 rounded-2xl border bg-black/40 border-white/5 text-white flex flex-col gap-2 relative overflow-hidden shadow-lg"
                                     >
                                       {/* Header */}
-                                      <div className="flex items-center gap-2 mb-0.5">
-                                        <span className="text-[10px] font-black italic uppercase tracking-tighter text-white">
+                                      <div className="flex items-center gap-2 mb-0.5 pr-12">
+                                        <span className="text-[10px] font-black italic uppercase tracking-tighter text-white truncate">
                                           {exName}
                                         </span>
                                         <span className="text-[9px] font-black text-slate-800/30">/</span>
-                                        <div className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md border bg-cyan-500/5 border-cyan-500/10 text-cyan-400">
+                                        <div className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md border bg-cyan-500/5 border-cyan-500/10 text-cyan-400 shrink-0">
                                           {currentLoadLabel}
                                         </div>
                                       </div>
@@ -804,26 +902,69 @@ export default function App() {
                                             ))}
                                           </div>
                                         )}
+
+                                        {/* Set Media */}
+                                        {s.media && s.media.length > 0 && (
+                                          <div className="flex gap-1 overflow-x-auto no-scrollbar mt-1">
+                                            {s.media.map((m: any, midx: number) => (
+                                              <div 
+                                                key={midx} 
+                                                className="w-6 h-6 rounded-md overflow-hidden bg-black/40 border border-white/5 shrink-0 cursor-pointer hover:border-cyan-500/50 transition-all"
+                                                onClick={() => handleMediaClick(s.media, midx)}
+                                              >
+                                                {m.type === 'image' ? (
+                                                  <img src={m.url} className="w-full h-full object-cover opacity-60" referrerPolicy="no-referrer" alt="" />
+                                                ) : (
+                                                  <div className="w-full h-full flex items-center justify-center text-cyan-500/40"><Video size={8} /></div>
+                                                )}
+                                              </div>
+                                            ))}
+                                          </div>
+                                        )}
                                       </div>
 
                                       {/* Bottom Right Badge */}
-                                      <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/40 border border-white/5 flex items-baseline gap-0.5">
+                                      <div className="absolute top-4 right-2 px-1.5 py-0.5 rounded bg-black/40 border border-white/5 flex items-baseline gap-0.5">
                                         <span className="text-[10px] font-black font-mono text-white">
                                           {s.reps || s.time}
                                         </span>
                                         <span className="text-[7px] font-black uppercase text-slate-500">
                                           {s.reps ? 'r' : 's'}
                                         </span>
-                                        {s.weight !== undefined && s.weight > 0 && effectiveLoadType !== 'weighted' && (
-                                          <span className="text-[10px] font-black font-mono ml-1 text-orange-400">
-                                            +{s.weight}{(s.weightUnit || log.weightUnit || 'kg').toLowerCase() === 'kg' ? 'k' : 'lb'}
-                                          </span>
-                                        )}
                                       </div>
                                     </div>
                                   );
                                 })}
                               </div>
+
+                              {/* Exercise Level notes and media */}
+                              {(log.notes || (log.media && log.media.length > 0)) && (
+                                <div className="mt-4 p-4 rounded-2xl bg-white/[0.02] border border-white/5 flex flex-col gap-3">
+                                  {log.notes && (
+                                    <div className="flex items-start gap-2">
+                                      <MessageSquare size={12} className="text-cyan-500 shrink-0 mt-0.5" />
+                                      <p className="text-[10px] font-medium text-slate-400 italic leading-relaxed">{log.notes}</p>
+                                    </div>
+                                  )}
+                                  {log.media && log.media.length > 0 && (
+                                    <div className="flex flex-wrap gap-2">
+                                      {log.media.map((m: any, midx: number) => (
+                                        <div 
+                                          key={midx} 
+                                          className="w-16 h-16 rounded-xl overflow-hidden border border-white/10 bg-black/40 shrink-0 cursor-pointer hover:border-cyan-500/50 transition-all"
+                                          onClick={() => handleMediaClick(log.media!, midx)}
+                                        >
+                                          {m.type === 'image' ? (
+                                            <img src={m.url} className="w-full h-full object-cover" referrerPolicy="no-referrer" alt="" />
+                                          ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-cyan-500"><Video size={20} /></div>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </div>
                         );
@@ -906,6 +1047,13 @@ export default function App() {
             </motion.div>
           </AnimatePresence>
         </div>
+
+        <MediaPreviewModal 
+          isOpen={isPreviewOpen}
+          onClose={() => setIsPreviewOpen(false)}
+          media={previewMedia}
+          initialIndex={previewIndex}
+        />
 
         <footer className="mt-20 pt-8 border-t border-black/5 dark:border-white/5 pb-10 flex flex-col md:flex-row justify-between items-center gap-6 opacity-40 hover:opacity-100 transition-opacity relative z-10">
           <div className="flex items-center gap-6">

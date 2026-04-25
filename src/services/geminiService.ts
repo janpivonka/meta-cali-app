@@ -6,17 +6,23 @@ export async function getWorkoutAdvice(workouts: Workout[]) {
     return "Zatím nemáš žádná data. Odcvič svůj první trénink a já ti poradím!";
   }
 
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
-  const recentSessionsText = workouts.slice(-5).map(w => {
-    const sessionDate = new Date(w.timestamp).toLocaleDateString();
-    const exercisesText = w.exercises.map(ex => 
-      `${ex.type}: ${ex.sets.map(s => s.reps || `${s.time}s`).join(',')} reps`
-    ).join(' | ');
-    return `${sessionDate}: ${exercisesText}`;
-  }).join('\n');
-
   try {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      console.warn("GEMINI_API_KEY is missing");
+      return "AI analýza je dočasně nedostupná (chybí API klíč).";
+    }
+
+    const ai = new GoogleGenAI({ apiKey });
+
+    const recentSessionsText = workouts.slice(-5).map(w => {
+      const sessionDate = new Date(w.timestamp).toLocaleDateString();
+      const exercisesText = w.exercises.map(ex => 
+        `${ex.type}: ${ex.sets.map(s => s.reps || `${s.time}s`).join(',')} reps`
+      ).join(' | ');
+      return `${sessionDate}: ${exercisesText}`;
+    }).join('\n');
+
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: `Jsi expertní kalisthenický trenér. Analyzuj tyto nedávné tréninky a dej uživateli krátké, 
