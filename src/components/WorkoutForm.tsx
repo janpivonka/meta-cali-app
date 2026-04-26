@@ -825,7 +825,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
 
   // Sync band placements based on leg progression
   React.useEffect(() => {
-    if (legProgression === 'one leg') {
+    if (legProgression === 'one leg' || legProgression === 'straddle') {
       if (bandPlacements.includes('both feet')) {
         const next = bandPlacements.map(p => p === 'both feet' ? 'one foot' as BandPlacement : p);
         handleUpdateAssistance('placement', next);
@@ -1109,7 +1109,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
 
     if (currentActivePlacements.includes(p)) {
       const filtered = currentActivePlacements.filter(item => item !== p);
-      const fallback: BandPlacement = legProgression === 'one leg' ? 'one foot' : 'both feet';
+      const fallback: BandPlacement = (legProgression === 'one leg' || legProgression === 'straddle') ? 'one foot' : 'both feet';
       next = filtered.length === 0 ? [fallback] : filtered;
     } else {
       if (isLegSupport(p)) {
@@ -1934,7 +1934,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                       <label className="text-[8px] font-black uppercase tracking-[0.3em] text-orange-500/60 block px-2">Assistance Placement</label>
                       <div className="flex flex-wrap gap-2">
                          {BAND_PLACEMENTS.filter(p => {
-                           if (legProgression === 'one leg') {
+                           if (legProgression === 'one leg' || legProgression === 'straddle') {
                              return p !== 'both feet';
                            }
                            return true;
@@ -1957,7 +1957,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                          ))}
                       </div>
 
-                      {legProgression === 'one leg' && (bandPlacements.includes('one foot') || bandPlacements.includes('knees')) && (
+                      {(legProgression === 'one leg' || legProgression === 'straddle') && (bandPlacements.includes('one foot') || bandPlacements.includes('knees')) && (
                         <div className="space-y-3 pt-2">
                           <label className="text-[8px] font-black uppercase tracking-[0.3em] text-orange-500/40 block px-2">Assistance Target Leg</label>
                           <div className="flex gap-2">
