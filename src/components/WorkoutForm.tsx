@@ -1213,12 +1213,13 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
   }, [equipment, executionStyle, position, legProgression, grip, gripWidth, currentExercise, isOneLeg, loadType, isHoldExercise]);
 
   const handleStyleChange = (style: ExecutionStyle) => {
+    const newGrip = style === 'commando' ? 'neutral' : (localEditingSetIndex !== null && sets[localEditingSetIndex]?.grip ? sets[localEditingSetIndex].grip : grip);
+    const newWidth = (style === 'archer' || style === 'typewriter') ? 'wide' : (style === 'commando' ? 'narrow' : (localEditingSetIndex !== null && sets[localEditingSetIndex]?.gripWidth ? sets[localEditingSetIndex].gripWidth : gripWidth));
+
     if (localEditingSetIndex !== null) {
-      const newGrip = style === 'commando' ? 'neutral' : (activeSet?.grip || grip);
-      const newWidth = (style === 'archer' || style === 'typewriter') ? 'wide' : (style === 'commando' ? 'narrow' : (activeSet?.gripWidth || gripWidth));
-      
+      const active = sets[localEditingSetIndex];
       const newSetValues = {
-        ...activeSet,
+        ...active,
         executionStyle: style,
         grip: newGrip,
         gripWidth: newWidth
@@ -1228,15 +1229,12 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
         next[localEditingSetIndex] = newSetValues as any;
         return next;
       });
-    } else {
-      setExecutionStyle(style);
-      if (style === 'archer' || style === 'typewriter') {
-        setGripWidth('wide');
-      } else if (style === 'commando') {
-        setGripWidth('narrow');
-        setGrip('neutral');
-      }
-    }
+    } 
+    
+    // Always update local state so the UI (buttons, etc.) updates instantly
+    setExecutionStyle(style);
+    setGrip(newGrip);
+    setGripWidth(newWidth);
   };
 
   const updateActiveAssistance = (field: string, val: any) => {
