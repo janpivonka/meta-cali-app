@@ -424,76 +424,11 @@ const WorkoutSetItem = memo<WorkoutSetItemProps>(({
                 </div>
               </div>
 
-              {/* Hand/Leg selection for specific styles */}
-              {(set.executionStyle === 'one arm' || set.executionStyle === 'commando') && (
-                <div className="flex flex-col gap-2">
-                  <label className="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-400/60">
-                    {set.executionStyle === 'one arm' ? 'Active Arm' : 'Front Hand'}
-                  </label>
-                  <div className="flex bg-black/40 p-1 rounded-2xl border border-white/5">
-                    {(['left', 'right', 'alternating'] as const).map((side) => (
-                      <button
-                        key={side}
-                        type="button"
-                        onClick={() => updateSet(index, 'oneArmSide', side)}
-                        className={cn(
-                          "flex-1 py-3 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all",
-                          (set.oneArmSide || 'right') === side ? "bg-cyan-500 text-black shadow-lg shadow-cyan-500/20" : "text-slate-500 hover:text-white"
-                        )}
-                      >
-                        {side}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {set.executionStyle === 'one arm' && (
-                <div className="flex flex-col gap-2">
-                  <label className="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-400/60">Passive Arm Support</label>
-                  <div className="grid grid-cols-4 gap-1 bg-black/40 p-1 rounded-2xl border border-white/5">
-                    {ONE_ARM_POSITIONS.map((pos) => (
-                      <button
-                        key={pos.val}
-                        type="button"
-                        onClick={() => updateSet(index, 'oneArmHandPosition', pos.val)}
-                        className={cn(
-                          "py-2 rounded-xl text-[7px] font-black uppercase tracking-tighter transition-all",
-                          (set.oneArmHandPosition || 'free') === pos.val ? "bg-purple-600 text-white shadow-lg shadow-purple-500/20" : "text-slate-500 hover:text-white"
-                        )}
-                      >
-                        {pos.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {set.legProgression === 'one leg' && (
-                <div className="flex flex-col gap-2">
-                  <label className="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-400/60">Leg Selection</label>
-                  <div className="flex bg-black/40 p-1 rounded-2xl border border-white/5">
-                    {(['left', 'right', 'alternating'] as const).map((side) => (
-                      <button
-                        key={side}
-                        type="button"
-                        onClick={() => updateSet(index, 'oneArmSide', side)} // Using oneArmSide as proxy for side, or should add oneLegSide to types?
-                        className={cn(
-                          "flex-1 py-3 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all",
-                          (set.oneArmSide || 'right') === side ? "bg-cyan-500 text-black shadow-lg shadow-cyan-500/20" : "text-slate-500 hover:text-white"
-                        )}
-                      >
-                        {side}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </Reorder.Item>
-  );
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </Reorder.Item>
+    );
 });
 
 // Move constant helpers outside to prevent recreation
@@ -823,15 +758,53 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     }
   }, [localEditingSetIndex]); // ONLY depend on the index change
 
-  // Sync band placements based on leg progression
+  // Sync band placements based on leg progression and leg positions
   React.useEffect(() => {
-    if (legProgression === 'one leg' || legProgression === 'straddle') {
+    const isAustralian = legProgression.toString().includes('australian');
+    const isOneLegAustralian = isAustralian && isOneLeg;
+    const isOneLegNormal = legProgression === 'one leg';
+
+    // 1. One leg / Straddle / One leg Australian -> No "both feet"
+    if (isOneLegNormal || legProgression === 'straddle' || isOneLegAustralian) {
       if (bandPlacements.includes('both feet')) {
         const next = bandPlacements.map(p => p === 'both feet' ? 'one foot' as BandPlacement : p);
         handleUpdateAssistance('placement', next);
+        return;
       }
     }
-  }, [legProgression, bandPlacements, handleUpdateAssistance]);
+
+    // 2. Halflay logic (feet invalid unless floating australian)
+    const isPrimaryHalflay = (isOneLegNormal || isOneLegAustralian) && oneLegPrimaryPosition === 'halflay';
+    const isSecondaryHalflay = (isOneLegNormal || isOneLegAustralian) && oneLegSecondaryPosition === 'halflay';
+    const isFullHalflay = legProgression === 'halflay';
+    
+    const isTargetLegHalflay = isFullHalflay || 
+                              (legTarget === 'primary' && isPrimaryHalflay) ||
+                              (legTarget === 'secondary' && isSecondaryHalflay);
+
+    // Exception: Floating leg in Australian version can have band under foot even in halflay
+    const isFloatingLegInAustralian = isOneLegAustralian && legTarget === 'primary';
+
+    if (isTargetLegHalflay && !isFloatingLegInAustralian) {
+      if (bandPlacements.includes('both feet') || bandPlacements.includes('one foot')) {
+        const next = bandPlacements
+          .filter(p => p !== 'both feet' && p !== 'one foot')
+          .concat(bandPlacements.some(p => p === 'both feet' || p === 'one foot') ? ['knees' as BandPlacement] : []);
+        
+        // Remove duplicates and ensure fallback is clean
+        const uniqueNext = Array.from(new Set(next));
+        handleUpdateAssistance('placement', uniqueNext);
+      }
+    }
+  }, [
+    legProgression, 
+    bandPlacements, 
+    handleUpdateAssistance, 
+    oneLegPrimaryPosition, 
+    oneLegSecondaryPosition, 
+    isOneLeg, 
+    legTarget
+  ]);
 
   const updateActiveValue = (setField: keyof WorkoutSet, globalSetter: (val: any) => void, val: any) => {
     if (localEditingSetIndex !== null) {
@@ -1661,7 +1634,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                     >
                       <div className="space-y-2">
                         <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-400 block mb-2">
-                          {executionStyle === 'one arm' ? 'Working Arm' : 'Front Hand Position'}
+                          {executionStyle === 'one arm' ? 'Active Arm' : 'Front Hand Position'}
                         </label>
                         <div className="flex gap-2">
                           {(['left', 'right', 'alternating'] as const).map(side => (
@@ -1682,7 +1655,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
 
                       {executionStyle === 'one arm' && (
                         <div className="space-y-2">
-                          <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-400 block mb-2">Free Hand Position (Second Arm)</label>
+                          <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-400 block mb-2">Passive Arm Support</label>
                           <div className="flex flex-wrap gap-2">
                              {ONE_ARM_POSITIONS.map(pos => (
                                <button
@@ -1785,6 +1758,25 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                       animate={{ opacity: 1, height: 'auto' }}
                       className="space-y-4 pt-4 border-t border-white/5 pb-4"
                     >
+                      <div className="space-y-2">
+                        <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-400 block mb-2">Leg Selection</label>
+                        <div className="flex bg-black/40 p-1 rounded-2xl border border-white/5 mb-4">
+                          {(['left', 'right', 'alternating'] as const).map(side => (
+                            <button
+                              key={side}
+                              type="button"
+                              onClick={() => updateActiveValue('oneArmSide', setOneArmSide, side)}
+                              className={cn(
+                                "flex-1 py-3 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all",
+                                oneArmSide === side ? "bg-cyan-500 text-black shadow-lg" : "text-slate-500 hover:text-white"
+                              )}
+                            >
+                              {side}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
                       <div className="space-y-2">
                         <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-400 block mb-2">
                           {legProgression.toString().includes('australian') ? 'Floating Leg Position' : 'Primary Leg'}
@@ -1934,9 +1926,25 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                       <label className="text-[8px] font-black uppercase tracking-[0.3em] text-orange-500/60 block px-2">Assistance Placement</label>
                       <div className="flex flex-wrap gap-2">
                          {BAND_PLACEMENTS.filter(p => {
-                           if (legProgression === 'one leg' || legProgression === 'straddle') {
-                             return p !== 'both feet';
+                           const isAustr = legProgression.toString().includes('australian');
+                           const isOneLegNor = legProgression === 'one leg';
+                           const isOneLegAustr = isAustr && isOneLeg;
+
+                           if ((isOneLegNor || legProgression === 'straddle' || isOneLegAustr) && p === 'both feet') {
+                             return false;
                            }
+
+                           const isPrimHalf = (isOneLegNor || isOneLegAustr) && oneLegPrimaryPosition === 'halflay';
+                           const isSecHalf = (isOneLegNor || isOneLegAustr) && oneLegSecondaryPosition === 'halflay';
+                           const isFullHalf = legProgression === 'halflay';
+                           
+                           const targetHalf = isFullHalf || (legTarget === 'primary' && isPrimHalf) || (legTarget === 'secondary' && isSecHalf);
+                           const isFloatAustr = isAustr && isOneLeg && legTarget === 'primary';
+
+                           if (targetHalf && !isFloatAustr) {
+                             return p !== 'both feet' && p !== 'one foot';
+                           }
+
                            return true;
                          }).map(p => (
                            <button
