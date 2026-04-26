@@ -522,6 +522,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
   const [assistanceValue, setAssistanceValue] = useState('');
   const [bandPlacements, setBandPlacements] = useState<BandPlacement[]>(['both feet']);
   const [bandLoopType, setBandLoopType] = useState<BandLoopType>('single');
+  const [legTarget, setLegTarget] = useState<'primary' | 'secondary'>('primary');
   const [falseGrip, setFalseGrip] = useState(false);
   const [sets, setSets] = useState<WorkoutSet[]>(() => {
     const safeUUID = () => {
@@ -751,6 +752,33 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     }
   }, [highlightedSetIndex]);
 
+  // Smart Conflict Resolution Handlers
+  const handleUpdateField = useCallback((field: keyof WorkoutSet, val: any) => {
+    if (localEditingSetIndex !== null) {
+      updateSet(localEditingSetIndex, field, val);
+    }
+  }, [localEditingSetIndex, updateSet]);
+
+  const handleUpdateAssistance = useCallback((field: string, val: any) => {
+    if (localEditingSetIndex !== null) {
+      const currentDetails = sets[localEditingSetIndex]?.assistanceDetails || { resistance: '', loopType: 'single', placement: ['both feet'], legTarget: 'primary' };
+      const updatedDetails = { ...currentDetails, [field]: val };
+      
+      if (loadType === 'weighted' && field === 'resistance') {
+        const numericWeight = parseFloat(val) || 0;
+        updateSet(localEditingSetIndex, 'weight', numericWeight);
+      } else {
+        updateSet(localEditingSetIndex, 'assistanceDetails', updatedDetails);
+      }
+    }
+    
+    // Always update local state
+    if (field === 'resistance') setAssistanceValue(val);
+    if (field === 'loopType') setBandLoopType(val);
+    if (field === 'placement') setBandPlacements(val);
+    if (field === 'legTarget') setLegTarget(val);
+  }, [localEditingSetIndex, sets, loadType, updateSet]);
+
   // Sync global form-state ONLY when the selected set index changes
   // This prevents the lag caused by syncing on every individual keystroke (sets array update)
   React.useEffect(() => {
@@ -780,37 +808,30 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
         setBandPlacements(active.assistanceDetails.placement as BandPlacement[] || ['both feet']);
         setBandLoopType(active.assistanceDetails.loopType || 'single');
         setAssistanceValue(active.assistanceDetails.resistance?.toString() || '');
+        setLegTarget(active.assistanceDetails.legTarget || 'primary');
       } else if (activeLoadType === 'weighted' || (active.weight && active.weight > 0)) {
         setAssistanceValue(active.weight?.toString() || '');
         setBandPlacements(['both feet']);
         setBandLoopType('single');
+        setLegTarget('primary');
       } else {
         setAssistanceValue('');
         setBandPlacements(['both feet']);
         setBandLoopType('single');
+        setLegTarget('primary');
       }
     }
   }, [localEditingSetIndex]); // ONLY depend on the index change
 
-  // Smart Conflict Resolution Handlers
-  const handleUpdateField = useCallback((field: keyof WorkoutSet, val: any) => {
-    if (localEditingSetIndex !== null) {
-      updateSet(localEditingSetIndex, field, val);
-    }
-  }, [localEditingSetIndex, updateSet]);
-
-  const handleUpdateAssistance = useCallback((field: string, val: any) => {
-    if (localEditingSetIndex !== null) {
-      const currentDetails = sets[localEditingSetIndex]?.assistanceDetails || { resistance: '', loopType: 'single', placement: ['both feet'] };
-      const updatedDetails = { ...currentDetails, [field]: val };
-      
-      if (loadType === 'weighted' && field === 'resistance') {
-        updateSet(localEditingSetIndex, 'weight', parseFloat(val) || 0);
-      } else if (loadType === 'assisted') {
-        updateSet(localEditingSetIndex, 'assistanceDetails', updatedDetails);
+  // Sync band placements based on leg progression
+  React.useEffect(() => {
+    if (legProgression === 'one leg') {
+      if (bandPlacements.includes('both feet')) {
+        const next = bandPlacements.map(p => p === 'both feet' ? 'one foot' as BandPlacement : p);
+        handleUpdateAssistance('placement', next);
       }
     }
-  }, [localEditingSetIndex, sets, updateSet, loadType]);
+  }, [legProgression, bandPlacements, handleUpdateAssistance]);
 
   const updateActiveValue = (setField: keyof WorkoutSet, globalSetter: (val: any) => void, val: any) => {
     if (localEditingSetIndex !== null) {
@@ -1080,49 +1101,29 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
   };
 
   const toggleBandPlacement = (p: BandPlacement) => {
-    const isFoot = (item: BandPlacement) => item === 'both feet' || item === 'one foot';
-    const isSupport = (item: BandPlacement) => item === 'waist' || item === 'buttocks' || item === 'knees' || item === 'chest';
-    
-    const pIsFoot = isFoot(p);
-    const pIsSupport = isSupport(p);
+    const isLegSupport = (item: BandPlacement) => item === 'both feet' || item === 'one foot' || item === 'knees';
+    const isUpperSupport = (item: BandPlacement) => item === 'waist' || item === 'buttocks' || item === 'chest';
     
     const currentActivePlacements = bandPlacements;
     let next: BandPlacement[];
 
     if (currentActivePlacements.includes(p)) {
-      // When mixed groups are active, clicking an active item deselects the other group
-      const hasFoot = currentActivePlacements.some(isFoot);
-      const hasSupport = currentActivePlacements.some(isSupport);
-
-      if (hasFoot && hasSupport) {
-        next = [p];
-      } else {
-        // Normal toggle off
-        const filtered = currentActivePlacements.filter(item => item !== p);
-        next = filtered.length === 0 ? ['both feet'] : filtered;
-      }
+      const filtered = currentActivePlacements.filter(item => item !== p);
+      const fallback: BandPlacement = legProgression === 'one leg' ? 'one foot' : 'both feet';
+      next = filtered.length === 0 ? [fallback] : filtered;
     } else {
-      // Adding p
-      if (pIsFoot) {
-        // Keep support, replace other foot elements
-        const support = currentActivePlacements.filter(isSupport);
-        next = [...support, p];
-      } else if (pIsSupport) {
-        // Keep foot, replace other support elements
-        const foot = currentActivePlacements.filter(isFoot);
-        next = [...foot, p];
+      if (isLegSupport(p)) {
+        const upper = currentActivePlacements.filter(isUpperSupport);
+        next = [...upper, p];
+      } else if (isUpperSupport(p)) {
+        const leg = currentActivePlacements.filter(isLegSupport);
+        next = [...leg, p];
       } else {
         next = [p];
       }
     }
 
-    if (localEditingSetIndex !== null) {
-      const currentDetails = sets[localEditingSetIndex]?.assistanceDetails || {};
-      updateSet(localEditingSetIndex, 'assistanceDetails', { ...currentDetails, placement: next });
-      setBandPlacements(next); // Sync local state
-    } else {
-      setBandPlacements(next);
-    }
+    handleUpdateAssistance('placement', next);
   };
 
   const availableEquipment = EQUIPMENTS.filter(eq => {
@@ -1932,13 +1933,18 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                     <div className="space-y-4">
                       <label className="text-[8px] font-black uppercase tracking-[0.3em] text-orange-500/60 block px-2">Assistance Placement</label>
                       <div className="flex flex-wrap gap-2">
-                         {BAND_PLACEMENTS.map(p => (
+                         {BAND_PLACEMENTS.filter(p => {
+                           if (legProgression === 'one leg') {
+                             return p !== 'both feet';
+                           }
+                           return true;
+                         }).map(p => (
                            <button
                              key={p}
                              type="button"
                              onClick={() => toggleBandPlacement(p)}
                              className={cn(
-                               "px-4 py-2 rounded-xl text-[7px] font-black uppercase tracking-widest border transition-all flex-1 text-center",
+                               "px-4 py-2 rounded-xl text-[7px] font-black uppercase tracking-widest border transition-all flex-1 text-center min-w-[80px]",
                                bandPlacements.includes(p) ? "bg-orange-500 text-black border-orange-400" : "bg-black/40 text-slate-500 border-white/5"
                              )}
                            >
@@ -1950,6 +1956,27 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                            </button>
                          ))}
                       </div>
+
+                      {legProgression === 'one leg' && (bandPlacements.includes('one foot') || bandPlacements.includes('knees')) && (
+                        <div className="space-y-3 pt-2">
+                          <label className="text-[8px] font-black uppercase tracking-[0.3em] text-orange-500/40 block px-2">Assistance Target Leg</label>
+                          <div className="flex gap-2">
+                             {(['primary', 'secondary'] as const).map(side => (
+                               <button
+                                 key={side}
+                                 type="button"
+                                 onClick={() => handleUpdateAssistance('legTarget', side)}
+                                 className={cn(
+                                   "px-4 py-2 rounded-xl text-[7px] font-black uppercase tracking-widest border transition-all flex-1 text-center",
+                                   legTarget === side ? "bg-orange-500/20 text-orange-400 border-orange-400/30" : "bg-black/40 text-slate-600 border-white/5"
+                                 )}
+                               >
+                                 {side === 'primary' ? 'Primary Leg' : 'Secondary Leg'}
+                               </button>
+                             ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </motion.div>

@@ -15,6 +15,7 @@ export interface AssistanceDetails {
   placement?: BandPlacement[] | string;
   loopType?: BandLoopType;
   resistance?: string | number;
+  legTarget?: 'primary' | 'secondary';
 }
 
 export interface WorkoutSet {
