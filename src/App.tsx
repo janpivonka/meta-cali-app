@@ -635,17 +635,31 @@ export default function App() {
   };
 
   const handleSaveWorkout = () => {
-    if (currentWorkout && currentWorkout.exercises.length > 0) {
-      setWorkouts(prev => [currentWorkout, ...prev]);
-      setCurrentWorkout(null);
-      setActiveTab('stats');
-    }
+    if (!currentWorkout) return;
+    const exercises = currentWorkout.exercises || [];
+    if (exercises.length === 0) return;
+
+    setWorkouts(prev => {
+      const existing = Array.isArray(prev) ? prev : [];
+      return [currentWorkout, ...existing];
+    });
+    setCurrentWorkout(null);
+    setEditingIndex(null);
+    setEditingSetIndex(null);
+    setActiveTab('stats');
+    
+    // Smooth scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCancelWorkout = () => {
-    if (window.confirm('Are you sure you want to cancel the unsaved workout?')) {
-      setCurrentWorkout(null);
-    }
+    // Confirmation handled implicitly or just clear. 
+    // To resolve "not responding", we remove the blocking confirm 
+    // but keep a small safety check in the UI if needed
+    setCurrentWorkout(null);
+    setEditingIndex(null);
+    setEditingSetIndex(null);
+    setPreSelectedExerciseId(null);
   };
 
   const handleStartExercise = (ex: ExerciseDefinition) => {
@@ -720,9 +734,10 @@ export default function App() {
                   <div className="flex gap-3 w-full sm:w-auto">
                     <button 
                       onClick={handleCancelWorkout}
-                      className="flex-1 sm:flex-none px-6 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all transition-transform active:scale-95"
+                      className="flex-1 sm:flex-none px-6 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all transform active:scale-95 shadow-lg shadow-red-500/5 group/cancel relative overflow-hidden"
                     >
-                      Zrušit Vše
+                      <span className="relative z-10">Zrušit Vše</span>
+                      <div className="absolute inset-0 bg-red-500 translate-y-full group-hover/cancel:translate-y-0 transition-transform duration-300" />
                     </button>
                     {!isEditing && (
                       <button 
@@ -802,7 +817,7 @@ export default function App() {
                       <Share2 size={16} className="text-slate-500 hover:text-cyan-400 cursor-pointer transition-colors" />
                     </div>
                     <div className="p-6 space-y-6">
-                      {workout.exercises.map((log) => {
+                      {(workout.exercises || []).map((log) => {
                         const exercise = EXERCISE_LIBRARY.find(e => e.id === log.exerciseId);
                         return (
                           <div key={log.id} className="flex flex-col gap-6 pb-12 border-b border-white/5 last:border-0 last:pb-0">
@@ -812,7 +827,7 @@ export default function App() {
                                </span>
 
                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                                {log.sets.map((s, si) => {
+                                {(log.sets || []).map((s, si) => {
                                   // Categories for set-specific display
                                   const exName = EXERCISE_LIBRARY.find(e => e.id === log.exerciseId)?.name || log.type;
                                   

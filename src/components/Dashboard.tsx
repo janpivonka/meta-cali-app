@@ -112,32 +112,37 @@ export const Dashboard: React.FC<DashboardProps> = ({ workouts }) => {
   ];
 
   // LIVE STATS CALCULATION
-  const totalSets = workouts.reduce((acc, w) => acc + w.exercises.reduce((exAcc, ex) => exAcc + ex.sets.length, 0), 0);
+  const totalSets = Array.isArray(workouts) 
+    ? workouts.reduce((acc, w) => acc + (w.exercises || []).reduce((exAcc, ex) => exAcc + (ex.sets || []).length, 0), 0)
+    : 0;
   
   // Basic streak calculation
   const calculateStreak = () => {
-    if (workouts.length === 0) return 0;
+    if (!Array.isArray(workouts) || workouts.length === 0) return 0;
     let streak = 0;
  
     // Check if there's a workout from today or yesterday to start
-    const hasLogToday = workouts.some(w => isSameDay(new Date(w.timestamp), today));
+    const hasLogToday = workouts.some(w => w?.timestamp && isSameDay(new Date(w.timestamp), today));
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    const hasLogYesterday = workouts.some(w => isSameDay(new Date(w.timestamp), yesterday));
+    const hasLogYesterday = workouts.some(w => w?.timestamp && isSameDay(new Date(w.timestamp), yesterday));
  
     if (!hasLogToday && !hasLogYesterday) return 0;
  
     // Simplified streak: count consecutive days with at least one workout
     let checkDate = hasLogToday ? today : yesterday;
     while (true) {
-      const dayLogs = workouts.filter(w => isSameDay(new Date(w.timestamp), checkDate));
+      const dayLogs = workouts.filter(w => w?.timestamp && isSameDay(new Date(w.timestamp), checkDate));
       if (dayLogs.length > 0) {
         streak++;
-        checkDate = new Date(checkDate);
-        checkDate.setDate(checkDate.getDate() - 1);
+        const prevDay = new Date(checkDate);
+        prevDay.setDate(prevDay.getDate() - 1);
+        checkDate = prevDay;
       } else {
         break;
       }
+      // Safety break to prevent infinite loop
+      if (streak > 3650) break;
     }
     return streak;
   };
