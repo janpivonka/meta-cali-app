@@ -1,4 +1,5 @@
 import React, { useState, useCallback, memo, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Plus, 
   Minus, 
@@ -134,6 +135,7 @@ const WorkoutSetItem = memo<WorkoutSetItemProps>(({
       <input 
         type="file" 
         accept="image/*,video/*"
+        multiple
         ref={fileInputRef}
         className="hidden"
         onChange={(e) => onFileUpload(e, index)}
@@ -352,23 +354,36 @@ const WorkoutSetItem = memo<WorkoutSetItemProps>(({
                         exit={{ opacity: 0, scale: 0.8 }}
                         className="relative group/media"
                       >
-                        <div 
-                          className="w-16 h-16 rounded-2xl overflow-hidden border border-white/10 bg-black/40 cursor-pointer hover:border-cyan-500/50 transition-all relative group/media-container"
-                          onClick={() => onMediaClick(set.media!, mIdx)}
-                        >
-                          {m?.type === 'image' ? (
-                            <MediaRenderer url={m.url} type="image" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                          ) : (
-                            <div className="w-full h-full relative">
-                              {m?.thumbnail ? (
-                                <img src={m.thumbnail} className="w-full h-full object-cover" alt="Thumbnail" />
+                          <div 
+                            className="w-20 h-20 rounded-2xl overflow-hidden border border-white/10 bg-black/40 cursor-pointer hover:border-cyan-500/50 transition-all relative group/media-container"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (m.isProcessing) return;
+                              onMediaClick(set.media!, mIdx);
+                            }}
+                          >
+                            <div className={cn("w-full h-full pointer-events-none", m.isProcessing && "animate-pulse")}>
+                              {m.isProcessing ? (
+                                <div className="w-full h-full bg-white/5 flex items-center justify-center">
+                                  <div className="w-8 h-8 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
+                                </div>
+                              ) : m?.type === 'image' ? (
+                                <MediaRenderer url={m.url} type="image" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                               ) : (
-                                <div className="w-full h-full flex items-center justify-center text-cyan-500"><Video size={24} /></div>
+                                <div className="w-full h-full relative">
+                                  {m?.thumbnail ? (
+                                    <img src={m.thumbnail} className="w-full h-full object-cover" alt="Thumbnail" />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-cyan-500"><Video size={32} /></div>
+                                  )}
+                                  <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover/media-container:opacity-0 transition-opacity">
+                                    <Video size={16} className="text-cyan-500" />
+                                  </div>
+                                </div>
                               )}
-                              <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover/media-container:opacity-0 transition-opacity">
-                                <Video size={14} className="text-cyan-500" />
-                              </div>
-                              {/* Thumbnail Edit Button */}
+                            </div>
+                            {/* Thumbnail Edit Button */}
+                            {m?.type === 'video' && !m.isProcessing && (
                               <button
                                 type="button"
                                 onClick={(e) => {
@@ -376,13 +391,12 @@ const WorkoutSetItem = memo<WorkoutSetItemProps>(({
                                   onEditThumbnail(m, mIdx, index);
                                 }}
                                 title="Nastavit úvodní fotku"
-                                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-cyan-500 text-black border border-white/20 flex items-center justify-center shadow-lg opacity-0 group-hover/media-container:opacity-100 transition-all hover:scale-110 active:scale-95"
+                                className="absolute top-1 right-1 w-9 h-9 rounded-full bg-cyan-500 text-black border border-white/20 flex items-center justify-center shadow-lg opacity-0 group-hover/media-container:opacity-100 transition-all hover:scale-110 active:scale-95 z-20"
                               >
-                                <Camera size={14} />
+                                <Camera size={18} />
                               </button>
-                            </div>
-                          )}
-                        </div>
+                            )}
+                          </div>
                         <button 
                           type="button"
                           onClick={() => {
@@ -548,6 +562,26 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
 
   const activeSet = localEditingSetIndex !== null ? sets[localEditingSetIndex] : null;
 
+  const handleThumbnailFromPreview = useCallback((media: ExerciseMedia, thumbnail: string) => {
+    // 1. Check in exercise fragments
+    setExerciseMedia(prev => prev.map(m => {
+      if (m.url === media.url) return { ...m, thumbnail };
+      return m;
+    }));
+    
+    // 2. Check in sets
+    setSets(prev => prev.map(s => {
+      if (!s.media) return s;
+      const newMedia = s.media.map(m => {
+        if (m.url === media.url) return { ...m, thumbnail };
+        return m;
+      });
+      return { ...s, media: newMedia };
+    }));
+
+    setIsPreviewOpen(false);
+  }, []);
+
   const handleMediaClick = useCallback((media: ExerciseMedia[], index: number) => {
     setPreviewMedia(media);
     setPreviewIndex(index);
@@ -618,20 +652,61 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     const files = Array.from(e.target.files || []) as File[];
     if (files.length === 0) return;
 
-    for (const file of files) {
+    // 1. Create temporary placeholders for immediate feedback
+    const placeholders: ExerciseMedia[] = files.map(file => ({
+      type: file.type.startsWith('video') ? 'video' : 'image',
+      url: URL.createObjectURL(file), // Temporary local URL
+      isProcessing: true,
+      id: Math.random().toString(36).substring(2, 11)
+    }));
+
+    if (setIndex !== undefined) {
+      setSets(prev => prev.map((s, i) => {
+        if (i !== setIndex) return s;
+        return { ...s, media: [...(s.media || []), ...placeholders] };
+      }));
+    } else {
+      setExerciseMedia(prev => [...prev, ...placeholders]);
+    }
+
+    // 2. Process files and replace placeholders
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const placeholderId = placeholders[i].id;
+      
       const processed = await processFile(file);
+      
       if (processed) {
+        // Keep the same ID for stability if needed, though processFile doesn't return one
+        const finalMedia = { ...processed, id: placeholderId };
+
         if (setIndex !== undefined) {
-          setSets(prev => prev.map((s, i) => {
-            if (i !== setIndex) return s;
-            const currentMedia = s.media || [];
-            return { ...s, media: [...currentMedia, processed!] };
+          setSets(prev => prev.map((s, idx) => {
+            if (idx !== setIndex) return s;
+            const newMedia = (s.media || []).map(m => m.id === placeholderId ? finalMedia : m);
+            return { ...s, media: newMedia };
           }));
         } else {
-          setExerciseMedia(prev => [...prev, processed!]);
+          setExerciseMedia(prev => prev.map(m => m.id === placeholderId ? finalMedia : m));
+        }
+      } else {
+        // Remove on failure
+        if (setIndex !== undefined) {
+          setSets(prev => prev.map((s, idx) => {
+            if (idx !== setIndex) return s;
+            return { ...s, media: (s.media || []).filter(m => m.id !== placeholderId) };
+          }));
+        } else {
+          setExerciseMedia(prev => prev.filter(m => m.id !== placeholderId));
         }
       }
+      
+      // Cleanup cleanup
+      if (placeholders[i].url.startsWith('blob:')) {
+        URL.revokeObjectURL(placeholders[i].url);
+      }
     }
+
     // Reset input
     e.target.value = '';
   }, [exerciseMedia, sets]);
@@ -1364,36 +1439,46 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                         className="relative group/media"
                       >
                           <div 
-                            className="w-20 h-20 rounded-2xl overflow-hidden border border-white/10 bg-black/40 cursor-pointer hover:border-cyan-500/50 transition-all flex items-center justify-center relative group/media-container"
-                            onClick={() => handleMediaClick(exerciseMedia, mIdx)}
+                            className="w-20 h-20 rounded-2xl overflow-hidden border border-white/10 bg-black/40 cursor-pointer hover:border-cyan-500/50 transition-all relative group/media-container"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (m.isProcessing) return;
+                              handleMediaClick(exerciseMedia, mIdx);
+                            }}
                           >
-                            {m?.type === 'image' ? (
-                              <MediaRenderer url={m.url} type="image" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                            ) : (
-                              <div className="w-full h-full relative">
-                                {m?.thumbnail ? (
-                                  <img src={m.thumbnail} className="w-full h-full object-cover" alt="Thumbnail" />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-cyan-500"><Video size={32} /></div>
-                                )}
-                                <div className="absolute inset-0 flex items-center justify-center group-hover/media-container:opacity-0 transition-opacity">
-                                  <div className="w-8 h-8 rounded-full bg-cyan-500/20 backdrop-blur-sm flex items-center justify-center">
+                            <div className={cn("w-full h-full pointer-events-none", m.isProcessing && "animate-pulse")}>
+                              {m.isProcessing ? (
+                                <div className="w-full h-full bg-white/5 flex items-center justify-center">
+                                  <div className="w-10 h-10 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
+                                </div>
+                              ) : m?.type === 'image' ? (
+                                <MediaRenderer url={m.url} type="image" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                              ) : (
+                                <div className="w-full h-full relative">
+                                  {m?.thumbnail ? (
+                                    <img src={m.thumbnail} className="w-full h-full object-cover" alt="Thumbnail" />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-cyan-500"><Video size={32} /></div>
+                                  )}
+                                  <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover/media-container:opacity-0 transition-opacity">
                                     <Video size={16} className="text-cyan-500" />
                                   </div>
                                 </div>
-                                {/* Thumbnail Edit Button */}
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setEditingThumbnail({ media: m, type: 'fragment', mIdx });
-                                  }}
-                                  title="Nastavit úvodní fotku"
-                                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-cyan-500 text-black border border-white/20 flex items-center justify-center shadow-lg opacity-0 group-hover/media-container:opacity-100 transition-all hover:scale-110 active:scale-95"
-                                >
-                                  <Camera size={18} />
-                                </button>
-                              </div>
+                              )}
+                            </div>
+                            {/* Thumbnail Edit Button */}
+                            {m?.type === 'video' && !m.isProcessing && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingThumbnail({ media: m, type: 'fragment', mIdx });
+                                }}
+                                title="Nastavit úvodní fotku"
+                                className="absolute top-1 right-1 w-9 h-9 rounded-full bg-cyan-500 text-black border border-white/20 flex items-center justify-center shadow-lg opacity-0 group-hover/media-container:opacity-100 transition-all hover:scale-110 active:scale-95 z-20"
+                              >
+                                <Camera size={18} />
+                              </button>
                             )}
                           </div>
                         <button 
@@ -1962,16 +2047,17 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
         onClose={() => setIsPreviewOpen(false)}
         media={previewMedia}
         initialIndex={previewIndex}
+        onSelectThumbnail={handleThumbnailFromPreview}
       />
 
       {/* Thumbnail Selection Modal */}
       <AnimatePresence>
-        {editingThumbnail && (
-          <motion.div
+         {editingThumbnail && createPortal(
+          <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl"
+            className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl"
             onClick={() => setEditingThumbnail(null)}
           >
             <motion.div
@@ -2024,7 +2110,8 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                 </p>
               </div>
             </motion.div>
-          </motion.div>
+          </motion.div>,
+          document.body
         )}
       </AnimatePresence>
     </div>

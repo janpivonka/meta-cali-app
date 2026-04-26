@@ -21,7 +21,7 @@ interface MediaRendererProps {
   onClick?: (e: React.MouseEvent) => void;
 }
 
-export const MediaRenderer: React.FC<MediaRendererProps> = ({
+export const MediaRenderer = React.forwardRef<HTMLImageElement | HTMLVideoElement, MediaRendererProps>(({
   url,
   type,
   thumbnail,
@@ -36,7 +36,7 @@ export const MediaRenderer: React.FC<MediaRendererProps> = ({
   muted = true,
   id,
   onClick
-}) => {
+}, ref) => {
   const [objectUrl, setObjectUrl] = useState<string | undefined>(undefined);
 
   useEffect(() => {
@@ -76,6 +76,8 @@ export const MediaRenderer: React.FC<MediaRendererProps> = ({
   if (type === 'image') {
     return (
       <img
+        ref={ref as React.Ref<HTMLImageElement>}
+        key={objectUrl || thumbnail}
         src={objectUrl || thumbnail}
         className={className}
         alt={alt}
@@ -87,6 +89,8 @@ export const MediaRenderer: React.FC<MediaRendererProps> = ({
 
   return (
     <video
+      ref={ref as React.Ref<HTMLVideoElement>}
+      key={objectUrl || 'empty'}
       id={id}
       src={objectUrl}
       poster={poster || thumbnail}
@@ -95,8 +99,10 @@ export const MediaRenderer: React.FC<MediaRendererProps> = ({
       controls={controls}
       playsInline={playsInline}
       preload={preload}
-      muted={muted}
+      muted={autoPlay ? true : muted} 
       onClick={onClick}
     />
   );
-};
+});
+
+MediaRenderer.displayName = 'MediaRenderer';

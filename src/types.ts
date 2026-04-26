@@ -50,6 +50,8 @@ export interface ExerciseMedia {
   type: 'image' | 'video';
   url: string;
   thumbnail?: string;
+  id?: string;
+  isProcessing?: boolean;
 }
 
 export interface ExerciseLog {

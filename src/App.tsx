@@ -214,33 +214,33 @@ function SetReorderItem({ s, si, i, ex, editingIndex, editingSetIndex, handleEdi
             {s.media && s.media.length > 0 && (
               <div className="flex gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
                 {s.media.map((m, midx) => (
-                  <div 
-                    key={midx} 
-                    className="w-8 h-8 rounded-lg overflow-hidden border border-white/5 bg-black/40 shrink-0 cursor-pointer pointer-events-auto hover:border-cyan-500/50 transition-all"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onMediaClick(s.media, midx);
-                    }}
-                  >
-                    {m?.type === 'image' ? (
-                      <MediaRenderer url={m.url} type="image" className="w-full h-full object-cover opacity-80" referrerPolicy="no-referrer" />
-                    ) : (
-                      <div className="w-full h-full relative">
-                        {m?.thumbnail ? (
-                          <img src={m.thumbnail} className="w-full h-full object-cover opacity-80" referrerPolicy="no-referrer" alt="" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-cyan-500/60 transition-colors">
-                            <Video size={10} />
-                          </div>
-                        )}
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-3 h-3 rounded-full bg-cyan-500/20 backdrop-blur-sm flex items-center justify-center">
-                            <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-pulse" />
+                    <div 
+                      key={midx} 
+                      className="w-8 h-8 rounded-lg overflow-hidden border border-white/5 bg-black/40 shrink-0 cursor-pointer pointer-events-auto hover:border-cyan-500/50 transition-all relative"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onMediaClick(s.media, midx);
+                      }}
+                    >
+                      {m?.type === 'image' ? (
+                        <MediaRenderer url={m.url} type="image" className="w-full h-full object-cover opacity-80 pointer-events-none" referrerPolicy="no-referrer" />
+                      ) : (
+                        <div className="w-full h-full relative pointer-events-none">
+                          {m?.thumbnail ? (
+                            <img src={m.thumbnail} className="w-full h-full object-cover opacity-80" referrerPolicy="no-referrer" alt="" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-cyan-500/60 transition-colors">
+                              <Video size={10} />
+                            </div>
+                          )}
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-3 h-3 rounded-full bg-cyan-500/20 backdrop-blur-sm flex items-center justify-center">
+                              <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-pulse" />
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
+                      )}
+                    </div>
                 ))}
               </div>
             )}
@@ -340,33 +340,33 @@ function ExerciseReorderItem({
                 {ex.media && ex.media.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 pointer-events-auto">
                     {ex.media.map((m: any, midx: number) => (
-                      <div 
-                        key={midx} 
-                        className="w-10 h-10 rounded-xl overflow-hidden border border-white/10 bg-black/40 cursor-pointer hover:border-cyan-500/50 transition-all"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onMediaClick(ex.media, midx);
-                        }}
-                      >
-                        {m?.type === 'image' ? (
-                          <MediaRenderer url={m.url} type="image" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                        ) : (
-                          <div className="w-full h-full relative">
-                            {m?.thumbnail ? (
-                              <img src={m.thumbnail} className="w-full h-full object-cover" referrerPolicy="no-referrer" alt="" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-cyan-500">
-                                <Video size={14} />
-                              </div>
-                            )}
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <div className="w-5 h-5 rounded-full bg-cyan-500/20 backdrop-blur-sm flex items-center justify-center">
-                                <Activity size={10} className="text-cyan-500 animate-pulse" />
+                        <div 
+                          key={midx} 
+                          className="w-10 h-10 rounded-xl overflow-hidden border border-white/10 bg-black/40 cursor-pointer hover:border-cyan-500/50 transition-all relative"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onMediaClick(ex.media, midx);
+                          }}
+                        >
+                          {m?.type === 'image' ? (
+                            <MediaRenderer url={m.url} type="image" className="w-full h-full object-cover pointer-events-none" referrerPolicy="no-referrer" />
+                          ) : (
+                            <div className="w-full h-full relative pointer-events-none">
+                              {m?.thumbnail ? (
+                                <img src={m.thumbnail} className="w-full h-full object-cover" referrerPolicy="no-referrer" alt="" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-cyan-500">
+                                  <Video size={14} />
+                                </div>
+                              )}
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="w-5 h-5 rounded-full bg-cyan-500/20 backdrop-blur-sm flex items-center justify-center">
+                                  <Activity size={10} className="text-cyan-500 animate-pulse" />
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        )}
-                      </div>
+                          )}
+                        </div>
                     ))}
                   </div>
                 )}
