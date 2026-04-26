@@ -12,3 +12,8 @@ export const formatDate = (timestamp: number) => {
     month: 'short',
   });
 };
+
+export function getMediaUrl(url: any): string | undefined {
+  if (typeof url === 'string') return url || undefined;
+  return undefined;
+}

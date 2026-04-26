@@ -1,7 +1,8 @@
-import React from 'react';
-import { X, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ExerciseMedia } from '../types';
+import { MediaRenderer } from './MediaRenderer';
 
 interface MediaPreviewModalProps {
   media: ExerciseMedia[];
@@ -11,13 +12,13 @@ interface MediaPreviewModalProps {
 }
 
 export const MediaPreviewModal: React.FC<MediaPreviewModalProps> = ({ media, initialIndex, isOpen, onClose }) => {
-  const [currentIndex, setCurrentIndex] = React.useState(initialIndex);
+  const [currentIndex, setCurrentIndex] = useState(initialIndex);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setCurrentIndex(initialIndex);
   }, [initialIndex]);
 
-  if (!isOpen || media.length === 0) return null;
+  if (!isOpen || media.length === 0 || !media[currentIndex]) return null;
 
   const currentMedia = media[currentIndex];
 
@@ -67,24 +68,19 @@ export const MediaPreviewModal: React.FC<MediaPreviewModalProps> = ({ media, ini
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="relative max-w-full max-h-full flex items-center justify-center"
+          className="relative max-w-full max-h-full flex items-center justify-center px-4"
           onClick={(e) => e.stopPropagation()}
         >
-          {currentMedia.type === 'image' ? (
-            <img
-              src={currentMedia.url}
-              alt="Preview"
-              className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl"
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            <video
-              src={currentMedia.url}
-              controls
-              autoPlay
-              className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl"
-            />
-          )}
+          <MediaRenderer
+            url={currentMedia.url}
+            type={currentMedia.type}
+            thumbnail={currentMedia.thumbnail}
+            className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl"
+            controls={currentMedia.type === 'video'}
+            autoPlay={currentMedia.type === 'video'}
+            playsInline
+            preload="auto"
+          />
 
           <div className="absolute -bottom-10 left-0 right-0 flex justify-center gap-2">
             {media.map((_, idx) => (

@@ -10,7 +10,8 @@ import { ExerciseLog, UserProfile, Workout, ExerciseDefinition, BandPlacement, E
 import { motion, AnimatePresence, Reorder, useDragControls } from 'framer-motion';
 import { Activity, Github, Twitter, Instagram, Sun, Moon, Share2, Edit3, MessageSquare, GripVertical, Video, Camera, ArrowUp } from 'lucide-react';
 import { EXERCISE_LIBRARY } from './data/exerciseLibrary';
-import { cn } from './lib/utils';
+import { cn, getMediaUrl } from './lib/utils';
+import { MediaRenderer } from './components/MediaRenderer';
 import { getWorkoutsFromDB, saveWorkoutsToDB, getCurrentWorkoutFromDB, saveCurrentWorkoutToDB } from './lib/db';
 
 const DEFAULT_PROFILE: UserProfile = {
@@ -221,10 +222,23 @@ function SetReorderItem({ s, si, i, ex, editingIndex, editingSetIndex, handleEdi
                       onMediaClick(s.media, midx);
                     }}
                   >
-                    {m.type === 'image' ? (
-                      <img src={m.url} className="w-full h-full object-cover opacity-80" referrerPolicy="no-referrer" alt="" />
+                    {m?.type === 'image' ? (
+                      <MediaRenderer url={m.url} type="image" className="w-full h-full object-cover opacity-80" referrerPolicy="no-referrer" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-cyan-500/60"><Video size={10} /></div>
+                      <div className="w-full h-full relative">
+                        {m?.thumbnail ? (
+                          <img src={m.thumbnail} className="w-full h-full object-cover opacity-80" referrerPolicy="no-referrer" alt="" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-cyan-500/60 transition-colors">
+                            <Video size={10} />
+                          </div>
+                        )}
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-3 h-3 rounded-full bg-cyan-500/20 backdrop-blur-sm flex items-center justify-center">
+                            <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-pulse" />
+                          </div>
+                        </div>
+                      </div>
                     )}
                   </div>
                 ))}
@@ -334,10 +348,23 @@ function ExerciseReorderItem({
                           onMediaClick(ex.media, midx);
                         }}
                       >
-                        {m.type === 'image' ? (
-                          <img src={m.url} className="w-full h-full object-cover" referrerPolicy="no-referrer" alt="" />
+                        {m?.type === 'image' ? (
+                          <MediaRenderer url={m.url} type="image" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-cyan-500"><Video size={14} /></div>
+                          <div className="w-full h-full relative">
+                            {m?.thumbnail ? (
+                              <img src={m.thumbnail} className="w-full h-full object-cover" referrerPolicy="no-referrer" alt="" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-cyan-500">
+                                <Video size={14} />
+                              </div>
+                            )}
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="w-5 h-5 rounded-full bg-cyan-500/20 backdrop-blur-sm flex items-center justify-center">
+                                <Activity size={10} className="text-cyan-500 animate-pulse" />
+                              </div>
+                            </div>
+                          </div>
                         )}
                       </div>
                     ))}
@@ -912,10 +939,19 @@ export default function App() {
                                                 className="w-6 h-6 rounded-md overflow-hidden bg-black/40 border border-white/5 shrink-0 cursor-pointer hover:border-cyan-500/50 transition-all"
                                                 onClick={() => handleMediaClick(s.media, midx)}
                                               >
-                                                {m.type === 'image' ? (
-                                                  <img src={m.url} className="w-full h-full object-cover opacity-60" referrerPolicy="no-referrer" alt="" />
+                                                {m?.type === 'image' ? (
+                                                  <MediaRenderer url={m.url} type="image" className="w-full h-full object-cover opacity-60" referrerPolicy="no-referrer" />
                                                 ) : (
-                                                  <div className="w-full h-full flex items-center justify-center text-cyan-500/40"><Video size={8} /></div>
+                                                  <div className="w-full h-full relative">
+                                                    {m?.thumbnail ? (
+                                                      <img src={m.thumbnail} className="w-full h-full object-cover opacity-60" referrerPolicy="no-referrer" alt="" />
+                                                    ) : (
+                                                      <div className="w-full h-full flex items-center justify-center text-cyan-500/40 transform scale-75"><Video size={8} /></div>
+                                                    )}
+                                                    <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                                      <Video size={8} className="text-cyan-500/60" />
+                                                    </div>
+                                                  </div>
                                                 )}
                                               </div>
                                             ))}
@@ -954,10 +990,19 @@ export default function App() {
                                           className="w-16 h-16 rounded-xl overflow-hidden border border-white/10 bg-black/40 shrink-0 cursor-pointer hover:border-cyan-500/50 transition-all"
                                           onClick={() => handleMediaClick(log.media!, midx)}
                                         >
-                                          {m.type === 'image' ? (
-                                            <img src={m.url} className="w-full h-full object-cover" referrerPolicy="no-referrer" alt="" />
+                                          {m?.type === 'image' ? (
+                                            <MediaRenderer url={m.url} type="image" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                                           ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-cyan-500"><Video size={20} /></div>
+                                            <div className="w-full h-full relative">
+                                              {m?.thumbnail ? (
+                                                <img src={m.thumbnail} className="w-full h-full object-cover opacity-80" referrerPolicy="no-referrer" alt="" />
+                                              ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-cyan-500"><Video size={20} /></div>
+                                              )}
+                                              <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                                <Activity size={14} className="text-cyan-500 animate-pulse" />
+                                              </div>
+                                            </div>
                                           )}
                                         </div>
                                       ))}
