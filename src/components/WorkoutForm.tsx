@@ -496,6 +496,11 @@ const WorkoutSetItem = memo<WorkoutSetItemProps>(({
   );
 });
 
+// Move constant helpers outside to prevent recreation
+const isHoldExercise = (id: string) => {
+  return ['planche', 'frontlever', 'statics'].some(k => id.toLowerCase().includes(k));
+};
+
 export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, initialExerciseId, initialData, highlightedSetIndex }) => {
   const [exerciseId, setExerciseId] = useState<string>(initialData?.exerciseId || initialExerciseId || EXERCISE_LIBRARY[0].id);
 
@@ -711,6 +716,34 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     e.target.value = '';
   }, [exerciseMedia, sets]);
 
+  const updateSet = useCallback((index: number, field: keyof WorkoutSet, value: any) => {
+    setSets(prev => {
+      const newSets = [...prev];
+      newSets[index] = { ...newSets[index], [field]: value };
+      
+      // Auto-update loadType field on the set itself
+      if (field === 'weight') {
+        if (value > 0) {
+          newSets[index].loadType = 'weighted';
+          newSets[index].assistanceDetails = undefined;
+        } else if (!newSets[index].assistanceDetails?.resistance) {
+          newSets[index].loadType = 'bodyweight';
+        }
+      } else if (field === 'assistanceDetails') {
+        if (value?.resistance) {
+          newSets[index].loadType = 'assisted';
+          newSets[index].weight = 0;
+        } else if (!newSets[index].weight || newSets[index].weight === 0) {
+          newSets[index].loadType = 'bodyweight';
+        }
+      }
+      return newSets;
+    });
+
+    // We can't easily sync local UI state here without index/localEditingSetIndex comparison
+    // But updateSet is mostly used by WorkoutSetItem which is for the current item or we pass it index.
+  }, []);
+
   // Sync local editing index with parent highlight
   React.useEffect(() => {
     if (highlightedSetIndex !== undefined && highlightedSetIndex !== null) {
@@ -718,7 +751,8 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     }
   }, [highlightedSetIndex]);
 
-  // Sync global form-state with the currently active set
+  // Sync global form-state ONLY when the selected set index changes
+  // This prevents the lag caused by syncing on every individual keystroke (sets array update)
   React.useEffect(() => {
     if (localEditingSetIndex === null) return;
     const active = sets[localEditingSetIndex];
@@ -738,35 +772,45 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       setOneLegSecondaryPosition(active.oneLegSecondaryPosition || 'tuck');
       setIsOneLeg(active.isOneLeg !== undefined ? active.isOneLeg : false);
       
-      // Determine load mode for the UI based on set data
-      if (active.loadType) {
-        setLoadType(active.loadType);
-      } else if (active.assistanceDetails?.resistance) {
-        setLoadType('assisted');
-      } else if (active.weight && active.weight > 0) {
-        setLoadType('weighted');
-      } else {
-        setLoadType('bodyweight');
-      }
-
+      const activeLoadType = active.loadType || (active.assistanceDetails?.resistance ? 'assisted' : (active.weight && active.weight > 0 ? 'weighted' : 'bodyweight'));
+      setLoadType(activeLoadType);
       setWeightUnit(active.weightUnit || 'kg');
 
       if (active.assistanceDetails) {
         setBandPlacements(active.assistanceDetails.placement as BandPlacement[] || ['both feet']);
         setBandLoopType(active.assistanceDetails.loopType || 'single');
         setAssistanceValue(active.assistanceDetails.resistance?.toString() || '');
-      } else if (active.loadType === 'weighted' || (active.weight && active.weight > 0)) {
+      } else if (activeLoadType === 'weighted' || (active.weight && active.weight > 0)) {
         setAssistanceValue(active.weight?.toString() || '');
         setBandPlacements(['both feet']);
         setBandLoopType('single');
       } else {
-        // Clear if not present in active set
         setAssistanceValue('');
         setBandPlacements(['both feet']);
         setBandLoopType('single');
       }
     }
-  }, [localEditingSetIndex, sets]);
+  }, [localEditingSetIndex]); // ONLY depend on the index change
+
+  // Smart Conflict Resolution Handlers
+  const handleUpdateField = useCallback((field: keyof WorkoutSet, val: any) => {
+    if (localEditingSetIndex !== null) {
+      updateSet(localEditingSetIndex, field, val);
+    }
+  }, [localEditingSetIndex, updateSet]);
+
+  const handleUpdateAssistance = useCallback((field: string, val: any) => {
+    if (localEditingSetIndex !== null) {
+      const currentDetails = sets[localEditingSetIndex]?.assistanceDetails || { resistance: '', loopType: 'single', placement: ['both feet'] };
+      const updatedDetails = { ...currentDetails, [field]: val };
+      
+      if (loadType === 'weighted' && field === 'resistance') {
+        updateSet(localEditingSetIndex, 'weight', parseFloat(val) || 0);
+      } else if (loadType === 'assisted') {
+        updateSet(localEditingSetIndex, 'assistanceDetails', updatedDetails);
+      }
+    }
+  }, [localEditingSetIndex, sets, updateSet, loadType]);
 
   const updateActiveValue = (setField: keyof WorkoutSet, globalSetter: (val: any) => void, val: any) => {
     if (localEditingSetIndex !== null) {
@@ -889,17 +933,16 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     }
   }, [initialData, initialExerciseId]);
 
-  // Filtered exercises for selection
-  const filteredExercises = EXERCISE_LIBRARY.filter(ex => 
-    ex.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    ex.id.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredExercises = React.useMemo(() => 
+    EXERCISE_LIBRARY.filter(ex => 
+      ex.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      ex.id.toLowerCase().includes(searchQuery.toLowerCase())
+    ),
+  [searchQuery]);
 
-  const currentExercise = EXERCISE_LIBRARY.find(e => e.id === exerciseId);
-
-  const isHoldExercise = (id: string) => {
-    return ['planche', 'frontlever', 'statics'].some(k => id.toLowerCase().includes(k));
-  };
+  const currentExercise = React.useMemo(() => 
+    EXERCISE_LIBRARY.find(e => e.id === exerciseId),
+  [exerciseId]);
 
   const addSet = useCallback(() => {
     const safeUUID = () => {
@@ -1036,34 +1079,6 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     });
   };
 
-  const updateSet = useCallback((index: number, field: keyof WorkoutSet, value: any) => {
-    setSets(prev => {
-      const newSets = [...prev];
-      newSets[index] = { ...newSets[index], [field]: value };
-      
-      // Auto-update loadType field on the set itself
-      if (field === 'weight') {
-        if (value > 0) {
-          newSets[index].loadType = 'weighted';
-          newSets[index].assistanceDetails = undefined;
-        } else if (!newSets[index].assistanceDetails?.resistance) {
-          newSets[index].loadType = 'bodyweight';
-        }
-      } else if (field === 'assistanceDetails') {
-        if (value?.resistance) {
-          newSets[index].loadType = 'assisted';
-          newSets[index].weight = 0;
-        } else if (!newSets[index].weight || newSets[index].weight === 0) {
-          newSets[index].loadType = 'bodyweight';
-        }
-      }
-      return newSets;
-    });
-
-    // We can't easily sync local UI state here without index/localEditingSetIndex comparison
-    // But updateSet is mostly used by WorkoutSetItem which is for the current item or we pass it index.
-  }, []);
-
   const toggleBandPlacement = (p: BandPlacement) => {
     const isFoot = (item: BandPlacement) => item === 'both feet' || item === 'one foot';
     const isSupport = (item: BandPlacement) => item === 'waist' || item === 'buttocks' || item === 'knees' || item === 'chest';
@@ -1131,12 +1146,17 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
   // Smart conflict resolution (Proactive de-selection)
   React.useEffect(() => {
     if (currentExercise?.category === 'Pull') {
-      const styleChanged = prevStyleRef.current !== executionStyle;
-      const equipChanged = prevEquipmentRef.current !== equipment;
-      const posChanged = prevPositionRef.current !== position;
-      const legProgChanged = prevLegProgressionRef.current !== legProgression;
-      const gripChanged = prevGripRef.current !== grip;
-      const widthChanged = prevGripWidthRef.current !== gripWidth;
+      const prevEquipment = prevEquipmentRef.current;
+      const prevStyle = prevStyleRef.current;
+      const prevGrip = prevGripRef.current;
+      const prevGripWidth = prevGripWidthRef.current;
+      const prevLegProgression = prevLegProgressionRef.current;
+
+      const styleChanged = prevStyle !== executionStyle;
+      const equipChanged = prevEquipment !== equipment;
+      const legProgChanged = prevLegProgression !== legProgression;
+      const gripChanged = prevGrip !== grip;
+      const widthChanged = prevGripWidth !== gripWidth;
 
       // Logic: A changed value updates the other incompatible one
       
@@ -1176,7 +1196,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
         setBandPlacements(['one foot']);
       }
 
-      if (prevEquipmentRef.current !== equipment && equipment === 'pull-up bar') {
+      if (prevEquipment !== equipment && equipment === 'pull-up bar') {
         if (legProgression && legProgression.toString().includes('australian')) {
           setLegProgression('full');
           setIsOneLeg(false);
@@ -1190,7 +1210,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     prevLegProgressionRef.current = legProgression;
     prevGripRef.current = grip;
     prevGripWidthRef.current = gripWidth;
-  }, [equipment, executionStyle, position, legProgression, grip, gripWidth, currentExercise]);
+  }, [equipment, executionStyle, position, legProgression, grip, gripWidth, currentExercise, isOneLeg, loadType, isHoldExercise]);
 
   const handleStyleChange = (style: ExecutionStyle) => {
     if (localEditingSetIndex !== null) {
@@ -1243,8 +1263,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     }
   };
 
-    const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+    const onSaveClick = () => {
     const validSets = sets.filter(s => (s.reps && s.reps > 0) || (s.time && s.time > 0));
     if (validSets.length === 0) return;
 
@@ -1345,6 +1364,10 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     resetForm();
   };
 
+  const onEditThumbnailClick = useCallback((media: ExerciseMedia, mIdx: number, setIdx: number) => {
+    setEditingThumbnail({ media, type: 'set', mIdx, setIdx });
+  }, []);
+
   const setControls = useDragControls();
 
   return (
@@ -1359,7 +1382,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-12">
+      <form onSubmit={(e) => { e.preventDefault(); onSaveClick(); }} className="space-y-12">
         {/* EXERCISE SELECTION GRID */}
         <div className="space-y-6">
           <div className="flex items-center justify-between px-2">
@@ -1953,7 +1976,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                     key={set.id}
                     set={set}
                     index={index}
-                    highlightedSetIndex={highlightedSetIndex}
+                    highlightedSetIndex={highlightedSetIndex || null}
                     localEditingSetIndex={localEditingSetIndex}
                     exerciseId={exerciseId}
                     loadType={loadType}
@@ -1963,7 +1986,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                     isHoldExercise={isHoldExercise}
                     onFileUpload={handleFileUpload}
                     onMediaClick={handleMediaClick}
-                    onEditThumbnail={(media, mIdx, setIdx) => setEditingThumbnail({ media, type: 'set', mIdx, setIdx })}
+                    onEditThumbnail={onEditThumbnailClick}
                   />
                 ))}
               </Reorder.Group>
