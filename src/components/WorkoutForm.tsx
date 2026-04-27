@@ -162,7 +162,7 @@ const WorkoutSetItem = memo<WorkoutSetItemProps>(({
           </div>
         </div>
 
-        <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4 w-full pr-12">
+        <div className="flex-1 grid grid-cols-2 gap-4 w-full pr-12">
           {/* Reps/Time */}
           <div className="flex flex-col items-center gap-1">
             <div className="flex items-center gap-2">
@@ -192,59 +192,84 @@ const WorkoutSetItem = memo<WorkoutSetItemProps>(({
           {/* Load Details (Weight/Assistance) */}
           <div className="flex flex-col items-center gap-1">
             {(set.loadType === 'weighted' || (set.weight !== undefined && set.weight > 0) || (set.loadType === 'assisted' || (set.assistanceDetails?.resistance))) ? (
-              <div className="flex items-center gap-2">
-                {set.loadType === 'weighted' || (set.weight !== undefined && set.weight > 0) ? (
-                  <div className="flex items-center gap-2">
-                    <button 
-                      type="button" 
-                      onClick={(e) => { e.stopPropagation(); updateSet(index, 'weight', Math.max(0, (set.weight || 0) - 1)); }}
-                      className="w-6 h-6 rounded-full flex items-center justify-center bg-white/5 text-slate-400 hover:text-purple-400 hover:bg-purple-500/10 transition-all active:scale-90"
-                    ><Minus size={10} /></button>
-                    <input 
-                       type="number"
-                       value={set.weight || 0}
-                       onChange={(e) => updateSet(index, 'weight', parseInt(e.target.value) || 0)}
-                       onClick={(e) => e.stopPropagation()}
-                       className="bg-transparent text-xl font-black text-purple-400 w-12 text-center focus:outline-none font-mono tracking-tighter"
-                    />
-                    <button 
-                      type="button" 
-                      onClick={(e) => { e.stopPropagation(); updateSet(index, 'weight', (set.weight || 0) + 1); }}
-                      className="w-6 h-6 rounded-full flex items-center justify-center bg-white/5 text-slate-400 hover:text-purple-400 hover:bg-purple-500/10 transition-all active:scale-90"
-                    ><Plus size={10} /></button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <button 
-                      type="button" 
-                      onClick={(e) => { 
-                        e.stopPropagation(); 
-                        const currentRes = parseFloat(set.assistanceDetails?.resistance || '0');
-                        const newVal = Math.max(0, currentRes - 1);
-                        updateSet(index, 'assistanceDetails', { ...set.assistanceDetails, resistance: newVal.toString() });
-                      }}
-                      className="w-6 h-6 rounded-full flex items-center justify-center bg-white/5 text-slate-400 hover:text-orange-400 hover:bg-orange-500/10 transition-all active:scale-90"
-                    ><Minus size={10} /></button>
-                    <input 
-                       type="number"
-                       value={set.assistanceDetails?.resistance || ''}
-                       onChange={(e) => updateSet(index, 'assistanceDetails', { ...set.assistanceDetails, resistance: e.target.value })}
-                       onClick={(e) => e.stopPropagation()}
-                       placeholder="0"
-                       className="bg-transparent text-xl font-black text-orange-400 w-12 text-center focus:outline-none font-mono tracking-tighter"
-                    />
-                    <button 
-                      type="button" 
-                      onClick={(e) => { 
-                        e.stopPropagation(); 
-                        const currentRes = parseFloat(set.assistanceDetails?.resistance || '0');
-                        const newVal = currentRes + 1;
-                        updateSet(index, 'assistanceDetails', { ...set.assistanceDetails, resistance: newVal.toString() });
-                      }}
-                      className="w-6 h-6 rounded-full flex items-center justify-center bg-white/5 text-slate-400 hover:text-orange-400 hover:bg-orange-500/10 transition-all active:scale-90"
-                    ><Plus size={10} /></button>
-                  </div>
-                )}
+              <div className="flex flex-col items-center">
+                <div className="flex items-center gap-2">
+                  {set.loadType === 'weighted' || (set.weight !== undefined && set.weight > 0) ? (
+                    <>
+                      <button 
+                        type="button" 
+                        onClick={(e) => { e.stopPropagation(); updateSet(index, 'weight', Math.max(0, (set.weight || 0) - 1)); }}
+                        className="w-6 h-6 rounded-full flex items-center justify-center bg-white/5 text-slate-400 hover:text-purple-400 hover:bg-purple-500/10 transition-all active:scale-90"
+                      ><Minus size={10} /></button>
+                      <input 
+                         type="number"
+                         value={set.weight || 0}
+                         onChange={(e) => updateSet(index, 'weight', parseFloat(e.target.value) || 0)}
+                         onClick={(e) => e.stopPropagation()}
+                         className="bg-transparent text-xl font-black text-purple-400 w-12 text-center focus:outline-none font-mono tracking-tighter"
+                      />
+                      <button 
+                        type="button" 
+                        onClick={(e) => { e.stopPropagation(); updateSet(index, 'weight', (set.weight || 0) + 1); }}
+                        className="w-6 h-6 rounded-full flex items-center justify-center bg-white/5 text-slate-400 hover:text-purple-400 hover:bg-purple-500/10 transition-all active:scale-90"
+                      ><Plus size={10} /></button>
+                    </>
+                  ) : (
+                    <>
+                      <button 
+                        type="button" 
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          const currentRes = parseFloat(set.assistanceDetails?.resistance || '0');
+                          const newVal = Math.max(0, currentRes - 1);
+                          updateSet(index, 'assistanceDetails', { ...set.assistanceDetails, resistance: newVal.toString() });
+                        }}
+                        className="w-6 h-6 rounded-full flex items-center justify-center bg-white/5 text-slate-400 hover:text-orange-400 hover:bg-orange-500/10 transition-all active:scale-90"
+                      ><Minus size={10} /></button>
+                      <input 
+                         type="number"
+                         value={set.assistanceDetails?.resistance || ''}
+                         onChange={(e) => updateSet(index, 'assistanceDetails', { ...set.assistanceDetails, resistance: e.target.value })}
+                         onClick={(e) => e.stopPropagation()}
+                         placeholder="0"
+                         className="bg-transparent text-xl font-black text-orange-400 w-12 text-center focus:outline-none font-mono tracking-tighter"
+                      />
+                      <button 
+                        type="button" 
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          const currentRes = parseFloat(set.assistanceDetails?.resistance || '0');
+                          const newVal = currentRes + 1;
+                          updateSet(index, 'assistanceDetails', { ...set.assistanceDetails, resistance: newVal.toString() });
+                        }}
+                        className="w-6 h-6 rounded-full flex items-center justify-center bg-white/5 text-slate-400 hover:text-orange-400 hover:bg-orange-500/10 transition-all active:scale-90"
+                      ><Plus size={10} /></button>
+                    </>
+                  )}
+                </div>
+                
+                <div className="flex bg-black/40 rounded-lg p-0.5 border border-white/5 mt-1" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); updateSet(index, 'weightUnit', 'kg'); }}
+                    className={cn(
+                      "px-1 py-0.5 rounded-md text-[6px] font-black transition-all",
+                      (set.weightUnit || 'kg') === 'kg' ? (set.loadType === 'weighted' ? "bg-purple-500 text-white" : "bg-orange-500 text-black") : "text-slate-500"
+                    )}
+                  >
+                    KG
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); updateSet(index, 'weightUnit', 'lbs'); }}
+                    className={cn(
+                      "px-1 py-0.5 rounded-md text-[6px] font-black transition-all",
+                      set.weightUnit === 'lbs' ? (set.loadType === 'weighted' ? "bg-purple-500 text-white" : "bg-orange-500 text-black") : "text-slate-500"
+                    )}
+                  >
+                    LB
+                  </button>
+                </div>
               </div>
             ) : (
                 <span className="text-[9px] font-black text-slate-700 uppercase tracking-widest pt-2">BW</span>
@@ -252,28 +277,6 @@ const WorkoutSetItem = memo<WorkoutSetItemProps>(({
             <span className="text-[7px] font-black uppercase tracking-widest text-slate-600 italic leading-none">
               {set.loadType === 'weighted' ? 'Weight' : set.loadType === 'assisted' ? 'Assist' : 'Load'}
             </span>
-          </div>
-
-          {/* Execution Selection Detail */}
-          <div className="flex flex-col items-center justify-center">
-            {((set.executionStyle || executionStyle) === 'one arm' || (set.executionStyle || executionStyle) === 'commando' || (set.legProgression || legProgression) === 'one leg') && (
-              <div className="flex flex-col items-center p-1.5 rounded-xl bg-cyan-500/5 border border-cyan-500/10 w-full">
-                <span className="text-[9px] font-black text-cyan-400 tracking-tighter uppercase leading-none">{set.oneArmSide || oneArmSide}</span>
-                <span className="text-[6px] font-bold text-slate-600 uppercase tracking-widest mt-0.5">
-                  {(set.legProgression || legProgression) === 'one leg' ? 'Leg' : 'Arm'}
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Assistance Target Detail */}
-          <div className="flex flex-col items-center justify-center">
-            {((set.legProgression || legProgression) === 'one leg' || (set.legProgression || legProgression) === 'straddle') && (set.assistanceDetails?.legTarget || legTarget) && (
-              <div className="flex flex-col items-center p-1.5 rounded-xl bg-orange-500/5 border border-orange-500/10 w-full">
-                <span className="text-[9px] font-black text-orange-400 tracking-tighter uppercase leading-none">{set.assistanceDetails?.legTarget || legTarget}</span>
-                <span className="text-[6px] font-bold text-slate-600 uppercase tracking-widest mt-0.5">Assist</span>
-              </div>
-            )}
           </div>
         </div>
 
