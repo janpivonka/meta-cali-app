@@ -63,11 +63,11 @@ const THUMBS: { val: ThumbPosition; label: string }[] = [
   { val: 'alternating', label: 'Alternating' }
 ];
 const EQUIPMENTS: EquipmentType[] = ['pull-up bar', 'low bar', 'dip bars', 'rings', 'floor', 'parallelettes', 'stall bars'];
-const EXECUTION_STYLES: ExecutionStyle[] = ['basic', 'one arm', 'archer', 'typewriter', 'commando', 'high', 'korean'];
+const EXECUTION_STYLES: ExecutionStyle[] = ['basic', 'one arm', 'archer', 'typewriter', 'commando', 'high', 'korean', 'korean archer', 'korean typewriter'];
 const EXECUTION_METHODS: ExecutionMethod[] = ['standard', 'explosive', 'partial', 'negative', 'scapula', 'controlled'];
 const POSITIONS: BodyPosition[] = ['neutral', 'hollow body', 'arch back', 'L-sit'];
 const LEG_PROGRESSIONS: LegProgression[] = ['tuck', 'adv tuck', 'straddle', 'one leg', 'halflay', 'full', 'australian (bent legs)', 'australian (straight legs)'];
-const BAND_PLACEMENTS: BandPlacement[] = ['both feet', 'one foot', 'knees', 'buttocks', 'waist', 'chest'];
+const BAND_PLACEMENTS: BandPlacement[] = ['both feet', 'one foot', 'knees', 'buttocks', 'waist', 'chest', 'dip bar foot support'];
 const LOOP_TYPES: { val: BandLoopType; label: string }[] = [
   { val: 'single', label: 'Single' },
   { val: 'double', label: 'Double (wrapped)' }
@@ -1114,7 +1114,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     return true;
   });
 
-  const availableExecutionStyles = EXECUTION_STYLES;
+  const availableExecutionStyles = EXECUTION_STYLES.filter(s => !s.startsWith('korean ') || s === 'korean');
 
   // Track the previous values to know what changed
   const prevEquipmentRef = React.useRef(equipment);
@@ -1195,7 +1195,8 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
 
   const handleStyleChange = (style: ExecutionStyle) => {
     const newGrip = style === 'commando' ? 'neutral' : (localEditingSetIndex !== null && sets[localEditingSetIndex]?.grip ? sets[localEditingSetIndex].grip : grip);
-    const newWidth = (style === 'archer' || style === 'typewriter') ? 'wide' : (style === 'commando' ? 'narrow' : (localEditingSetIndex !== null && sets[localEditingSetIndex]?.gripWidth ? sets[localEditingSetIndex].gripWidth : gripWidth));
+    const isWideStyle = ['archer', 'typewriter', 'korean archer', 'korean typewriter'].includes(style);
+    const newWidth = isWideStyle ? 'wide' : (style === 'commando' ? 'narrow' : (localEditingSetIndex !== null && sets[localEditingSetIndex]?.gripWidth ? sets[localEditingSetIndex].gripWidth : gripWidth));
 
     if (localEditingSetIndex !== null) {
       const active = sets[localEditingSetIndex];
@@ -1705,7 +1706,33 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                         </button>
                       ))}
                    </div>
-                 </div>                 {(executionStyle === 'one arm' || executionStyle === 'commando') && (
+                 </div>                                   {executionStyle.toString().startsWith('korean') && (
+                    <motion.div 
+                      key="korean-variants"
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex gap-2 mt-3 pt-3 border-t border-white/5 mb-6"
+                    >
+                      {(['archer', 'typewriter'] as const).map(variant => {
+                        const variantStyle = `korean ${variant}` as ExecutionStyle;
+                        const isActive = executionStyle === variantStyle;
+                        return (
+                          <button
+                            key={variant}
+                            type="button"
+                            onClick={() => handleStyleChange(isActive ? 'korean' : variantStyle)}
+                            className={cn(
+                              "flex-1 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest border transition-all",
+                              isActive ? "bg-purple-600 text-white border-purple-400" : "bg-black/40 text-slate-500 border-white/5"
+                            )}
+                          >
+                            + {variant}
+                          </button>
+                        );
+                      })}
+                    </motion.div>
+                  )}
+                  {(executionStyle === 'one arm' || executionStyle === 'commando') && (
                     <motion.div 
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
@@ -2029,6 +2056,10 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                            const isNotL = position !== 'L-sit';
                            if (isRestrictedEquip && isNotL && (p === 'buttocks' || p === 'waist')) return false;
 
+                           // Dip bar foot support logic
+                           const isKorean = executionStyle.toString().startsWith('korean');
+                           if (p === 'dip bar foot support' && !(equipment === 'dip bars' && isKorean)) return false;
+
                            return true;
                          }).map(p => (
                            <button
@@ -2044,7 +2075,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                               p === 'both feet' ? 'Both Feet' : 
                               p === 'knees' ? 'Knee/s' :
                               p === 'waist' ? 'Waist (Lumbar)' : 
-                              p === 'buttocks' ? 'Buttocks' : 'Chest'}
+                              p === 'buttocks' ? 'Buttocks' : p === 'dip bar foot support' ? 'Dip Bar Support' : 'Chest'}
                            </button>
                          ))}
                       </div>

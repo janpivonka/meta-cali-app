@@ -2,13 +2,13 @@ export type GripType = 'pronated' | 'supinated' | 'neutral' | 'mixed' | 'alterna
 export type GripWidth = 'narrow' | 'shoulder-width' | 'wide' | 'alternating';
 export type ThumbPosition = 'over' | 'under' | 'alternating';
 export type EquipmentType = 'pull-up bar' | 'low bar' | 'dip bars' | 'rings' | 'floor' | 'parallelettes' | 'stall bars';
-export type ExecutionStyle = 'basic' | 'one arm' | 'archer' | 'typewriter' | 'commando' | 'high' | 'korean';
+export type ExecutionStyle = 'basic' | 'one arm' | 'archer' | 'typewriter' | 'commando' | 'high' | 'korean' | 'korean archer' | 'korean typewriter';
 export type ExecutionMethod = 'standard' | 'explosive' | 'partial' | 'negative' | 'scapula' | 'controlled';
 export type BodyPosition = 'neutral' | 'hollow body' | 'arch back' | 'L-sit';
 export type LegProgression = 'none' | 'tuck' | 'adv tuck' | 'straddle' | 'one leg' | 'halflay' | 'full' | 'australian (bent legs)' | 'australian (straight legs)';
 export type SingleLegPosition = 'tuck' | 'adv tuck' | 'halflay' | 'full';
 export type OneArmHandPosition = 'wrist' | 'forearm' | 'elbow' | 'biceps' | 'shoulder' | 'horizontal' | 'free';
-export type BandPlacement = 'both feet' | 'one foot' | 'buttocks' | 'waist' | 'chest' | 'knees';
+export type BandPlacement = 'both feet' | 'one foot' | 'buttocks' | 'waist' | 'chest' | 'knees' | 'dip bar foot support';
 export type BandLoopType = 'single' | 'double';
 
 export interface AssistanceDetails {
