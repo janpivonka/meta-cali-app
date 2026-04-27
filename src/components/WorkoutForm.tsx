@@ -781,7 +781,19 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
         // Remove duplicates and ensure fallback is clean
         const uniqueNext = Array.from(new Set(next));
         handleUpdateAssistance('placement', uniqueNext);
+        return;
       }
+    }
+
+    // 3. Buttocks placement logic: Not allowed on High Bar/Rings/Stall Bars unless in L-Sit
+    const isEquipmentRestricted = ['pull-up bar', 'rings', 'stall bars'].includes(equipment);
+    const isNotLSit = position !== 'L-sit';
+    if (isEquipmentRestricted && isNotLSit && bandPlacements.includes('buttocks')) {
+      const next = bandPlacements.filter(p => p !== 'buttocks');
+      const fallback: BandPlacement = (legProgression === 'one leg' || legProgression === 'straddle') ? 'one foot' : 'both feet';
+      const finalNext = next.length === 0 ? [fallback] : next;
+      handleUpdateAssistance('placement', finalNext);
+      return;
     }
   }, [
     legProgression, 
@@ -790,7 +802,9 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     oneLegPrimaryPosition, 
     oneLegSecondaryPosition, 
     isOneLeg, 
-    legTarget
+    legTarget,
+    equipment,
+    position
   ]);
 
   const updateActiveValue = (setField: keyof WorkoutSet, globalSetter: (val: any) => void, val: any) => {
@@ -2009,6 +2023,11 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                            if (targetHalf && !isFloatAustr) {
                              return p !== 'both feet' && p !== 'one foot';
                            }
+
+                           // Restricted Buttocks logic
+                           const isRestrictedEquip = ['pull-up bar', 'rings', 'stall bars'].includes(equipment);
+                           const isNotL = position !== 'L-sit';
+                           if (isRestrictedEquip && isNotL && p === 'buttocks') return false;
 
                            return true;
                          }).map(p => (
