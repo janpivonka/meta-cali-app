@@ -1,6 +1,6 @@
-export type GripType = 'pronated' | 'supinated' | 'neutral' | 'mixed';
-export type GripWidth = 'narrow' | 'shoulder-width' | 'wide';
-export type ThumbPosition = 'over' | 'under';
+export type GripType = 'pronated' | 'supinated' | 'neutral' | 'mixed' | 'alternating';
+export type GripWidth = 'narrow' | 'shoulder-width' | 'wide' | 'alternating';
+export type ThumbPosition = 'over' | 'under' | 'alternating';
 export type EquipmentType = 'pull-up bar' | 'low bar' | 'dip bars' | 'rings' | 'floor' | 'parallelettes' | 'stall bars';
 export type ExecutionStyle = 'basic' | 'one arm' | 'archer' | 'typewriter' | 'commando' | 'high' | 'korean';
 export type ExecutionMethod = 'standard' | 'explosive' | 'partial' | 'negative' | 'scapula' | 'controlled';
@@ -18,6 +18,12 @@ export interface AssistanceDetails {
   legTarget?: 'primary' | 'secondary' | 'alternating';
 }
 
+export interface MixedGripDetails {
+  left: 'pronated' | 'supinated' | 'neutral' | 'alternating';
+  right: 'pronated' | 'supinated' | 'neutral' | 'alternating';
+  isAlternating?: boolean;
+}
+
 export interface WorkoutSet {
   id: string;
   reps?: number;
@@ -26,6 +32,7 @@ export interface WorkoutSet {
   weightUnit?: 'kg' | 'lbs';
   // Overrides for per-set configuration
   grip?: GripType;
+  mixedGripDetails?: MixedGripDetails;
   gripWidth?: GripWidth;
   thumb?: ThumbPosition;
   falseGrip?: boolean;
@@ -60,6 +67,7 @@ export interface ExerciseLog {
   exerciseId: string; // reference to Library item
   type: string; // Keep string for UI display or custom ones
   grip?: GripType;
+  mixedGripDetails?: MixedGripDetails;
   gripWidth?: GripWidth;
   thumb?: ThumbPosition;
   falseGrip?: boolean;

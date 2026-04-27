@@ -76,9 +76,20 @@ const getSetMetadata = (s: any, ex: any) => {
   const gEquip = s.equipment || ex.equipment || 'pull-up bar';
   const eStyle = s.executionStyle || ex.executionStyle || 'basic';
 
-  if (eStyle !== 'one arm' && eStyle !== 'commando') {
-    gripLine.push(gWidth);
-    gripLine.push(gType);
+  if (eStyle !== 'commando') {
+    if (eStyle !== 'one arm') gripLine.push(gWidth);
+    if (gType === 'mixed') {
+      const details = s.mixedGripDetails || ex.mixedGripDetails;
+      if (details) {
+        let mixedStr = `L:${details.left.toUpperCase()} / R:${details.right.toUpperCase()}`;
+        if (details.isAlternating) mixedStr += ' (ALT-HANDS)';
+        gripLine.push(mixedStr);
+      } else {
+        gripLine.push(gType);
+      }
+    } else {
+      gripLine.push(gType);
+    }
   }
   gripLine.push(`${gThumb} THUMB`);
   if (gFalse) gripLine.push(gFalse);

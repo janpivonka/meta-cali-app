@@ -38,6 +38,7 @@ import {
   LegProgression,
   SingleLegPosition,
   AssistanceDetails,
+  MixedGripDetails,
   ExerciseMedia
 } from '../types';
 import { cn, getMediaUrl } from '../lib/utils';
@@ -54,11 +55,12 @@ interface WorkoutFormProps {
   highlightedSetIndex?: number | null;
 }
 
-const GRIPS: GripType[] = ['pronated', 'supinated', 'neutral', 'mixed'];
-const GRIP_WIDTHS: GripWidth[] = ['narrow', 'shoulder-width', 'wide'];
+const GRIPS: GripType[] = ['pronated', 'supinated', 'neutral', 'mixed', 'alternating'];
+const GRIP_WIDTHS: GripWidth[] = ['narrow', 'shoulder-width', 'wide', 'alternating'];
 const THUMBS: { val: ThumbPosition; label: string }[] = [
   { val: 'under', label: 'Under' },
-  { val: 'over', label: 'Over' }
+  { val: 'over', label: 'Over' },
+  { val: 'alternating', label: 'Alternating' }
 ];
 const EQUIPMENTS: EquipmentType[] = ['pull-up bar', 'low bar', 'dip bars', 'rings', 'floor', 'parallelettes', 'stall bars'];
 const EXECUTION_STYLES: ExecutionStyle[] = ['basic', 'one arm', 'archer', 'typewriter', 'commando', 'high', 'korean'];
@@ -433,6 +435,9 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
   const [loadType, setLoadType] = useState<LoadType>('bodyweight');
   const [weightUnit, setWeightUnit] = useState<'kg' | 'lbs'>('kg');
   const [assistanceValue, setAssistanceValue] = useState('');
+  const [mixedGripLeft, setMixedGripLeft] = useState<'pronated' | 'supinated' | 'neutral' | 'alternating'>('supinated');
+  const [mixedGripRight, setMixedGripRight] = useState<'pronated' | 'supinated' | 'neutral' | 'alternating'>('pronated');
+  const [mixedGripIsAlternating, setMixedGripIsAlternating] = useState(false);
   const [bandPlacements, setBandPlacements] = useState<BandPlacement[]>(['both feet']);
   const [bandLoopType, setBandLoopType] = useState<BandLoopType>('single');
   const [legTarget, setLegTarget] = useState<'primary' | 'secondary' | 'alternating'>('primary');
@@ -717,6 +722,10 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       setLoadType(activeLoadType);
       setWeightUnit(active.weightUnit || 'kg');
 
+      setMixedGripLeft(active.mixedGripDetails?.left || 'supinated');
+      setMixedGripRight(active.mixedGripDetails?.right || 'pronated');
+      setMixedGripIsAlternating(active.mixedGripDetails?.isAlternating || false);
+
       if (active.assistanceDetails) {
         setBandPlacements(active.assistanceDetails.placement as BandPlacement[] || ['both feet']);
         setBandLoopType(active.assistanceDetails.loopType || 'single');
@@ -832,6 +841,9 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     setLegProgression('full');
     setLoadType('bodyweight');
     setAssistanceValue('');
+    setMixedGripLeft('supinated');
+    setMixedGripRight('pronated');
+    setMixedGripIsAlternating(false);
     setBandPlacements(['both feet']);
     setBandLoopType('single');
     const safeUUID = () => {
@@ -895,6 +907,9 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       setLoadType(initialData.loadType || 'bodyweight');
       setWeightUnit(initialData.weightUnit || 'kg');
       setAssistanceValue(initialData.assistanceValue?.toString() || '');
+      setMixedGripLeft(initialData.mixedGripDetails?.left || 'supinated');
+      setMixedGripRight(initialData.mixedGripDetails?.right || 'pronated');
+      setMixedGripIsAlternating(initialData.mixedGripDetails?.isAlternating || false);
       if (initialData.assistanceDetails) {
         setBandPlacements(initialData.assistanceDetails.placement as BandPlacement[] || ['both feet']);
         setBandLoopType(initialData.assistanceDetails.loopType || 'single');
@@ -1257,6 +1272,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     };
 
     const consensusGrip = getConsensus('grip') as GripType | undefined;
+    const consensusMixedGrip = getConsensus('mixedGripDetails') as MixedGripDetails | undefined;
     const consensusGripWidth = getConsensus('gripWidth') as GripWidth | undefined;
     const consensusThumb = getConsensus('thumb') as ThumbPosition | undefined;
     const consensusFalseGrip = getConsensus('falseGrip') as boolean | undefined;
@@ -1279,6 +1295,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       exerciseId,
       type: currentExercise?.name || 'Unknown',
       grip: consensusGrip ?? grip,
+      mixedGripDetails: consensusMixedGrip ?? (grip === 'mixed' ? { left: mixedGripLeft, right: mixedGripRight } : undefined),
       gripWidth: consensusGripWidth ?? gripWidth,
       thumb: consensusThumb ?? thumb,
       falseGrip: consensusFalseGrip ?? falseGrip,
@@ -1482,31 +1499,33 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
            <div className="space-y-8 p-8 bg-white/5 rounded-[32px] border border-white/5">
               <div className="space-y-6">
-                 {executionStyle !== 'one arm' && executionStyle !== 'commando' && (
+                 {executionStyle !== 'commando' && (
                    <>
-                     <div id="grip-width-section">
-                       <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-500/60 block mb-3">Grip Width</label>
-                       <div className="flex flex-wrap gap-2">
-                          {GRIP_WIDTHS.map(w => (
-                            <button
-                              key={w}
-                              type="button"
-                              onClick={() => updateActiveValue('gripWidth', setGripWidth, w)}
-                              className={cn(
-                                "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all",
-                                gripWidth === w ? "bg-white text-black border-white shadow-lg" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
-                              )}
-                            >
-                              {w === 'shoulder-width' ? 'Shoulder-width' : w === 'narrow' ? 'Narrow' : 'Wide'}
-                            </button>
-                          ))}
+                     {executionStyle !== 'one arm' && (
+                       <div id="grip-width-section">
+                         <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-500/60 block mb-3">Grip Width</label>
+                         <div className="flex flex-wrap gap-2">
+                            {GRIP_WIDTHS.map(w => (
+                              <button
+                                key={w}
+                                type="button"
+                                onClick={() => updateActiveValue('gripWidth', setGripWidth, w)}
+                                className={cn(
+                                  "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all",
+                                  gripWidth === w ? "bg-white text-black border-white shadow-lg" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
+                                )}
+                              >
+                                {w === 'shoulder-width' ? 'Shoulder-width' : w === 'narrow' ? 'Narrow' : w === 'wide' ? 'Wide' : 'Alternating'}
+                              </button>
+                            ))}
+                         </div>
                        </div>
-                     </div>
+                     )}
 
                      <div>
                        <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-500/60 block mb-3">Grip Type</label>
                        <div className="flex flex-wrap gap-2">
-                          {GRIPS.map(g => (
+                          {GRIPS.filter(g => executionStyle === 'one arm' ? g !== 'mixed' : true).map(g => (
                             <button
                               key={g}
                               type="button"
@@ -1521,6 +1540,79 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                           ))}
                        </div>
                      </div>
+
+                     <AnimatePresence>
+                       {grip === 'mixed' && executionStyle !== 'one arm' && (
+                         <motion.div 
+                           initial={{ opacity: 0, height: 0 }}
+                           animate={{ opacity: 1, height: 'auto' }}
+                           exit={{ opacity: 0, height: 0 }}
+                           className="space-y-4 pt-4 border-t border-white/5 overflow-hidden"
+                         >
+                           <div className="grid grid-cols-2 gap-4">
+                             <div className="space-y-2">
+                               <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-500/60 block">Left Hand</label>
+                               <div className="flex gap-1">
+                                 {(['pronated', 'supinated', 'neutral', 'alternating'] as const).map(g => (
+                                   <button
+                                     key={g}
+                                     type="button"
+                                     onClick={() => {
+                                       const details = { left: g, right: mixedGripRight, isAlternating: mixedGripIsAlternating };
+                                       updateActiveValue('mixedGripDetails', (val) => setMixedGripLeft(val.left), details);
+                                     }}
+                                     className={cn(
+                                       "flex-1 py-1.5 rounded-lg text-[8px] font-black uppercase border transition-all",
+                                       mixedGripLeft === g ? "bg-white text-black border-white shadow-sm" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
+                                     )}
+                                   >
+                                     {g === 'alternating' ? 'ALT' : g[0]}
+                                   </button>
+                                 ))}
+                               </div>
+                             </div>
+                             <div className="space-y-2">
+                               <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-500/60 block">Right Hand</label>
+                               <div className="flex gap-1">
+                                 {(['pronated', 'supinated', 'neutral', 'alternating'] as const).map(g => (
+                                   <button
+                                     key={g}
+                                     type="button"
+                                     onClick={() => {
+                                       const details = { left: mixedGripLeft, right: g, isAlternating: mixedGripIsAlternating };
+                                       updateActiveValue('mixedGripDetails', (val) => setMixedGripRight(val.right), details);
+                                     }}
+                                     className={cn(
+                                       "flex-1 py-1.5 rounded-lg text-[8px] font-black uppercase border transition-all",
+                                       mixedGripRight === g ? "bg-white text-black border-white shadow-sm" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
+                                     )}
+                                   >
+                                     {g === 'alternating' ? 'ALT' : g[0]}
+                                   </button>
+                                 ))}
+                               </div>
+                             </div>
+                           </div>
+
+                           <div className="pt-4 mt-4 border-t border-white/5 flex justify-center">
+                              <button 
+                                type="button"
+                                onClick={() => {
+                                  const details = { left: mixedGripLeft, right: mixedGripRight, isAlternating: !mixedGripIsAlternating };
+                                  updateActiveValue('mixedGripDetails', (val) => setMixedGripIsAlternating(val.isAlternating || false), details);
+                                }}
+                                className={cn(
+                                  "px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all flex items-center gap-2",
+                                  mixedGripIsAlternating ? "bg-cyan-500 text-black border-cyan-400 shadow-lg shadow-cyan-500/20" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
+                                )}
+                              >
+                                <div className={cn("w-1.5 h-1.5 rounded-full", mixedGripIsAlternating ? "bg-black animate-pulse" : "bg-slate-600")} />
+                                Alternating Hands (Per Rep)
+                              </button>
+                           </div>
+                         </motion.div>
+                       )}
+                     </AnimatePresence>
                    </>
                  )}
 
@@ -1595,13 +1687,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                             executionStyle === style ? "bg-purple-500 text-white border-purple-400 shadow-lg shadow-purple-500/20" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
                           )}
                         >
-                          {style === 'basic' ? 'Basic' : 
-                           style === 'one arm' ? 'One Arm' : 
-                           style === 'archer' ? 'Archer' : 
-                           style === 'typewriter' ? 'Typewriter' : 
-                           style === 'commando' ? 'Commando' : 
-                           style === 'high' ? 'High' : 
-                           style === 'korean' ? 'Korean' : 'Australian'}
+                          {style.replace('-', ' ').toUpperCase()}
                         </button>
                       ))}
                    </div>
