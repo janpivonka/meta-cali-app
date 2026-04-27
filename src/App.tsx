@@ -58,7 +58,7 @@ const getSetMetadata = (s: any, ex: any) => {
     // Add leg target info - Critical fix for user request
     const legTarget = s.assistanceDetails?.legTarget || ex.assistanceDetails?.legTarget;
     if (legTarget) {
-      const targetLabel = legTarget === 'alternating' ? 'ALT' : legTarget.toUpperCase();
+      const targetLabel = legTarget.toUpperCase();
       orangeLine.push(targetLabel);
     }
 
