@@ -33,37 +33,48 @@ const DEFAULT_PROFILE: UserProfile = {
   trophies: ['🥇 PULL-UPS PRO', '🎖️ PLANCHE SURVIVOR', '⚡ MUSCLE-UP ELITE', '🛡️ IRON CORE']
 };
 
-interface SetReorderItemProps {
-  s: any;
-  si: number;
-  i: number;
-  ex: any;
-  editingIndex: number | null;
-  editingSetIndex: number | null;
-  handleEditSet: (exIndex: number, setIndex: number, e: React.MouseEvent) => void;
-  key?: React.Key;
-}
-
-function SetReorderItem({ s, si, i, ex, editingIndex, editingSetIndex, handleEditSet, onMediaClick }: any) {
-  const controls = useDragControls();
-  const isHighlighted = editingIndex === i && editingSetIndex === si;
-  const exName = EXERCISE_LIBRARY.find(e => e.id === ex.exerciseId)?.name || ex.type;
-                                    
-  const loadTag = [];
-  const effectiveLType = s.loadType || ex.loadType;
+/**
+ * Shared utility to generate descriptive labels for a workout set
+ */
+const getSetMetadata = (s: any, ex: any) => {
   const effectiveUnit = s.weightUnit || ex.weightUnit || 'kg';
-  const resTotal = s.assistanceDetails?.resistance || (effectiveLType === 'weighted' ? s.weight : null) || ex.assistanceValue;
-  if (effectiveLType === 'bodyweight') loadTag.push('BODYWEIGHT');
-  else if (effectiveLType === 'weighted') loadTag.push(`WEIGHTED (+${s.weight || resTotal || 0}${effectiveUnit.toUpperCase()})`);
-  else loadTag.push(`ASSISTED (-${resTotal || '?'}${effectiveUnit.toUpperCase()})`);
+  const effectiveLoadType = s.loadType || ex.loadType;
+  const res = s.assistanceDetails?.resistance || ex.assistanceValue || (s.assistanceDetails?.resistance);
+
+  const currentLoadLabel = (() => {
+    if (effectiveLoadType === 'bodyweight') return 'BODYWEIGHT';
+    if (s.weight && s.weight > 0) return `WEIGHTED (+${s.weight}${effectiveUnit.toUpperCase()})`;
+    if (effectiveLoadType === 'assisted' && res) return `ASSISTED (-${res}${effectiveUnit.toUpperCase()})`;
+    if (effectiveLoadType === 'weighted') return `WEIGHTED (+${res || 0}${effectiveUnit.toUpperCase()})`;
+    return 'BODYWEIGHT';
+  })();
+
+  const orangeLine = [];
+  if (effectiveLoadType === 'assisted' && res) {
+    orangeLine.push(`${res}${effectiveUnit.toUpperCase()} BAND`);
+    const p = s.assistanceDetails?.placement || ex.assistanceDetails?.placement;
+    if (p) orangeLine.push(Array.isArray(p) ? p.join('/') : p);
+    
+    // Add leg target info - Critical fix for user request
+    const legTarget = s.assistanceDetails?.legTarget || ex.assistanceDetails?.legTarget;
+    if (legTarget) {
+      const targetLabel = legTarget === 'alternating' ? 'ALT' : legTarget.toUpperCase();
+      orangeLine.push(targetLabel);
+    }
+
+    if (s.assistanceDetails?.loopType || ex.assistanceDetails?.loopType) {
+      orangeLine.push((s.assistanceDetails?.loopType || ex.assistanceDetails?.loopType) === 'double' ? 'WRAP' : 'SINGLE');
+    }
+  }
+  if (s.weight && s.weight > 0 && effectiveLoadType !== 'weighted') orangeLine.push(`+${s.weight}${effectiveUnit.toUpperCase()}`);
 
   const gripLine = [];
-  const eStyle = s.executionStyle || ex.executionStyle || 'basic';
   const gWidth = s.gripWidth || ex.gripWidth || 'shoulder-width';
   const gType = s.grip || ex.grip || 'pronated';
   const gThumb = s.thumb || ex.thumb || 'under';
   const gFalse = (s.falseGrip !== undefined ? s.falseGrip : ex.falseGrip) ? 'FALSE GRIP' : null;
   const gEquip = s.equipment || ex.equipment || 'pull-up bar';
+  const eStyle = s.executionStyle || ex.executionStyle || 'basic';
 
   if (eStyle !== 'one arm' && eStyle !== 'commando') {
     gripLine.push(gWidth);
@@ -88,38 +99,39 @@ function SetReorderItem({ s, si, i, ex, editingIndex, editingSetIndex, handleEdi
   } else {
     execLine.push(eStyle);
   }
+  
   execLine.push(eMethod);
   execLine.push(ePos);
   
   if (eLeg === 'one leg') {
+    const sideLabel = eSide ? ` - ${eSide.toUpperCase()}` : '';
     const p1 = s.oneLegPrimaryPosition || ex.oneLegPrimaryPosition || 'full';
     const p2 = s.oneLegSecondaryPosition || ex.oneLegSecondaryPosition || 'tuck';
-    execLine.push(`ONE LEG (${p1.toUpperCase()}/${p2.toUpperCase()})`);
+    execLine.push(`ONE LEG${sideLabel} (${p1.toUpperCase()}/${p2.toUpperCase()})`);
   } else {
     execLine.push(eLeg);
   }
 
-  const orangeLine = [];
-  const res = s.assistanceDetails?.resistance || ex.assistanceValue;
-  const effectiveLoadType = s.loadType || ex.loadType;
-  if (effectiveLoadType === 'assisted' && res) {
-    orangeLine.push(`${res}${effectiveUnit.toUpperCase()} BAND`);
-    const p = s.assistanceDetails?.placement || (ex.assistanceDetails?.placement as any);
-    if (p) orangeLine.push(Array.isArray(p) ? p.join('/') : p);
-    if (s.assistanceDetails?.loopType || ex.assistanceDetails?.loopType) {
-      orangeLine.push((s.assistanceDetails?.loopType || ex.assistanceDetails?.loopType) === 'double' ? 'WRAP' : 'SINGLE');
-    }
-  }
-  if (s.weight && s.weight > 0 && effectiveLoadType !== 'weighted') orangeLine.push(`+${s.weight}${effectiveUnit.toUpperCase()}`);
+  return { currentLoadLabel, orangeLine, gripLine, execLine };
+};
 
-  const currentLoadLabel = (() => {
-    const effectiveLoadType = s.loadType || ex.loadType;
-    if (effectiveLoadType === 'bodyweight') return 'BODYWEIGHT';
-    if (s.weight && s.weight > 0) return `WEIGHTED (+${s.weight}${effectiveUnit.toUpperCase()})`;
-    if (effectiveLoadType === 'assisted' && res) return `ASSISTED (-${res}${effectiveUnit.toUpperCase()})`;
-    if (effectiveLoadType === 'weighted') return `WEIGHTED (+${res || 0}${effectiveUnit.toUpperCase()})`;
-    return 'BODYWEIGHT';
-  })();
+interface SetReorderItemProps {
+  s: any;
+  si: number;
+  i: number;
+  ex: any;
+  editingIndex: number | null;
+  editingSetIndex: number | null;
+  handleEditSet: (exIndex: number, setIndex: number, e: React.MouseEvent) => void;
+  key?: React.Key;
+}
+
+function SetReorderItem({ s, si, i, ex, editingIndex, editingSetIndex, handleEditSet, onMediaClick }: any) {
+  const controls = useDragControls();
+  const isHighlighted = editingIndex === i && editingSetIndex === si;
+  const exName = EXERCISE_LIBRARY.find(e => e.id === ex.exerciseId)?.name || ex.type;
+                                    
+  const { currentLoadLabel, orangeLine, gripLine, execLine } = getSetMetadata(s, ex);
 
   return (
     <Reorder.Item 
@@ -830,70 +842,7 @@ export default function App() {
                                 {(log.sets || []).map((s, si) => {
                                   // Categories for set-specific display
                                   const exName = EXERCISE_LIBRARY.find(e => e.id === log.exerciseId)?.name || log.type;
-                                  
-                                  const loadTag = [];
-                                  const effectiveLType = s.loadType || log.loadType;
-                                  const effectiveUnit = s.weightUnit || log.weightUnit || 'kg';
-                                  const resTotal = s.assistanceDetails?.resistance || s.weight || (effectiveLType === 'weighted' ? s.weight : null) || log.assistanceValue;
-                                  if (effectiveLType === 'bodyweight') loadTag.push('BODYWEIGHT');
-                                  else if (effectiveLType === 'weighted') loadTag.push(`WEIGHT- (${s.weight || resTotal || 0}${effectiveUnit.toUpperCase()})`);
-                                  else loadTag.push(`ASSIST- (${resTotal || '?'})`);
-
-                                  const gripLine = [];
-                                  const gWidth = s.gripWidth || log.gripWidth || 'shoulder-width';
-                                  const gType = s.grip || log.grip || 'pronated';
-                                  const gThumb = s.thumb || log.thumb || 'under';
-                                  const gFalse = (s.falseGrip !== undefined ? s.falseGrip : log.falseGrip) ? 'FALSE GRIP' : null;
-                                  const gEquip = s.equipment || log.equipment || 'pull-up bar';
-  
-                                  gripLine.push(gWidth);
-                                  gripLine.push(gType);
-                                  gripLine.push(`${gThumb} THUMB`);
-                                  if (gFalse) gripLine.push(gFalse);
-                                  gripLine.push(`@ ${gEquip}`);
-  
-                                  const execLine = [];
-                                  const eStyle = s.executionStyle || log.executionStyle || 'basic';
-                                  const eMethod = s.executionMethod || log.executionMethod || 'standard';
-                                  const ePos = s.position || log.position || 'neutral';
-                                  const eLeg = s.legProgression || log.legProgression || 'full';
-                                  const eHand = s.oneArmHandPosition || log.oneArmHandPosition;
-                                  const eOneLeg = s.isOneLeg || log.isOneLeg || (eLeg === 'one leg');
-  
-                                  execLine.push(eStyle);
-                                  execLine.push(eMethod);
-                                  execLine.push(ePos);
-                                  
-                                  if (eLeg === 'one leg') {
-                                    const p1 = s.oneLegPrimaryPosition || log.oneLegPrimaryPosition || 'full';
-                                    const p2 = s.oneLegSecondaryPosition || log.oneLegSecondaryPosition || 'tuck';
-                                    execLine.push(`ONE LEG (${p1.toUpperCase()}/${p2.toUpperCase()})`);
-                                  } else {
-                                    execLine.push(eLeg);
-                                  }
-
-                                  if (eStyle === 'one arm' && eHand && eHand !== 'free') execLine.push(`H:${eHand}`);
-  
-                                  const orangeLine = [];
-                                  const effectiveLoadType = s.loadType || log.loadType;
-                                  const res = s.assistanceDetails?.resistance || log.assistanceValue;
-                                  if (effectiveLoadType === 'assisted' && res) {
-                                    orangeLine.push(`${res} BAND`);
-                                    const p = s.assistanceDetails?.placement || (log.assistanceDetails?.placement as any);
-                                    if (p) orangeLine.push(Array.isArray(p) ? p.join('/') : p);
-                                    if (s.assistanceDetails?.loopType || log.assistanceDetails?.loopType) {
-                                      orangeLine.push((s.assistanceDetails?.loopType || log.assistanceDetails?.loopType) === 'double' ? 'WRAP' : 'SINGLE');
-                                    }
-                                  }
-                                  if (s.weight && s.weight > 0 && effectiveLoadType !== 'weighted') orangeLine.push(`+${s.weight}${effectiveUnit.toUpperCase()}`);
-
-                                  const currentLoadLabel = (() => {
-                                    if (effectiveLoadType === 'bodyweight') return 'BODYWEIGHT';
-                                    if (s.weight && s.weight > 0) return `WEIGHTED (+${s.weight}${effectiveUnit.toUpperCase()})`;
-                                    if (effectiveLoadType === 'assisted' && res) return `ASSISTED (${res})`;
-                                    if (effectiveLoadType === 'weighted') return `WEIGHTED (${res || 0}${effectiveUnit.toUpperCase()})`;
-                                    return 'BODYWEIGHT';
-                                  })();
+                                  const { currentLoadLabel, orangeLine, gripLine, execLine } = getSetMetadata(s, log);
 
                                   return (
                                     <div 

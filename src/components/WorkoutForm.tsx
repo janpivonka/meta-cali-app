@@ -88,6 +88,10 @@ interface WorkoutSetItemProps {
   localEditingSetIndex: number | null;
   exerciseId: string;
   loadType: LoadType;
+  executionStyle: string;
+  legProgression: string;
+  oneArmSide: 'left' | 'right' | 'alternating';
+  legTarget: 'primary' | 'secondary' | 'alternating';
   setLocalEditingSetIndex: (i: number) => void;
   updateSet: (index: number, field: keyof WorkoutSet, value: any) => void;
   removeSet: (index: number) => void;
@@ -104,6 +108,10 @@ const WorkoutSetItem = memo<WorkoutSetItemProps>(({
   localEditingSetIndex, 
   exerciseId, 
   loadType,
+  executionStyle,
+  legProgression,
+  oneArmSide,
+  legTarget,
   setLocalEditingSetIndex,
   updateSet,
   removeSet,
@@ -141,183 +149,150 @@ const WorkoutSetItem = memo<WorkoutSetItemProps>(({
         onChange={(e) => onFileUpload(e, index)}
       />
 
-      <div className="w-full flex flex-col md:flex-row items-center gap-4">
-        <div 
-          onPointerDown={(e) => controls.start(e)}
-          className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col items-center justify-center w-10 h-10 cursor-grab active:cursor-grabbing hover:bg-white/5 rounded-xl transition-all"
-          style={{ touchAction: 'none' }}
-        >
-         <div className="flex flex-col gap-1 items-center">
-           <div className="w-[3px] h-[3px] rounded-full bg-slate-600 group-hover:bg-cyan-500" />
-           <div className="w-[3px] h-[3px] rounded-full bg-slate-600 group-hover:bg-cyan-500" />
-           <div className="w-[3px] h-[3px] rounded-full bg-slate-600 group-hover:bg-cyan-500" />
-         </div>
-      </div>
-
-      <div className="flex flex-col items-center gap-1 min-w-[30px] md:min-w-[80px]">
-         <div className={cn(
-           "w-10 h-10 rounded-xl bg-black/40 flex items-center justify-center border transition-all relative",
-           (highlightedSetIndex === index || localEditingSetIndex === index) ? "border-cyan-400 text-cyan-400 scale-105 shadow-[0_0_10px_rgba(34,211,238,0.1)]" : "border-white/10 text-white italic"
-         )}>
+      <div className="w-full flex flex-col md:flex-row items-center gap-6">
+        <div className="flex flex-col items-center gap-1 min-w-[30px] md:min-w-[80px]">
+          <div className={cn(
+            "w-10 h-10 rounded-xl bg-black/40 flex items-center justify-center border transition-all relative",
+            (highlightedSetIndex === index || localEditingSetIndex === index) ? "border-cyan-400 text-cyan-400 scale-105 shadow-[0_0_10px_rgba(34,211,238,0.1)]" : "border-white/10 text-white italic"
+          )}>
             <span className="text-lg font-black">{index + 1}</span>
             {(set.notes || (set.media && set.media.length > 0)) && (
               <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full border border-black shadow-[0_0_5px_rgba(249,115,22,0.5)]" />
             )}
-         </div>
-      </div>
-
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 w-full pr-10">
-        {/* Reps/Time */}
-        <div className="flex flex-col items-center gap-1">
-          <div className="flex items-center gap-3">
-             <button 
-               type="button" 
-               onClick={(e) => { e.stopPropagation(); updateSet(index, isHoldExercise(exerciseId) ? 'time' : 'reps', Math.max(0, (isHoldExercise(exerciseId) ? (set.time || 0) : (set.reps || 0)) - 1)); }}
-               className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all active:scale-90"
-             ><Minus size={16} /></button>
-             <input 
-                 type="number"
-                 value={isHoldExercise(exerciseId) ? (set.time || 0) : (set.reps || 0)}
-                 onChange={(e) => updateSet(index, isHoldExercise(exerciseId) ? 'time' : 'reps', parseInt(e.target.value) || 0)}
-                 onClick={(e) => e.stopPropagation()}
-                 className="bg-transparent text-3xl font-black text-white w-16 text-center focus:outline-none font-mono tracking-tighter"
-             />
-             <button 
-               type="button" 
-               onClick={(e) => { e.stopPropagation(); updateSet(index, isHoldExercise(exerciseId) ? 'time' : 'reps', (isHoldExercise(exerciseId) ? (set.time || 0) : (set.reps || 0)) + 1); }}
-               className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all active:scale-90"
-             ><Plus size={16} /></button>
           </div>
-          <span className="text-[8px] font-black uppercase tracking-widest text-slate-600 italic">
-            {isHoldExercise(exerciseId) ? 'Time' : 'Reps'}
-          </span>
         </div>
 
-        {/* Weight / Assistance */}
-        {(loadType === 'weighted' || (set.weight !== undefined && set.weight > 0) || localEditingSetIndex === index) && (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex flex-col items-center gap-1"
-          >
-            <div className="flex items-center gap-3">
+        <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4 w-full pr-12">
+          {/* Reps/Time */}
+          <div className="flex flex-col items-center gap-1">
+            <div className="flex items-center gap-2">
                <button 
                  type="button" 
-                 onClick={(e) => { e.stopPropagation(); updateSet(index, 'weight', Math.max(0, (set.weight || 0) - 1)); }}
-                 className="w-7 h-7 rounded-full flex items-center justify-center bg-white/5 text-slate-400 hover:text-purple-400 hover:bg-purple-500/10 transition-all active:scale-90"
-               ><Minus size={12} /></button>
-               <div className="flex flex-col items-center">
-                 <input 
-                    type="number"
-                    value={set.weight || 0}
-                    onChange={(e) => updateSet(index, 'weight', parseInt(e.target.value) || 0)}
-                    onClick={(e) => e.stopPropagation()}
-                    className="bg-transparent text-2xl font-black text-purple-400 w-14 text-center focus:outline-none font-mono tracking-tighter"
-                 />
-                 <div className="flex bg-black/40 rounded-lg p-0.5 border border-white/5" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); updateSet(index, 'weightUnit', 'kg'); }}
-                      className={cn(
-                        "px-1.5 py-0.5 rounded-md text-[7px] font-black transition-all",
-                        (set.weightUnit || 'kg') === 'kg' ? "bg-purple-500 text-white" : "text-slate-500"
-                      )}
-                    >
-                      KG
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); updateSet(index, 'weightUnit', 'lbs'); }}
-                      className={cn(
-                        "px-1.5 py-0.5 rounded-md text-[7px] font-black transition-all",
-                        set.weightUnit === 'lbs' ? "bg-purple-500 text-white" : "text-slate-500"
-                      )}
-                    >
-                      LB
-                    </button>
-                  </div>
-               </div>
+                 onClick={(e) => { e.stopPropagation(); updateSet(index, isHoldExercise(exerciseId) ? 'time' : 'reps', Math.max(0, (isHoldExercise(exerciseId) ? (set.time || 0) : (set.reps || 0)) - 1)); }}
+                 className="w-7 h-7 rounded-full flex items-center justify-center bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all active:scale-90"
+               ><Minus size={14} /></button>
+               <input 
+                   type="number"
+                   value={isHoldExercise(exerciseId) ? (set.time || 0) : (set.reps || 0)}
+                   onChange={(e) => updateSet(index, isHoldExercise(exerciseId) ? 'time' : 'reps', parseInt(e.target.value) || 0)}
+                   onClick={(e) => e.stopPropagation()}
+                   className="bg-transparent text-2xl font-black text-white w-14 text-center focus:outline-none font-mono tracking-tighter"
+               />
                <button 
                  type="button" 
-                 onClick={(e) => { e.stopPropagation(); updateSet(index, 'weight', (set.weight || 0) + 1); }}
-                 className="w-7 h-7 rounded-full flex items-center justify-center bg-white/5 text-slate-400 hover:text-purple-400 hover:bg-purple-500/10 transition-all active:scale-90"
-               ><Plus size={12} /></button>
+                 onClick={(e) => { e.stopPropagation(); updateSet(index, isHoldExercise(exerciseId) ? 'time' : 'reps', (isHoldExercise(exerciseId) ? (set.time || 0) : (set.reps || 0)) + 1); }}
+                 className="w-7 h-7 rounded-full flex items-center justify-center bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all active:scale-90"
+               ><Plus size={14} /></button>
             </div>
-          </motion.div>
-        )}
+            <span className="text-[7px] font-black uppercase tracking-widest text-slate-600 italic leading-none">
+              {isHoldExercise(exerciseId) ? 'Time' : 'Reps'}
+            </span>
+          </div>
 
-        {(loadType === 'assisted' || (set.assistanceDetails?.resistance) || (localEditingSetIndex === index && loadType === 'assisted')) && (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex flex-col items-center gap-1"
-          >
-            <div className="flex items-center gap-3">
-               <button 
-                 type="button" 
-                 onClick={(e) => { 
-                   e.stopPropagation(); 
-                   const currentRes = parseFloat(set.assistanceDetails?.resistance || '0');
-                   const newVal = Math.max(0, currentRes - 1);
-                   updateSet(index, 'assistanceDetails', { ...set.assistanceDetails, resistance: newVal.toString() });
-                 }}
-                 className="w-7 h-7 rounded-full flex items-center justify-center bg-white/5 text-slate-400 hover:text-orange-400 hover:bg-orange-500/10 transition-all active:scale-90"
-               ><Minus size={12} /></button>
-               <div className="flex flex-col items-center">
-                 <input 
-                    type="number"
-                    value={set.assistanceDetails?.resistance || ''}
-                    onChange={(e) => updateSet(index, 'assistanceDetails', { ...set.assistanceDetails, resistance: e.target.value })}
-                    onClick={(e) => e.stopPropagation()}
-                    placeholder="0"
-                    className="bg-transparent text-2xl font-black text-orange-400 w-14 text-center focus:outline-none font-mono tracking-tighter"
-                 />
-                 <div className="flex bg-black/40 rounded-lg p-0.5 border border-white/5" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); updateSet(index, 'weightUnit', 'kg'); }}
-                      className={cn(
-                        "px-1.5 py-0.5 rounded-md text-[7px] font-black transition-all",
-                        (set.weightUnit || 'kg') === 'kg' ? "bg-orange-500 text-black" : "text-slate-500"
-                      )}
-                    >
-                      KG
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); updateSet(index, 'weightUnit', 'lbs'); }}
-                      className={cn(
-                        "px-1.5 py-0.5 rounded-md text-[7px] font-black transition-all",
-                        set.weightUnit === 'lbs' ? "bg-orange-500 text-black" : "text-slate-500"
-                      )}
-                    >
-                      LB
-                    </button>
+          {/* Load Details (Weight/Assistance) */}
+          <div className="flex flex-col items-center gap-1">
+            {(set.loadType === 'weighted' || (set.weight !== undefined && set.weight > 0) || (set.loadType === 'assisted' || (set.assistanceDetails?.resistance))) ? (
+              <div className="flex items-center gap-2">
+                {set.loadType === 'weighted' || (set.weight !== undefined && set.weight > 0) ? (
+                  <div className="flex items-center gap-2">
+                    <button 
+                      type="button" 
+                      onClick={(e) => { e.stopPropagation(); updateSet(index, 'weight', Math.max(0, (set.weight || 0) - 1)); }}
+                      className="w-6 h-6 rounded-full flex items-center justify-center bg-white/5 text-slate-400 hover:text-purple-400 hover:bg-purple-500/10 transition-all active:scale-90"
+                    ><Minus size={10} /></button>
+                    <input 
+                       type="number"
+                       value={set.weight || 0}
+                       onChange={(e) => updateSet(index, 'weight', parseInt(e.target.value) || 0)}
+                       onClick={(e) => e.stopPropagation()}
+                       className="bg-transparent text-xl font-black text-purple-400 w-12 text-center focus:outline-none font-mono tracking-tighter"
+                    />
+                    <button 
+                      type="button" 
+                      onClick={(e) => { e.stopPropagation(); updateSet(index, 'weight', (set.weight || 0) + 1); }}
+                      className="w-6 h-6 rounded-full flex items-center justify-center bg-white/5 text-slate-400 hover:text-purple-400 hover:bg-purple-500/10 transition-all active:scale-90"
+                    ><Plus size={10} /></button>
                   </div>
-               </div>
-               <button 
-                 type="button" 
-                 onClick={(e) => { 
-                   e.stopPropagation(); 
-                   const currentRes = parseFloat(set.assistanceDetails?.resistance || '0');
-                   const newVal = currentRes + 1;
-                   updateSet(index, 'assistanceDetails', { ...set.assistanceDetails, resistance: newVal.toString() });
-                 }}
-                 className="w-7 h-7 rounded-full flex items-center justify-center bg-white/5 text-slate-400 hover:text-orange-400 hover:bg-orange-500/10 transition-all active:scale-90"
-               ><Plus size={12} /></button>
-            </div>
-          </motion.div>
-        )}
-      </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <button 
+                      type="button" 
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        const currentRes = parseFloat(set.assistanceDetails?.resistance || '0');
+                        const newVal = Math.max(0, currentRes - 1);
+                        updateSet(index, 'assistanceDetails', { ...set.assistanceDetails, resistance: newVal.toString() });
+                      }}
+                      className="w-6 h-6 rounded-full flex items-center justify-center bg-white/5 text-slate-400 hover:text-orange-400 hover:bg-orange-500/10 transition-all active:scale-90"
+                    ><Minus size={10} /></button>
+                    <input 
+                       type="number"
+                       value={set.assistanceDetails?.resistance || ''}
+                       onChange={(e) => updateSet(index, 'assistanceDetails', { ...set.assistanceDetails, resistance: e.target.value })}
+                       onClick={(e) => e.stopPropagation()}
+                       placeholder="0"
+                       className="bg-transparent text-xl font-black text-orange-400 w-12 text-center focus:outline-none font-mono tracking-tighter"
+                    />
+                    <button 
+                      type="button" 
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        const currentRes = parseFloat(set.assistanceDetails?.resistance || '0');
+                        const newVal = currentRes + 1;
+                        updateSet(index, 'assistanceDetails', { ...set.assistanceDetails, resistance: newVal.toString() });
+                      }}
+                      className="w-6 h-6 rounded-full flex items-center justify-center bg-white/5 text-slate-400 hover:text-orange-400 hover:bg-orange-500/10 transition-all active:scale-90"
+                    ><Plus size={10} /></button>
+                  </div>
+                )}
+              </div>
+            ) : (
+                <span className="text-[9px] font-black text-slate-700 uppercase tracking-widest pt-2">BW</span>
+            )}
+            <span className="text-[7px] font-black uppercase tracking-widest text-slate-600 italic leading-none">
+              {set.loadType === 'weighted' ? 'Weight' : set.loadType === 'assisted' ? 'Assist' : 'Load'}
+            </span>
+          </div>
 
-      <div className="flex flex-row md:flex-col justify-end gap-2 pr-10 md:pr-0">
-         <button 
-           type="button" 
-           onClick={(e) => { e.stopPropagation(); removeSet(index); }}
-           className="w-8 h-8 rounded-xl bg-red-500/5 text-slate-700 hover:text-red-500 hover:bg-red-500/10 transition-all p-1.5 flex items-center justify-center"
-         ><Minus size={16} /></button>
+          {/* Execution Selection Detail */}
+          <div className="flex flex-col items-center justify-center">
+            {((set.executionStyle || executionStyle) === 'one arm' || (set.executionStyle || executionStyle) === 'commando' || (set.legProgression || legProgression) === 'one leg') && (
+              <div className="flex flex-col items-center p-1.5 rounded-xl bg-cyan-500/5 border border-cyan-500/10 w-full">
+                <span className="text-[9px] font-black text-cyan-400 tracking-tighter uppercase leading-none">{set.oneArmSide || oneArmSide}</span>
+                <span className="text-[6px] font-bold text-slate-600 uppercase tracking-widest mt-0.5">
+                  {(set.legProgression || legProgression) === 'one leg' ? 'Leg' : 'Arm'}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Assistance Target Detail */}
+          <div className="flex flex-col items-center justify-center">
+            {((set.legProgression || legProgression) === 'one leg' || (set.legProgression || legProgression) === 'straddle') && (set.assistanceDetails?.legTarget || legTarget) && (
+              <div className="flex flex-col items-center p-1.5 rounded-xl bg-orange-500/5 border border-orange-500/10 w-full">
+                <span className="text-[9px] font-black text-orange-400 tracking-tighter uppercase leading-none">{set.assistanceDetails?.legTarget || legTarget}</span>
+                <span className="text-[6px] font-bold text-slate-600 uppercase tracking-widest mt-0.5">Assist</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button 
+            type="button" 
+            onClick={(e) => { e.stopPropagation(); removeSet(index); }}
+            className="w-8 h-8 rounded-xl bg-red-500/5 text-slate-700 hover:text-red-500 hover:bg-red-500/10 transition-all p-1.5 flex items-center justify-center"
+          ><Minus size={16} /></button>
+          
+          <div 
+            onPointerDown={(e) => controls.start(e)}
+            className="w-8 h-8 flex items-center justify-center cursor-grab active:cursor-grabbing hover:bg-white/5 rounded-xl transition-all"
+            style={{ touchAction: 'none' }}
+          >
+            <GripVertical size={16} className="text-slate-600 group-hover:text-cyan-500 transition-colors" />
+          </div>
+        </div>
       </div>
-    </div>
 
     <AnimatePresence>
         {localEditingSetIndex === index && (
@@ -1320,7 +1295,8 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       assistanceDetails: (finalLoadType === 'assisted') ? {
          resistance: assistanceValue || '',
          loopType: bandLoopType || 'single',
-         placement: (bandPlacements && bandPlacements.length > 0) ? bandPlacements : ['both feet']
+         placement: (bandPlacements && bandPlacements.length > 0) ? bandPlacements : ['both feet'],
+         legTarget: legTarget || 'primary'
       } : undefined,
       sets: validSets.map(s => ({
         ...s,
@@ -2013,6 +1989,10 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                     localEditingSetIndex={localEditingSetIndex}
                     exerciseId={exerciseId}
                     loadType={loadType}
+                    executionStyle={executionStyle}
+                    legProgression={legProgression}
+                    oneArmSide={oneArmSide}
+                    legTarget={legTarget}
                     setLocalEditingSetIndex={setLocalEditingSetIndex}
                     updateSet={updateSet}
                     removeSet={removeSet}
