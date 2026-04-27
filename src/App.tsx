@@ -94,8 +94,13 @@ const getSetMetadata = (s: any, ex: any) => {
   gripLine.push(`${gThumb} THUMB`);
   if (gFalse) gripLine.push(gFalse);
   gripLine.push(`@ ${gEquip}`);
+  
+  const equipLine: string[] = [];
 
-  const execLine = [];
+  const armLine = [];
+  const coreLine = [];
+  const legLine = [];
+  
   const eMethod = s.executionMethod || ex.executionMethod || 'standard';
   const ePos = s.position || ex.position || 'neutral';
   const eLeg = s.legProgression || ex.legProgression || 'full';
@@ -106,24 +111,24 @@ const getSetMetadata = (s: any, ex: any) => {
     const sideLabel = eSide ? ` - ${eSide.toUpperCase()}` : '';
     const handLabel = (eStyle === 'one arm' && eHand && eHand !== 'free') ? ` (H:${eHand.toUpperCase()})` : '';
     const prefix = eStyle === 'one arm' ? 'ONE ARM' : 'COMMANDO';
-    execLine.push(`${prefix}${sideLabel}${handLabel}`);
+    armLine.push(`${prefix}${sideLabel}${handLabel}`);
   } else {
-    execLine.push(eStyle);
+    armLine.push(eStyle);
   }
-  
-  execLine.push(eMethod);
-  execLine.push(ePos);
+  armLine.push(eMethod);
+
+  coreLine.push(ePos);
   
   if (eLeg === 'one leg') {
     const sideLabel = eSide ? ` - ${eSide.toUpperCase()}` : '';
     const p1 = s.oneLegPrimaryPosition || ex.oneLegPrimaryPosition || 'full';
     const p2 = s.oneLegSecondaryPosition || ex.oneLegSecondaryPosition || 'tuck';
-    execLine.push(`ONE LEG${sideLabel} (${p1.toUpperCase()}/${p2.toUpperCase()})`);
+    legLine.push(`ONE LEG${sideLabel} (${p1.toUpperCase()}/${p2.toUpperCase()})`);
   } else {
-    execLine.push(eLeg);
+    legLine.push(eLeg);
   }
 
-  return { currentLoadLabel, orangeLine, gripLine, execLine };
+  return { currentLoadLabel, orangeLine, gripLine, equipLine, armLine, coreLine, legLine };
 };
 
 interface SetReorderItemProps {
@@ -142,7 +147,7 @@ function SetReorderItem({ s, si, i, ex, editingIndex, editingSetIndex, handleEdi
   const isHighlighted = editingIndex === i && editingSetIndex === si;
   const exName = EXERCISE_LIBRARY.find(e => e.id === ex.exerciseId)?.name || ex.type;
                                     
-  const { currentLoadLabel, orangeLine, gripLine, execLine } = getSetMetadata(s, ex);
+  const { currentLoadLabel, orangeLine, gripLine, equipLine, armLine, coreLine, legLine } = getSetMetadata(s, ex);
 
   return (
     <Reorder.Item 
@@ -179,46 +184,89 @@ function SetReorderItem({ s, si, i, ex, editingIndex, editingSetIndex, handleEdi
           </div>
         </div>
 
-        <div className="flex flex-col gap-1 pr-14">
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 pr-2 select-none">
           {/* Orange Line: Assistance */}
           {orangeLine.length > 0 && (
-            <div className="flex flex-wrap gap-x-2">
-              {orangeLine.map((p, pidx) => (
-                <span key={pidx} className={cn(
-                  "text-[7px] font-black uppercase italic",
-                  isHighlighted ? "text-black/70" : "text-orange-400"
-                )}>
-                  {pidx > 0 && "• "}{p}
-                </span>
-              ))}
+            <div className="flex items-baseline gap-x-1">
+              <span className={cn("text-[7px] font-black uppercase tracking-tighter opacity-40 shrink-0", isHighlighted ? "text-black" : "text-orange-400")}>ASSIST:</span>
+              <div className="flex flex-wrap items-baseline gap-x-1">
+                {orangeLine.map((p, pidx) => (
+                  <span key={pidx} className={cn(
+                    "text-[7px] font-black uppercase italic whitespace-nowrap",
+                    isHighlighted ? "text-black/70" : "text-orange-400"
+                  )}>
+                    {pidx > 0 && "• "}{p}
+                  </span>
+                ))}
+              </div>
             </div>
           )}
 
           {/* Gray Line: Grip */}
           {gripLine.length > 0 && (
-            <div className="flex flex-wrap gap-x-2">
-              {gripLine.map((p, pidx) => (
-                <span key={pidx} className={cn(
-                  "text-[7px] font-bold uppercase",
-                  isHighlighted ? "text-black/60" : "text-slate-500"
-                )}>
-                  {pidx > 0 && "• "}{p}
-                </span>
-              ))}
+            <div className="flex items-baseline gap-x-1">
+              <span className={cn("text-[7px] font-black uppercase tracking-tighter opacity-40 shrink-0", isHighlighted ? "text-black" : "text-slate-500")}>GRIP:</span>
+              <div className="flex flex-wrap items-baseline gap-x-1">
+                {gripLine.map((p, pidx) => (
+                  <span key={pidx} className={cn(
+                    "text-[7px] font-bold uppercase whitespace-nowrap",
+                    isHighlighted ? "text-black/60" : "text-slate-500"
+                  )}>
+                    {pidx > 0 && "• "}{p}
+                  </span>
+                ))}
+              </div>
             </div>
           )}
 
-          {/* Purple Line: Execution */}
-          {execLine.length > 0 && (
-            <div className="flex flex-wrap gap-x-2">
-              {execLine.map((p, pidx) => (
-                <span key={pidx} className={cn(
-                  "text-[7px] font-black uppercase italic",
-                  isHighlighted ? "text-black" : "text-purple-400"
-                )}>
-                  {pidx > 0 && "• "}{p}
-                </span>
-              ))}
+          {/* Purple Line: Arm Execution */}
+          {armLine.length > 0 && (
+            <div className="flex items-baseline gap-x-1">
+              <span className={cn("text-[7px] font-black uppercase tracking-tighter opacity-40 shrink-0", isHighlighted ? "text-black" : "text-purple-400")}>ARMS:</span>
+              <div className="flex flex-wrap items-baseline gap-x-1">
+                {armLine.map((p, pidx) => (
+                  <span key={pidx} className={cn(
+                    "text-[7px] font-black uppercase italic whitespace-nowrap",
+                    isHighlighted ? "text-black" : "text-purple-400"
+                  )}>
+                    {pidx > 0 && "• "}{p}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Purple Line: Core Position */}
+          {coreLine.length > 0 && (
+            <div className="flex items-baseline gap-x-1">
+              <span className={cn("text-[7px] font-black uppercase tracking-tighter opacity-40 shrink-0", isHighlighted ? "text-black" : "text-purple-400")}>CORE:</span>
+              <div className="flex flex-wrap items-baseline gap-x-1">
+                {coreLine.map((p, pidx) => (
+                  <span key={pidx} className={cn(
+                    "text-[7px] font-black uppercase italic whitespace-nowrap",
+                    isHighlighted ? "text-black" : "text-purple-400"
+                  )}>
+                    {pidx > 0 && "• "}{p}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Purple Line: Leg Progression */}
+          {legLine.length > 0 && (
+            <div className="flex items-baseline gap-x-1">
+              <span className={cn("text-[7px] font-black uppercase tracking-tighter opacity-40 shrink-0", isHighlighted ? "text-black" : "text-purple-400")}>LEGS:</span>
+              <div className="flex flex-wrap items-baseline gap-x-1">
+                {legLine.map((p, pidx) => (
+                  <span key={pidx} className={cn(
+                    "text-[7px] font-black uppercase italic whitespace-nowrap",
+                    isHighlighted ? "text-black" : "text-purple-400"
+                  )}>
+                    {pidx > 0 && "• "}{p}
+                  </span>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -853,7 +901,7 @@ export default function App() {
                                 {(log.sets || []).map((s, si) => {
                                   // Categories for set-specific display
                                   const exName = EXERCISE_LIBRARY.find(e => e.id === log.exerciseId)?.name || log.type;
-                                  const { currentLoadLabel, orangeLine, gripLine, execLine } = getSetMetadata(s, log);
+                                  const { currentLoadLabel, orangeLine, gripLine, equipLine, armLine, coreLine, legLine } = getSetMetadata(s, log);
 
                                   return (
                                     <div 
@@ -871,42 +919,79 @@ export default function App() {
                                         </div>
                                       </div>
 
-                                      <div className="flex flex-col gap-1.5">
+                                      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 select-none">
                                         {/* Orange Line */}
                                         {orangeLine.length > 0 && (
-                                          <div className="flex flex-wrap gap-x-2 gap-y-1">
-                                            {orangeLine.map((p, pidx) => (
-                                              <span key={pidx} className="text-[7px] font-black uppercase italic text-orange-400">
-                                                {pidx > 0 && "• "}{p}
-                                              </span>
-                                            ))}
+                                          <div className="flex items-baseline gap-x-1">
+                                            <span className="text-[7px] font-black uppercase tracking-tighter text-orange-400/40 shrink-0">ASSIST:</span>
+                                            <div className="flex flex-wrap items-baseline gap-x-1">
+                                              {orangeLine.map((p, pidx) => (
+                                                <span key={pidx} className="text-[7px] font-black uppercase italic text-orange-400 whitespace-nowrap">
+                                                  {pidx > 0 && "• "}{p}
+                                                </span>
+                                              ))}
+                                            </div>
                                           </div>
                                         )}
 
-                                        {/* Gray Line */}
+                                        {/* Gray Line: Grip */}
                                         {gripLine.length > 0 && (
-                                          <div className="flex flex-wrap gap-x-2 gap-y-1">
-                                            {gripLine.map((p, pidx) => (
-                                              <span key={pidx} className="text-[7px] font-bold uppercase text-slate-500">
-                                                {pidx > 0 && "• "}{p}
-                                              </span>
-                                            ))}
+                                          <div className="flex items-baseline gap-x-1">
+                                            <span className="text-[7px] font-black uppercase tracking-tighter text-slate-500/40 shrink-0">GRIP:</span>
+                                            <div className="flex flex-wrap items-baseline gap-x-1">
+                                              {gripLine.map((p, pidx) => (
+                                                <span key={pidx} className="text-[7px] font-bold uppercase text-slate-500 whitespace-nowrap">
+                                                  {pidx > 0 && "• "}{p}
+                                                </span>
+                                              ))}
+                                            </div>
                                           </div>
                                         )}
 
-                                        {/* Purple Line */}
-                                        {execLine.length > 0 && (
-                                          <div className="flex flex-wrap gap-x-2 gap-y-1">
-                                            {execLine.map((p, pidx) => (
-                                              <span key={pidx} className="text-[7px] font-black uppercase italic text-purple-400">
-                                                {pidx > 0 && "• "}{p}
-                                              </span>
-                                            ))}
+                                        {/* Purple Line: Arm */}
+                                        {armLine.length > 0 && (
+                                          <div className="flex items-baseline gap-x-1">
+                                            <span className="text-[7px] font-black uppercase tracking-tighter text-purple-400/40 shrink-0">ARMS:</span>
+                                            <div className="flex flex-wrap items-baseline gap-x-1">
+                                              {armLine.map((p, pidx) => (
+                                                <span key={pidx} className="text-[7px] font-black uppercase italic text-purple-400 whitespace-nowrap">
+                                                  {pidx > 0 && "• "}{p}
+                                                </span>
+                                              ))}
+                                            </div>
                                           </div>
                                         )}
 
-                                        {/* Set Media */}
-                                        {s.media && s.media.length > 0 && (
+                                        {/* Purple Line: Core */}
+                                        {coreLine.length > 0 && (
+                                          <div className="flex items-baseline gap-x-1">
+                                            <span className="text-[7px] font-black uppercase tracking-tighter text-purple-400/40 shrink-0">CORE:</span>
+                                            <div className="flex flex-wrap items-baseline gap-x-1">
+                                              {coreLine.map((p, pidx) => (
+                                                <span key={pidx} className="text-[7px] font-black uppercase italic text-purple-400 whitespace-nowrap">
+                                                  {pidx > 0 && "• "}{p}
+                                                </span>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        )}
+
+                                        {/* Purple Line: Legs */}
+                                        {legLine.length > 0 && (
+                                          <div className="flex items-baseline gap-x-1">
+                                            <span className="text-[7px] font-black uppercase tracking-tighter text-purple-400/40 shrink-0">LEGS:</span>
+                                            <div className="flex flex-wrap items-baseline gap-x-1">
+                                              {legLine.map((p, pidx) => (
+                                                <span key={pidx} className="text-[7px] font-black uppercase italic text-purple-400 whitespace-nowrap">
+                                                  {pidx > 0 && "• "}{p}
+                                                </span>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                      {/* Set Media */}
+                                      {s.media && s.media.length > 0 && (
                                           <div className="flex gap-1 overflow-x-auto no-scrollbar mt-1">
                                             {s.media.map((m: any, midx: number) => (
                                               <div 
@@ -932,8 +1017,6 @@ export default function App() {
                                             ))}
                                           </div>
                                         )}
-                                      </div>
-
                                       {/* Bottom Right Badge */}
                                       <div className="absolute top-4 right-2 px-1.5 py-0.5 rounded bg-black/40 border border-white/5 flex items-baseline gap-0.5">
                                         <span className="text-[10px] font-black font-mono text-white">
