@@ -457,7 +457,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
   const [assistanceValue, setAssistanceValue] = useState('');
   const [bandPlacements, setBandPlacements] = useState<BandPlacement[]>(['both feet']);
   const [bandLoopType, setBandLoopType] = useState<BandLoopType>('single');
-  const [legTarget, setLegTarget] = useState<'primary' | 'secondary'>('primary');
+  const [legTarget, setLegTarget] = useState<'primary' | 'secondary' | 'alternating'>('primary');
   const [falseGrip, setFalseGrip] = useState(false);
   const [sets, setSets] = useState<WorkoutSet[]>(() => {
     const safeUUID = () => {
@@ -1969,7 +1969,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                         <div className="space-y-3 pt-2">
                           <label className="text-[8px] font-black uppercase tracking-[0.3em] text-orange-500/40 block px-2">Assistance Target Leg</label>
                           <div className="flex gap-2">
-                             {(['primary', 'secondary'] as const).map(side => (
+                             {(['primary', 'secondary', 'alternating'] as const).map(side => (
                                <button
                                  key={side}
                                  type="button"
@@ -1979,7 +1979,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                                    legTarget === side ? "bg-orange-500/20 text-orange-400 border-orange-400/30" : "bg-black/40 text-slate-600 border-white/5"
                                  )}
                                >
-                                 {side === 'primary' ? 'Primary Leg' : 'Secondary Leg'}
+                                 {side === 'primary' ? 'Primary Leg' : side === 'secondary' ? 'Secondary Leg' : 'Alternating'}
                                </button>
                              ))}
                           </div>
