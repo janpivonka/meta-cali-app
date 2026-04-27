@@ -8,7 +8,7 @@ export type BodyPosition = 'neutral' | 'hollow body' | 'arch back' | 'L-sit';
 export type LegProgression = 'none' | 'tuck' | 'adv tuck' | 'straddle' | 'one leg' | 'halflay' | 'full' | 'australian (bent legs)' | 'australian (straight legs)';
 export type SingleLegPosition = 'tuck' | 'adv tuck' | 'halflay' | 'full';
 export type OneArmHandPosition = 'wrist' | 'forearm' | 'elbow' | 'biceps' | 'shoulder' | 'horizontal' | 'free';
-export type BandPlacement = 'both feet' | 'one foot' | 'buttocks' | 'waist' | 'chest' | 'knees' | 'dip bar foot support';
+export type BandPlacement = 'both feet' | 'one foot' | 'buttocks' | 'waist' | 'chest' | 'knees';
 export type BandLoopType = 'single' | 'double';
 
 export interface AssistanceDetails {
@@ -16,6 +16,7 @@ export interface AssistanceDetails {
   loopType?: BandLoopType;
   resistance?: string | number;
   legTarget?: 'primary' | 'secondary' | 'alternating';
+  dipBarFootSupport?: boolean;
 }
 
 export interface MixedGripDetails {

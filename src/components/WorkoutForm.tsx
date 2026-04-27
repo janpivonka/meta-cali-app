@@ -67,7 +67,7 @@ const EXECUTION_STYLES: ExecutionStyle[] = ['basic', 'one arm', 'archer', 'typew
 const EXECUTION_METHODS: ExecutionMethod[] = ['standard', 'explosive', 'partial', 'negative', 'scapula', 'controlled'];
 const POSITIONS: BodyPosition[] = ['neutral', 'hollow body', 'arch back', 'L-sit'];
 const LEG_PROGRESSIONS: LegProgression[] = ['tuck', 'adv tuck', 'straddle', 'one leg', 'halflay', 'full', 'australian (bent legs)', 'australian (straight legs)'];
-const BAND_PLACEMENTS: BandPlacement[] = ['both feet', 'one foot', 'knees', 'buttocks', 'waist', 'chest', 'dip bar foot support'];
+const BAND_PLACEMENTS: BandPlacement[] = ['both feet', 'one foot', 'knees', 'buttocks', 'waist', 'chest'];
 const LOOP_TYPES: { val: BandLoopType; label: string }[] = [
   { val: 'single', label: 'Single' },
   { val: 'double', label: 'Double (wrapped)' }
@@ -442,6 +442,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
   const [bandLoopType, setBandLoopType] = useState<BandLoopType>('single');
   const [legTarget, setLegTarget] = useState<'primary' | 'secondary' | 'alternating'>('primary');
   const [falseGrip, setFalseGrip] = useState(false);
+  const [dipBarFootSupport, setDipBarFootSupport] = useState(false);
   const [sets, setSets] = useState<WorkoutSet[]>(() => {
     const safeUUID = () => {
       if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -695,6 +696,17 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     if (field === 'loopType') setBandLoopType(val);
     if (field === 'placement') setBandPlacements(val);
     if (field === 'legTarget') setLegTarget(val);
+    if (field === 'dipBarFootSupport') {
+      setDipBarFootSupport(val);
+      // If we enable foot support, and we have a band, ensure band is only at waist
+      if (val && loadType === 'assisted') {
+        setBandPlacements(['waist']);
+        if (localEditingSetIndex !== null) {
+          const currentDetails = sets[localEditingSetIndex]?.assistanceDetails || {};
+          updateSet(localEditingSetIndex, 'assistanceDetails', { ...currentDetails, dipBarFootSupport: true, placement: ['waist'] });
+        }
+      }
+    }
   }, [localEditingSetIndex, sets, loadType, updateSet]);
 
   // Sync global form-state ONLY when the selected set index changes
@@ -731,16 +743,19 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
         setBandLoopType(active.assistanceDetails.loopType || 'single');
         setAssistanceValue(active.assistanceDetails.resistance?.toString() || '');
         setLegTarget(active.assistanceDetails.legTarget || 'primary');
+        setDipBarFootSupport(active.assistanceDetails.dipBarFootSupport || false);
       } else if (activeLoadType === 'weighted' || (active.weight && active.weight > 0)) {
         setAssistanceValue(active.weight?.toString() || '');
         setBandPlacements(['both feet']);
         setBandLoopType('single');
         setLegTarget('primary');
+        setDipBarFootSupport(false);
       } else {
         setAssistanceValue('');
         setBandPlacements(['both feet']);
         setBandLoopType('single');
         setLegTarget('primary');
+        setDipBarFootSupport(false);
       }
     }
   }, [localEditingSetIndex]); // ONLY depend on the index change
@@ -824,13 +839,16 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
         const updated = { ...s, loadType: newType };
         if (newType === 'bodyweight') {
           updated.weight = 0;
-          updated.assistanceDetails = undefined;
+          // Preserve dipBarFootSupport if it existed
+          const support = updated.assistanceDetails?.dipBarFootSupport;
+          updated.assistanceDetails = support ? { dipBarFootSupport: true } : undefined;
         } else if (newType === 'weighted') {
           updated.assistanceDetails = undefined;
         } else if (newType === 'assisted') {
           updated.weight = 0;
+          const support = updated.assistanceDetails?.dipBarFootSupport;
           if (!updated.assistanceDetails) {
-            updated.assistanceDetails = { resistance: '', loopType: 'single', placement: ['both feet'] };
+            updated.assistanceDetails = { resistance: '', loopType: 'single', placement: ['both feet'], dipBarFootSupport: support };
           }
         }
         return updated;
@@ -860,6 +878,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     setMixedGripIsAlternating(false);
     setBandPlacements(['both feet']);
     setBandLoopType('single');
+    setDipBarFootSupport(false);
     const safeUUID = () => {
       if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
         return crypto.randomUUID();
@@ -1948,6 +1967,31 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
         {/* LOAD & ASSISTANCE */}
         <div className="p-8 bg-orange-500/5 rounded-[32px] border border-orange-500/10">
            <div className="flex flex-col items-stretch gap-8">
+               {(equipment === 'dip bars' && executionStyle.toString().startsWith('korean')) && (
+                 <div className="bg-orange-500/10 p-5 rounded-2xl border border-orange-500/20">
+                   <div className="flex items-center justify-between gap-4">
+                     <div className="flex flex-col gap-1">
+                       <span className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500 italic">Dip Bar Foot Support</span>
+                       <span className="text-[8px] text-orange-400/60 font-bold uppercase leading-tight">One leg resting on the other bar for assistance</span>
+                     </div>
+                     <button
+                       type="button"
+                       onClick={() => handleUpdateAssistance('dipBarFootSupport', !dipBarFootSupport)}
+                       className={cn(
+                         "w-14 h-7 rounded-full transition-all relative border shrink-0",
+                         dipBarFootSupport ? "bg-orange-500 border-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.3)]" : "bg-black/40 border-white/10"
+                       )}
+                     >
+                       <motion.div 
+                         animate={{ x: dipBarFootSupport ? 30 : 4 }}
+                         transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                         className={cn("w-5 h-5 rounded-full absolute top-0.5", dipBarFootSupport ? "bg-black" : "bg-slate-600")}
+                       />
+                     </button>
+                   </div>
+                 </div>
+               )}
+
                  <label className="text-[10px] font-black uppercase tracking-[0.4em] text-orange-500 flex items-center gap-2">
                    <Target size={14} /> Load Configuration
                 </label>
@@ -2032,6 +2076,9 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                       <label className="text-[8px] font-black uppercase tracking-[0.3em] text-orange-500/60 block px-2">Assistance Placement</label>
                       <div className="flex flex-wrap gap-2">
                          {BAND_PLACEMENTS.filter(p => {
+                           // If dip bar foot support is ON, only WAIST is allowed
+                           if (dipBarFootSupport && p !== 'waist') return false;
+
                            const isAustr = legProgression.toString().includes('australian');
                            const isOneLegNor = legProgression === 'one leg';
                            const isOneLegAustr = isAustr && isOneLeg;

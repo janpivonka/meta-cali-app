@@ -50,6 +50,12 @@ const getSetMetadata = (s: any, ex: any) => {
   })();
 
   const orangeLine = [];
+  const hasDipBarSupport = s.assistanceDetails?.dipBarFootSupport || ex.assistanceDetails?.dipBarFootSupport;
+  
+  if (hasDipBarSupport) {
+    orangeLine.push('DIP BAR SUPPORT');
+  }
+
   if (effectiveLoadType === 'assisted' && res) {
     orangeLine.push(`${res}${effectiveUnit.toUpperCase()} BAND`);
     const p = s.assistanceDetails?.placement || ex.assistanceDetails?.placement;
