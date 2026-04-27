@@ -130,8 +130,14 @@ const getSetMetadata = (s: any, ex: any) => {
     const p1 = s.oneLegPrimaryPosition || ex.oneLegPrimaryPosition || 'full';
     const p2 = s.oneLegSecondaryPosition || ex.oneLegSecondaryPosition || 'tuck';
     legLine.push(`ONE LEG${sideLabel} (${p1.toUpperCase()}/${p2.toUpperCase()})`);
+  } else if (hasDipBarSupport) {
+    let supportLabel = eLeg.toUpperCase();
+    if (eLeg.includes('australian')) {
+      supportLabel = eLeg.includes('bent') ? 'BENT' : 'STRAIGHT';
+    }
+    legLine.push(`FLOATING LEG: ${supportLabel}`);
   } else {
-    legLine.push(eLeg);
+    legLine.push(eLeg.toUpperCase());
   }
 
   return { currentLoadLabel, orangeLine, gripLine, equipLine, armLine, coreLine, legLine };

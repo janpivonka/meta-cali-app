@@ -1844,21 +1844,24 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                   </div>
 
                   <div>
-                   <label className="text-[8px] font-black uppercase tracking-[0.3em] text-purple-500/60 block mb-3">Leg Progression</label>
+                   <label className="text-[8px] font-black uppercase tracking-[0.3em] text-purple-500/60 block mb-3">{dipBarFootSupport ? 'Floating Leg Position' : 'Leg Progression'}</label>
                    <div className="flex flex-wrap gap-2">
-                      {LEG_PROGRESSIONS.map(prog => (
-                        <button
-                          key={prog}
-                          type="button"
-                          onClick={() => updateActiveValue('legProgression', setLegProgression, prog)}
-                          className={cn(
-                            "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all",
-                            legProgression === prog ? "bg-purple-500 text-white border-purple-400 shadow-lg shadow-purple-500/20" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
-                          )}
-                        >
-                          {prog === 'full' ? 'Full' : prog}
-                        </button>
-                      ))}
+                       {LEG_PROGRESSIONS.filter(p => !dipBarFootSupport || (p !== 'one leg' && p !== 'straddle')).map(prog => (
+                         <button
+                           key={prog}
+                           type="button"
+                           onClick={() => updateActiveValue('legProgression', setLegProgression, prog)}
+                           className={cn(
+                             "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all",
+                             legProgression === prog ? "bg-purple-500 text-white border-purple-400 shadow-lg shadow-purple-500/20" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
+                           )}
+                         >
+                           {prog === 'full' ? 'Full' : 
+                            prog === 'australian (bent legs)' ? 'Bent' :
+                            prog === 'australian (straight legs)' ? 'Straight' : 
+                            prog}
+                         </button>
+                       ))}
                    </div>
                   </div>
 
