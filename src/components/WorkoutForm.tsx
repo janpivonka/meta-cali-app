@@ -699,11 +699,28 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     if (field === 'dipBarFootSupport') {
       setDipBarFootSupport(val);
       // If we enable foot support, and we have a band, ensure band is only at waist
-      if (val && loadType === 'assisted') {
-        setBandPlacements(['waist']);
+      if (val) {
+        if (loadType === 'assisted') {
+          setBandPlacements(['waist']);
+          setBandLoopType('double');
+        }
+        
+        // Sync leg progression with oneLegPrimaryPosition if it was "one leg" or Australian
+        if (legProgression === 'one leg' || legProgression.toString().includes('australian')) {
+           setLegProgression(oneLegPrimaryPosition);
+           if (localEditingSetIndex !== null) {
+              updateSet(localEditingSetIndex, 'legProgression', oneLegPrimaryPosition);
+           }
+        }
+
         if (localEditingSetIndex !== null) {
           const currentDetails = sets[localEditingSetIndex]?.assistanceDetails || {};
-          updateSet(localEditingSetIndex, 'assistanceDetails', { ...currentDetails, dipBarFootSupport: true, placement: ['waist'] });
+          const updateObj: any = { ...currentDetails, dipBarFootSupport: true };
+          if (loadType === 'assisted') {
+             updateObj.placement = ['waist'];
+             updateObj.loopType = 'double';
+          }
+          updateSet(localEditingSetIndex, 'assistanceDetails', updateObj);
         }
       }
     }
@@ -847,8 +864,11 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
         } else if (newType === 'assisted') {
           updated.weight = 0;
           const support = updated.assistanceDetails?.dipBarFootSupport;
+          // Default to double waist if no assistance details yet
           if (!updated.assistanceDetails) {
-            updated.assistanceDetails = { resistance: '', loopType: 'single', placement: ['both feet'], dipBarFootSupport: support };
+            updated.assistanceDetails = { resistance: '', loopType: 'double', placement: ['waist'], dipBarFootSupport: support };
+            setBandLoopType('double');
+            setBandPlacements(['waist']);
           }
         }
         return updated;
@@ -1846,22 +1866,25 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                   <div>
                    <label className="text-[8px] font-black uppercase tracking-[0.3em] text-purple-500/60 block mb-3">{dipBarFootSupport ? 'Floating Leg Position' : 'Leg Progression'}</label>
                    <div className="flex flex-wrap gap-2">
-                       {LEG_PROGRESSIONS.filter(p => !dipBarFootSupport || (p !== 'one leg' && p !== 'straddle')).map(prog => (
-                         <button
-                           key={prog}
-                           type="button"
-                           onClick={() => updateActiveValue('legProgression', setLegProgression, prog)}
-                           className={cn(
-                             "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all",
-                             legProgression === prog ? "bg-purple-500 text-white border-purple-400 shadow-lg shadow-purple-500/20" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
-                           )}
-                         >
-                           {prog === 'full' ? 'Full' : 
-                            prog === 'australian (bent legs)' ? 'Bent' :
-                            prog === 'australian (straight legs)' ? 'Straight' : 
-                            prog}
-                         </button>
-                       ))}
+                      {LEG_PROGRESSIONS.filter(p => {
+                        if (dipBarFootSupport) {
+                          // Exclude Australian and complex variants from Floating Leg list
+                          return !p.toString().includes('australian') && p !== 'one leg' && p !== 'straddle';
+                        }
+                        return true;
+                      }).map(prog => (
+                        <button
+                          key={prog}
+                          type="button"
+                          onClick={() => updateActiveValue('legProgression', setLegProgression, prog)}
+                          className={cn(
+                            "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all",
+                            legProgression === prog ? "bg-purple-500 text-white border-purple-400 shadow-lg shadow-purple-500/20" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
+                          )}
+                        >
+                          {prog === 'full' ? 'Full' : prog}
+                        </button>
+                      ))}
                    </div>
                   </div>
 
@@ -1880,14 +1903,14 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                     </div>
                   )}
 
-                  {(legProgression === 'one leg' || (legProgression.toString().includes('australian') && isOneLeg)) && (
+                  {(legProgression === 'one leg' || (legProgression.toString().includes('australian') && isOneLeg) || dipBarFootSupport) && (
                     <motion.div 
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       className="space-y-4 pt-4 border-t border-white/5 pb-4"
                     >
                       <div className="space-y-2">
-                        <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-400 block mb-2">Leg Selection</label>
+                        <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-400 block mb-2">Leg Assist</label>
                         <div className="flex bg-black/40 p-1 rounded-2xl border border-white/5 mb-4">
                           {(['left', 'right', 'alternating'] as const).map(side => (
                             <button
@@ -1907,7 +1930,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
 
                       <div className="space-y-2">
                         <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-400 block mb-2">
-                          {legProgression.toString().includes('australian') ? 'Floating Leg Position' : 'Primary Leg'}
+                          {(legProgression.toString().includes('australian') || dipBarFootSupport) ? 'Floating Leg Position' : 'Primary Leg'}
                         </label>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                           {SINGLE_LEG_POSITIONS.map(p => (

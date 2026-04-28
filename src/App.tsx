@@ -59,17 +59,22 @@ const getSetMetadata = (s: any, ex: any) => {
   if (effectiveLoadType === 'assisted' && res) {
     orangeLine.push(`${res}${effectiveUnit.toUpperCase()} BAND`);
     const p = s.assistanceDetails?.placement || ex.assistanceDetails?.placement;
-    if (p) orangeLine.push(Array.isArray(p) ? p.join('/') : p);
+    
+    const loopType = s.assistanceDetails?.loopType || ex.assistanceDetails?.loopType;
+    if (loopType === 'double') {
+      orangeLine.push('DOUBLE');
+    }
+
+    if (p) {
+      const placementLabel = Array.isArray(p) ? p.join('/') : p;
+      orangeLine.push(placementLabel.toUpperCase());
+    }
     
     // Add leg target info - Critical fix for user request
     const legTarget = s.assistanceDetails?.legTarget || ex.assistanceDetails?.legTarget;
     if (legTarget) {
       const targetLabel = legTarget.toUpperCase();
-      orangeLine.push(targetLabel);
-    }
-
-    if (s.assistanceDetails?.loopType || ex.assistanceDetails?.loopType) {
-      orangeLine.push((s.assistanceDetails?.loopType || ex.assistanceDetails?.loopType) === 'double' ? 'WRAP' : 'SINGLE');
+      orangeLine.push(`ASSIST: ${targetLabel}`);
     }
   }
   if (s.weight && s.weight > 0 && effectiveLoadType !== 'weighted') orangeLine.push(`+${s.weight}${effectiveUnit.toUpperCase()}`);
@@ -129,13 +134,14 @@ const getSetMetadata = (s: any, ex: any) => {
     const sideLabel = eSide ? ` - ${eSide.toUpperCase()}` : '';
     const p1 = s.oneLegPrimaryPosition || ex.oneLegPrimaryPosition || 'full';
     const p2 = s.oneLegSecondaryPosition || ex.oneLegSecondaryPosition || 'tuck';
-    legLine.push(`ONE LEG${sideLabel} (${p1.toUpperCase()}/${p2.toUpperCase()})`);
+    legLine.push(`LEG ASSIST: ${sideLabel.replace(' - ', '') || 'N/A'} (${p1.toUpperCase()}/${p2.toUpperCase()})`);
   } else if (hasDipBarSupport) {
     let supportLabel = eLeg.toUpperCase();
     if (eLeg.includes('australian')) {
-      supportLabel = eLeg.includes('bent') ? 'BENT' : 'STRAIGHT';
+      supportLabel = eLeg.includes('bent') ? 'AUSTRALIAN (BENT)' : 'AUSTRALIAN (STRAIGHT)';
     }
-    legLine.push(`FLOATING LEG: ${supportLabel}`);
+    const sideLabel = eSide ? ` - ${eSide.toUpperCase()}` : '';
+    legLine.push(`FLOATING LEG: ${supportLabel}${sideLabel}`);
   } else {
     legLine.push(eLeg.toUpperCase());
   }
