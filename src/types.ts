@@ -9,7 +9,7 @@ export type LegProgression = 'none' | 'tuck' | 'adv tuck' | 'straddle' | 'one le
 export type SingleLegPosition = 'tuck' | 'adv tuck' | 'halflay' | 'full';
 export type OneArmHandPosition = 'wrist' | 'forearm' | 'elbow' | 'biceps' | 'shoulder' | 'horizontal' | 'free';
 export type BandPlacement = 'both feet' | 'one foot' | 'buttocks' | 'waist' | 'chest' | 'knees';
-export type BandLoopType = 'single' | 'double';
+export type BandLoopType = 'single' | 'double' | 'half';
 
 export interface AssistanceDetails {
   placement?: BandPlacement[] | string;

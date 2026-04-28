@@ -61,6 +61,8 @@ const getSetMetadata = (s: any, ex: any) => {
     
     if (loopType === 'double') {
       orangeLine.push('DOUBLE');
+    } else if (loopType === 'half') {
+      orangeLine.push('1/2');
     }
 
     if (p) {

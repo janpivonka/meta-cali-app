@@ -70,7 +70,8 @@ const LEG_PROGRESSIONS: LegProgression[] = ['tuck', 'adv tuck', 'straddle', 'one
 const BAND_PLACEMENTS: BandPlacement[] = ['both feet', 'one foot', 'knees', 'buttocks', 'waist', 'chest'];
 const LOOP_TYPES: { val: BandLoopType; label: string }[] = [
   { val: 'single', label: 'Single' },
-  { val: 'double', label: 'Double (wrapped)' }
+  { val: 'double', label: 'Double (wrapped)' },
+  { val: 'half', label: '1/2' }
 ];
 const SINGLE_LEG_POSITIONS: SingleLegPosition[] = ['tuck', 'adv tuck', 'halflay', 'full'];
 const ONE_ARM_POSITIONS: { val: OneArmHandPosition; label: string }[] = [
@@ -2117,13 +2118,16 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                       <div className="bg-black/20 p-2 rounded-2xl border border-white/5 h-[54px] flex items-center">
                         <button
                           type="button"
-                          onClick={() => updateActiveAssistance('loopType', bandLoopType === 'single' ? 'double' : 'single')}
+                          onClick={() => {
+                            const next = bandLoopType === 'single' ? 'double' : (bandLoopType === 'double' ? 'half' : 'single');
+                            updateActiveAssistance('loopType', next);
+                          }}
                           className={cn(
                             "px-4 py-2 rounded-xl text-[7px] font-black uppercase tracking-widest transition-all",
-                            bandLoopType === 'double' ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" : "bg-white/10 text-slate-400"
+                            bandLoopType !== 'single' ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" : "bg-white/10 text-slate-400"
                           )}
                         >
-                          {bandLoopType === 'double' ? 'Double' : 'Single'}
+                          {bandLoopType === 'double' ? 'Double' : bandLoopType === 'half' ? '1/2' : 'Single'}
                         </button>
                       </div>
                     )}
