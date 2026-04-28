@@ -97,6 +97,7 @@ interface WorkoutSetItemProps {
   oneArmSide: 'left' | 'right' | 'alternating';
   legTarget: 'primary' | 'secondary' | 'alternating';
   setActiveSetId: (id: string | null) => void;
+  updateActiveAssistance: (field: string, val: any) => void;
   updateSet: (index: number, field: keyof WorkoutSet, value: any) => void;
   removeSet: (index: number) => void;
   setSets: React.Dispatch<React.SetStateAction<WorkoutSet[]>>;
@@ -118,6 +119,7 @@ const WorkoutSetDetail = memo<WorkoutSetItemProps>(({
   oneArmSide,
   legTarget,
   setActiveSetId,
+  updateActiveAssistance,
   updateSet,
   removeSet,
   setSets,
@@ -131,19 +133,6 @@ const WorkoutSetDetail = memo<WorkoutSetItemProps>(({
   const assistanceValue = set.assistanceDetails?.resistance?.toString() || (set.weight?.toString() || '');
   const bandLoopType = set.assistanceDetails?.loopType || 'single';
   const weightUnit = set.weightUnit || 'kg';
-
-  const updateActiveAssistance = (field: string, val: any) => {
-    const currentDetails = set.assistanceDetails || { resistance: '', loopType: 'single', placement: ['both feet'] };
-    const updatedDetails = { ...currentDetails, [field]: val };
-    
-    if (loadType === 'weighted' && field === 'resistance') {
-      updateSet(index, 'weight', parseFloat(val) || 0);
-    } else if (loadType === 'assisted') {
-      updateSet(index, 'assistanceDetails', updatedDetails);
-    } else if (field === 'unit') {
-      updateSet(index, 'weightUnit', val);
-    }
-  };
 
   return (
     <div
@@ -498,6 +487,9 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     setIdx?: number;
   } | null>(null);
 
+  const sharedActionRef = useRef<HTMLButtonElement>(null);
+  const bulkInputRef = useRef<HTMLInputElement>(null);
+
   const activeSet = sets.find(s => s.id === activeSetId) || sets[0];
   const activeSetIndex = sets.findIndex(s => s.id === activeSetId);
   const safeActiveSetIndex = activeSetIndex === -1 ? 0 : activeSetIndex;
@@ -521,6 +513,27 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
 
     setIsPreviewOpen(false);
   }, []);
+
+  const handleBulkApply = useCallback(() => {
+    if (!bulkInputRef.current) return;
+    const pattern = bulkInputRef.current.value;
+    const vals = pattern.split(/[,;\s]+/).map(v => parseInt(v.trim())).filter(v => !isNaN(v));
+    if (vals.length > 0) {
+      const lastSet = sets[sets.length - 1];
+      const newSetsToAdd = vals.map(v => ({
+        ...(lastSet || {}),
+        id: generateId(),
+        [isHoldExercise(exerciseId) ? 'time' : 'reps']: v,
+        notes: '',
+        media: [],
+        loadType: lastSet?.loadType || loadType,
+      }));
+      setSets(prev => [...prev, ...newSetsToAdd]);
+      setActiveSetId(newSetsToAdd[newSetsToAdd.length - 1].id);
+      bulkInputRef.current.value = '';
+      bulkInputRef.current.blur(); 
+    }
+  }, [sets, exerciseId, loadType]);
 
   const handleMediaClick = useCallback((media: ExerciseMedia[], index: number) => {
     setPreviewMedia(media);
@@ -653,7 +666,10 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
 
   const updateSet = useCallback((index: number, field: keyof WorkoutSet, value: any) => {
     setSets(prev => {
+      if (index < 0 || index >= prev.length) return prev;
       const newSets = [...prev];
+      if (!newSets[index]) return prev;
+
       newSets[index] = { ...newSets[index], [field]: value };
       
       // Auto-update loadType field on the set itself
@@ -680,12 +696,16 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
   }, []);
 
   // Sync local editing index with parent highlight
+  const lastSyncRef = useRef<number | null | undefined>(undefined);
   React.useEffect(() => {
-    if (highlightedSetIndex !== undefined && highlightedSetIndex !== null) {
-      const setId = sets[highlightedSetIndex]?.id;
-      if (setId) {
-        setActiveSetId(setId);
+    if (highlightedSetIndex !== lastSyncRef.current) {
+      if (highlightedSetIndex !== undefined && highlightedSetIndex !== null) {
+        const targetSet = sets[highlightedSetIndex];
+        if (targetSet) {
+          setActiveSetId(targetSet.id);
+        }
       }
+      lastSyncRef.current = highlightedSetIndex;
     }
   }, [highlightedSetIndex, sets]);
 
@@ -717,8 +737,8 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     }
 
     // 2. Then update the active set in the array
-    if (activeSetId) {
-      const currentDetails = activeSet?.assistanceDetails || { resistance: '', loopType: 'single', placement: ['both feet'], legTarget: 'primary' };
+    if (activeSetId && sets[safeActiveSetIndex]) {
+      const currentDetails = sets[safeActiveSetIndex]?.assistanceDetails || { resistance: '', loopType: 'single', placement: ['both feet'], legTarget: 'primary' };
       const updatedDetails = { ...currentDetails, [field]: val };
       
       // Special override for dip bar support defaults
@@ -736,7 +756,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
         updateSet(safeActiveSetIndex, 'assistanceDetails', updatedDetails);
       }
     }
-  }, [activeSetId, activeSet, safeActiveSetIndex, loadType, legProgression, oneLegPrimaryPosition, updateSet]);
+  }, [activeSetId, sets, safeActiveSetIndex, loadType, legProgression, oneLegPrimaryPosition, updateSet]);
 
   // Sync global form-state ONLY when the selected set index changes
   // This prevents the lag caused by syncing on every individual keystroke (sets array update)
@@ -1170,7 +1190,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       }
     }
 
-    handleUpdateAssistance('placement', next);
+    updateActiveAssistance('placement', next);
   };
 
   const availableEquipment = EQUIPMENTS.filter(eq => {
@@ -2231,6 +2251,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                 </div>
                 <div className="flex-1 w-full flex items-center gap-2">
                   <input 
+                    ref={bulkInputRef}
                     type="text"
                     placeholder="Enter pattern e.g. 10, 8, 8, 7..."
                     className="flex-1 bg-black/40 border border-white/5 rounded-xl px-4 py-2 text-[11px] font-bold text-white placeholder:text-slate-700 focus:outline-none focus:border-cyan-500/30"
@@ -2238,28 +2259,18 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                       if (e.key === 'Enter') {
                         e.preventDefault();
                         e.stopPropagation();
-                        const target = e.currentTarget;
-                        const pattern = target.value;
-                        const vals = pattern.split(/[,;\s]+/).map(v => parseInt(v.trim())).filter(v => !isNaN(v));
-                        if (vals.length > 0) {
-                          const lastSet = sets[sets.length - 1];
-                          const newSetsToAdd = vals.map(v => ({
-                            ...(lastSet || {}),
-                            id: generateId(),
-                            [isHoldExercise(exerciseId) ? 'time' : 'reps']: v,
-                            notes: '',
-                            media: [],
-                            loadType: lastSet?.loadType || loadType,
-                          }));
-                          setSets(prev => [...prev, ...newSetsToAdd]);
-                          setActiveSetId(newSetsToAdd[newSetsToAdd.length - 1].id);
-                          target.value = '';
-                          target.blur(); 
-                        }
+                        handleBulkApply();
                       }
                     }}
                   />
-                  <div className="text-[7px] font-black text-slate-600 uppercase tracking-widest">Press Enter</div>
+                  <button
+                    type="button"
+                    onClick={handleBulkApply}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-500 text-black text-[9px] font-black uppercase tracking-widest hover:bg-cyan-400 active:scale-95 transition-all shadow-lg shadow-cyan-500/20"
+                  >
+                    <PlusCircle size={14} />
+                    ADD
+                  </button>
                 </div>
              </div>
            </div>
@@ -2277,22 +2288,24 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                     key={s.id}
                     value={s}
                     className="shrink-0"
+                    whileDrag={{ scale: 1.1, zIndex: 50 }}
                   >
-                    <button
-                      type="button"
-                      onClick={() => setActiveSetId(s.id)}
+                    <motion.div
+                      role="button"
+                      tabIndex={0}
+                      onTap={() => setActiveSetId(s.id)}
                       className={cn(
-                        "flex flex-col items-center gap-1 min-w-[50px] p-2 rounded-2xl border transition-all cursor-pointer",
+                        "flex flex-col items-center gap-1 min-w-[50px] p-2 rounded-2xl border cursor-grab active:cursor-grabbing transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50",
                         activeSetId === s.id 
                           ? "bg-cyan-500/20 border-cyan-500/50 shadow-[0_0_15px_rgba(34,211,238,0.1)]" 
                           : "bg-black/20 border-white/5 opacity-60 hover:opacity-100 hover:border-white/10"
                       )}
                     >
                         <span className={cn(
-                          "text-[8px] font-black uppercase tracking-tighter",
+                          "text-[8px] font-black uppercase tracking-tighter pointer-events-none",
                           activeSetId === s.id ? "text-cyan-400" : "text-slate-500"
                         )}>Set {i+1}</span>
-                        <div className="flex items-baseline gap-1">
+                        <div className="flex items-baseline gap-1 pointer-events-none">
                           <span className={cn(
                             "text-sm font-black",
                             activeSetId === s.id ? "text-white" : "text-slate-400"
@@ -2301,7 +2314,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                             {isHoldExercise(exerciseId) ? 's' : 'r'}
                           </span>
                         </div>
-                    </button>
+                    </motion.div>
                   </Reorder.Item>
                 ))}
                 <button
@@ -2330,6 +2343,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                   oneArmSide={oneArmSide}
                   legTarget={legTarget}
                   setActiveSetId={setActiveSetId}
+                  updateActiveAssistance={updateActiveAssistance}
                   updateSet={updateSet}
                   removeSet={removeSet}
                   setSets={setSets}
