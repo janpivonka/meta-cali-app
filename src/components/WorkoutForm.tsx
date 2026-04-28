@@ -2253,6 +2253,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                   <input 
                     ref={bulkInputRef}
                     type="text"
+                    inputMode="decimal"
                     placeholder="Enter pattern e.g. 10, 8, 8, 7..."
                     className="flex-1 bg-black/40 border border-white/5 rounded-xl px-4 py-2 text-[11px] font-bold text-white placeholder:text-slate-700 focus:outline-none focus:border-cyan-500/30"
                     onKeyDown={(e) => {
