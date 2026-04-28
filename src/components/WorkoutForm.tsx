@@ -5,6 +5,7 @@ import {
   Minus, 
   Check, 
   PlusCircle, 
+  Copy,
   Target, 
   Zap, 
   Activity, 
@@ -88,60 +89,69 @@ interface WorkoutSetItemProps {
   set: WorkoutSet;
   index: number;
   highlightedSetIndex: number | null;
-  localEditingSetIndex: number | null;
+  activeSetId: string | null;
   exerciseId: string;
   loadType: LoadType;
   executionStyle: string;
   legProgression: string;
   oneArmSide: 'left' | 'right' | 'alternating';
   legTarget: 'primary' | 'secondary' | 'alternating';
-  setLocalEditingSetIndex: (i: number) => void;
+  setActiveSetId: (id: string | null) => void;
   updateSet: (index: number, field: keyof WorkoutSet, value: any) => void;
   removeSet: (index: number) => void;
+  setSets: React.Dispatch<React.SetStateAction<WorkoutSet[]>>;
   isHoldExercise: (id: string) => boolean;
   onFileUpload: (e: React.ChangeEvent<HTMLInputElement>, index?: number) => void;
   onMediaClick: (media: ExerciseMedia[], index: number) => void;
   onEditThumbnail: (media: ExerciseMedia, mIdx: number, setIdx: number) => void;
 }
 
-const WorkoutSetItem = memo<WorkoutSetItemProps>(({ 
+const WorkoutSetDetail = memo<WorkoutSetItemProps>(({ 
   set, 
   index, 
   highlightedSetIndex, 
-  localEditingSetIndex, 
+  activeSetId, 
   exerciseId, 
   loadType,
   executionStyle,
   legProgression,
   oneArmSide,
   legTarget,
-  setLocalEditingSetIndex,
+  setActiveSetId,
   updateSet,
   removeSet,
+  setSets,
   isHoldExercise,
   onFileUpload,
   onMediaClick,
   onEditThumbnail
 }) => {
-  const controls = useDragControls();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const assistanceValue = set.assistanceDetails?.resistance?.toString() || (set.weight?.toString() || '');
+  const bandLoopType = set.assistanceDetails?.loopType || 'single';
+  const weightUnit = set.weightUnit || 'kg';
+
+  const updateActiveAssistance = (field: string, val: any) => {
+    const currentDetails = set.assistanceDetails || { resistance: '', loopType: 'single', placement: ['both feet'] };
+    const updatedDetails = { ...currentDetails, [field]: val };
+    
+    if (loadType === 'weighted' && field === 'resistance') {
+      updateSet(index, 'weight', parseFloat(val) || 0);
+    } else if (loadType === 'assisted') {
+      updateSet(index, 'assistanceDetails', updatedDetails);
+    } else if (field === 'unit') {
+      updateSet(index, 'weightUnit', val);
+    }
+  };
+
   return (
-    <Reorder.Item 
-      layout
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      key={set.id}
-      value={set}
-      dragListener={false}
-      dragControls={controls}
+    <div
       id={`set-item-${index}`}
       className={cn(
-        "glass-card flex flex-col items-center p-4 md:p-6 border-white/5 bg-white/5 rounded-[32px] group transition-all shadow-lg relative",
-        (highlightedSetIndex === index || localEditingSetIndex === index) ? "border-cyan-500/50 bg-cyan-500/5 ring-1 ring-cyan-500/20" : "hover:border-white/10"
+        "glass-card flex flex-col p-4 md:p-6 border-white/5 bg-white/5 rounded-[32px] group transition-all shadow-lg relative",
+        (highlightedSetIndex === index || activeSetId === set.id) ? "border-cyan-500/50 bg-cyan-500/5 ring-1 ring-cyan-500/20" : "hover:border-white/10"
       )}
-      onClick={() => setLocalEditingSetIndex(index)}
     >
       <input 
         type="file" 
@@ -156,7 +166,7 @@ const WorkoutSetItem = memo<WorkoutSetItemProps>(({
         <div className="flex flex-col items-center gap-1 min-w-[30px] md:min-w-[80px]">
           <div className={cn(
             "w-10 h-10 rounded-xl bg-black/40 flex items-center justify-center border transition-all relative",
-            (highlightedSetIndex === index || localEditingSetIndex === index) ? "border-cyan-400 text-cyan-400 scale-105 shadow-[0_0_10px_rgba(34,211,238,0.1)]" : "border-white/10 text-white italic"
+            (highlightedSetIndex === index || activeSetId === set.id) ? "border-cyan-400 text-cyan-400 scale-105 shadow-[0_0_10px_rgba(34,211,238,0.1)]" : "border-white/10 text-white italic"
           )}>
             <span className="text-lg font-black">{index + 1}</span>
             {(set.notes || (set.media && set.media.length > 0)) && (
@@ -286,133 +296,140 @@ const WorkoutSetItem = memo<WorkoutSetItemProps>(({
         <div className="flex items-center gap-3">
           <button 
             type="button" 
+            onClick={(e) => { 
+                e.stopPropagation(); 
+                const newId = generateId();
+                const newSet = { ...set, id: newId, notes: '', media: [] };
+                setSets(prev => {
+                  const next = [...prev];
+                  next.splice(index + 1, 0, newSet);
+                  return next;
+                });
+                setActiveSetId(newId);
+            }}
+            title="Duplicate this set"
+            className="w-8 h-8 rounded-xl bg-cyan-500/5 text-slate-700 hover:text-cyan-400 hover:bg-cyan-500/10 transition-all p-1.5 flex items-center justify-center"
+          ><Copy size={16} /></button>
+
+          <button 
+            type="button" 
             onClick={(e) => { e.stopPropagation(); removeSet(index); }}
             className="w-8 h-8 rounded-xl bg-red-500/5 text-slate-700 hover:text-red-500 hover:bg-red-500/10 transition-all p-1.5 flex items-center justify-center"
           ><Minus size={16} /></button>
-          
-          <div 
-            onPointerDown={(e) => controls.start(e)}
-            className="w-8 h-8 flex items-center justify-center cursor-grab active:cursor-grabbing hover:bg-white/5 rounded-xl transition-all"
-            style={{ touchAction: 'none' }}
-          >
-            <GripVertical size={16} className="text-slate-600 group-hover:text-cyan-500 transition-colors" />
-          </div>
         </div>
       </div>
 
-    <AnimatePresence>
-        {localEditingSetIndex === index && (
-          <motion.div 
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="w-full flex flex-col gap-5 mt-6 pt-6 border-t border-white/5 px-2 md:px-10 overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex flex-col gap-2">
-              <label className="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-400/60 flex items-center gap-2">
-                <MessageSquare size={12} className="text-cyan-500" /> Commentary / Internal Cues
-              </label>
-              <textarea 
-                value={set.notes || ''}
-                onChange={(e) => updateSet(index, 'notes', e.target.value)}
-                placeholder="How did it feel? Technical cues to remember..."
-                className="w-full bg-black/30 border border-white/5 rounded-2xl p-4 text-xs font-medium text-slate-300 focus:outline-none focus:border-cyan-500/30 transition-all min-h-[80px] leading-relaxed placeholder:text-slate-700"
-              />
-            </div>
+      {/* Detail view contents */}
+      <div className="w-full flex flex-col gap-5 mt-6 pt-6 border-t border-white/5 px-2 md:px-10 overflow-hidden text-left">
+          <div className="flex flex-col gap-2">
+            <label className="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-400/60 flex items-center gap-2">
+              <MessageSquare size={12} className="text-cyan-500" /> Commentary / Internal Cues
+            </label>
+            <textarea 
+              value={set.notes || ''}
+              onChange={(e) => updateSet(index, 'notes', e.target.value)}
+              placeholder="How did it feel? Technical cues to remember..."
+              className="w-full bg-black/30 border border-white/5 rounded-2xl p-4 text-xs font-medium text-slate-300 focus:outline-none focus:border-cyan-500/30 transition-all min-h-[80px] leading-relaxed placeholder:text-slate-700"
+            />
+          </div>
 
-              <div className="flex flex-col gap-2">
-                <label className="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-400/60 flex items-center gap-2">
-                  <Camera size={12} className="text-cyan-500" /> Session Media
-                </label>
-                <div className="flex flex-wrap gap-3">
-                  <AnimatePresence mode="popLayout">
-                    {set.media?.map((m, mIdx) => (
-                      <motion.div 
-                        key={mIdx}
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                        className="relative group/media"
+          <div className="flex flex-col gap-2 text-left">
+            <label className="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-400/60 flex items-center gap-2">
+              <Camera size={12} className="text-cyan-500" /> Session Media
+            </label>
+            <div className="flex flex-wrap gap-3">
+              <AnimatePresence mode="popLayout">
+                {set.media?.map((m, mIdx) => (
+                  <motion.div 
+                    key={mIdx}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    className="relative group/media"
+                  >
+                      <div 
+                        className="w-20 h-20 rounded-2xl overflow-hidden border border-white/10 bg-black/40 cursor-pointer hover:border-cyan-500/50 transition-all relative group/media-container"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (m.isProcessing) return;
+                          onMediaClick(set.media!, mIdx);
+                        }}
                       >
-                          <div 
-                            className="w-20 h-20 rounded-2xl overflow-hidden border border-white/10 bg-black/40 cursor-pointer hover:border-cyan-500/50 transition-all relative group/media-container"
+                        <div className={cn("w-full h-full pointer-events-none", m.isProcessing && "animate-pulse")}>
+                          {m.isProcessing ? (
+                            <div className="w-full h-full bg-white/5 flex items-center justify-center">
+                              <div className="w-8 h-8 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
+                            </div>
+                          ) : m?.type === 'image' ? (
+                            <MediaRenderer url={m.url} type="image" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                          ) : (
+                            <div className="w-full h-full relative">
+                              {m?.thumbnail ? (
+                                <img src={m.thumbnail} className="w-full h-full object-cover" alt="Thumbnail" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-cyan-500"><Video size={32} /></div>
+                              )}
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover/media-container:opacity-0 transition-opacity">
+                                <Video size={16} className="text-cyan-500" />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        {/* Thumbnail Edit Button */}
+                        {m?.type === 'video' && !m.isProcessing && (
+                          <button
+                            type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (m.isProcessing) return;
-                              onMediaClick(set.media!, mIdx);
+                              onEditThumbnail(m, mIdx, index);
                             }}
+                            title="Nastavit úvodní fotku"
+                            className="absolute top-1 right-1 w-9 h-9 rounded-full bg-cyan-500 text-black border border-white/20 flex items-center justify-center shadow-lg opacity-0 group-hover/media-container:opacity-100 transition-all hover:scale-110 active:scale-95 z-20"
                           >
-                            <div className={cn("w-full h-full pointer-events-none", m.isProcessing && "animate-pulse")}>
-                              {m.isProcessing ? (
-                                <div className="w-full h-full bg-white/5 flex items-center justify-center">
-                                  <div className="w-8 h-8 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
-                                </div>
-                              ) : m?.type === 'image' ? (
-                                <MediaRenderer url={m.url} type="image" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                              ) : (
-                                <div className="w-full h-full relative">
-                                  {m?.thumbnail ? (
-                                    <img src={m.thumbnail} className="w-full h-full object-cover" alt="Thumbnail" />
-                                  ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-cyan-500"><Video size={32} /></div>
-                                  )}
-                                  <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover/media-container:opacity-0 transition-opacity">
-                                    <Video size={16} className="text-cyan-500" />
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                            {/* Thumbnail Edit Button */}
-                            {m?.type === 'video' && !m.isProcessing && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onEditThumbnail(m, mIdx, index);
-                                }}
-                                title="Nastavit úvodní fotku"
-                                className="absolute top-1 right-1 w-9 h-9 rounded-full bg-cyan-500 text-black border border-white/20 flex items-center justify-center shadow-lg opacity-0 group-hover/media-container:opacity-100 transition-all hover:scale-110 active:scale-95 z-20"
-                              >
-                                <Camera size={18} />
-                              </button>
-                            )}
-                          </div>
-                        <button 
-                          type="button"
-                          onClick={() => {
-                            const newMedia = [...(set.media || [])];
-                            newMedia.splice(mIdx, 1);
-                            updateSet(index, 'media', newMedia);
-                          }}
-                          className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-600 transition-colors z-10"
-                        ><X size={12} /></button>
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                  
-                  <button 
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      fileInputRef.current?.click();
-                    }}
-                    className="w-16 h-16 rounded-2xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-1 text-slate-500 hover:border-cyan-500/50 hover:text-cyan-400 transition-all bg-white/2"
-                  >
-                    <Plus size={20} />
-                    <span className="text-[7px] font-black">ADD</span>
-                  </button>
-                </div>
-              </div>
-
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </Reorder.Item>
-    );
+                            <Camera size={18} />
+                          </button>
+                        )}
+                      </div>
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        const newMedia = [...(set.media || [])];
+                        newMedia.splice(mIdx, 1);
+                        updateSet(index, 'media', newMedia);
+                      }}
+                      className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-600 transition-colors z-10"
+                    ><X size={12} /></button>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+              
+              <button 
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  fileInputRef.current?.click();
+                }}
+                className="w-16 h-16 rounded-2xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-1 text-slate-500 hover:border-cyan-500/50 hover:text-cyan-400 transition-all bg-white/2"
+              >
+                <Plus size={20} />
+                <span className="text-[7px] font-black">ADD</span>
+              </button>
+            </div>
+          </div>
+        </div>
+    </div>
+  );
 });
 
+
 // Move constant helpers outside to prevent recreation
+const generateId = () => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return Math.random().toString(36).substring(2, 11) + Date.now().toString(36);
+};
+
 const isHoldExercise = (id: string) => {
   return ['planche', 'frontlever', 'statics'].some(k => id.toLowerCase().includes(k));
 };
@@ -445,15 +462,9 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
   const [falseGrip, setFalseGrip] = useState(false);
   const [dipBarFootSupport, setDipBarFootSupport] = useState(false);
   const [sets, setSets] = useState<WorkoutSet[]>(() => {
-    const safeUUID = () => {
-      if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-        return crypto.randomUUID();
-      }
-      return Math.random().toString(36).substring(2, 15);
-    };
     return [
       { 
-        id: safeUUID(), 
+        id: generateId(), 
         reps: 10, 
         grip: 'pronated', 
         gripWidth: 'shoulder-width', 
@@ -474,8 +485,9 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
   const [notes, setNotes] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [shared, setShared] = useState(false);
-  const [localEditingSetIndex, setLocalEditingSetIndex] = useState<number | null>(0);
+  const [activeSetId, setActiveSetId] = useState<string | null>(null);
   const [exerciseMedia, setExerciseMedia] = useState<ExerciseMedia[]>(initialData?.media || []);
+
   const [previewMedia, setPreviewMedia] = useState<ExerciseMedia[]>([]);
   const [previewIndex, setPreviewIndex] = useState(0);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -486,7 +498,9 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     setIdx?: number;
   } | null>(null);
 
-  const activeSet = localEditingSetIndex !== null ? sets[localEditingSetIndex] : null;
+  const activeSet = sets.find(s => s.id === activeSetId) || sets[0];
+  const activeSetIndex = sets.findIndex(s => s.id === activeSetId);
+  const safeActiveSetIndex = activeSetIndex === -1 ? 0 : activeSetIndex;
 
   const handleThumbnailFromPreview = useCallback((media: ExerciseMedia, thumbnail: string) => {
     // 1. Check in exercise fragments
@@ -668,78 +682,67 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
   // Sync local editing index with parent highlight
   React.useEffect(() => {
     if (highlightedSetIndex !== undefined && highlightedSetIndex !== null) {
-      setLocalEditingSetIndex(highlightedSetIndex);
-    }
-  }, [highlightedSetIndex]);
-
-  // Smart Conflict Resolution Handlers
-  const handleUpdateField = useCallback((field: keyof WorkoutSet, val: any) => {
-    if (localEditingSetIndex !== null) {
-      updateSet(localEditingSetIndex, field, val);
-    }
-  }, [localEditingSetIndex, updateSet]);
-
-  const handleUpdateAssistance = useCallback((field: string, val: any) => {
-    if (localEditingSetIndex !== null) {
-      const currentDetails = sets[localEditingSetIndex]?.assistanceDetails || { resistance: '', loopType: 'single', placement: ['both feet'], legTarget: 'primary' };
-      const updatedDetails = { ...currentDetails, [field]: val };
-      
-      if (loadType === 'weighted' && field === 'resistance') {
-        const numericWeight = parseFloat(val) || 0;
-        updateSet(localEditingSetIndex, 'weight', numericWeight);
-      } else {
-        updateSet(localEditingSetIndex, 'assistanceDetails', updatedDetails);
+      const setId = sets[highlightedSetIndex]?.id;
+      if (setId) {
+        setActiveSetId(setId);
       }
     }
-    
-    // Always update local state
-    if (field === 'resistance') setAssistanceValue(val);
+  }, [highlightedSetIndex, sets]);
+
+  // Smart Conflict Resolution Handlers
+  const updateActiveAssistance = useCallback((field: string, val: any) => {
+    // 1. First update global/local state for instant UI feedback
+    if (field === 'resistance') setAssistanceValue(val.toString());
     if (field === 'loopType') setBandLoopType(val);
     if (field === 'placement') setBandPlacements(val);
     if (field === 'legTarget') setLegTarget(val);
+    if (field === 'unit') {
+      setWeightUnit(val);
+      if (activeSetId) updateSet(safeActiveSetIndex, 'weightUnit', val);
+      return;
+    }
     if (field === 'dipBarFootSupport') {
       setDipBarFootSupport(val);
-      // If we enable foot support, and we have a band, ensure band is only at waist
+      // Pre-set defaults for support
       if (val) {
-        if (loadType === 'assisted') {
-          setBandPlacements(['waist']);
-          setBandLoopType('double');
-        } else {
-          // Even in bodyweight, we might want to pre-set these for when they switch to assisted
-          setBandPlacements(['waist']);
-          setBandLoopType('double');
-        }
-        
-        // Sync leg progression with oneLegPrimaryPosition if it was "one leg" or Australian
+        setBandPlacements(['waist']);
+        setBandLoopType('double');
         if (legProgression === 'one leg' || legProgression.toString().includes('australian')) {
            setLegProgression(oneLegPrimaryPosition);
-           if (localEditingSetIndex !== null) {
-              updateSet(localEditingSetIndex, 'legProgression', oneLegPrimaryPosition);
+           if (activeSetId) {
+             updateSet(safeActiveSetIndex, 'legProgression', oneLegPrimaryPosition);
            }
-        }
-
-        if (localEditingSetIndex !== null) {
-          const currentDetails = sets[localEditingSetIndex]?.assistanceDetails || {};
-          const updateObj: any = { ...currentDetails, dipBarFootSupport: true };
-          // If enabled, always default to waist/double for better UX
-          updateObj.placement = ['waist'];
-          updateObj.loopType = 'double';
-          updateSet(localEditingSetIndex, 'assistanceDetails', updateObj);
-        }
-      } else {
-        if (localEditingSetIndex !== null) {
-          const currentDetails = sets[localEditingSetIndex]?.assistanceDetails || {};
-          updateSet(localEditingSetIndex, 'assistanceDetails', { ...currentDetails, dipBarFootSupport: false });
         }
       }
     }
-  }, [localEditingSetIndex, sets, loadType, updateSet]);
+
+    // 2. Then update the active set in the array
+    if (activeSetId) {
+      const currentDetails = activeSet?.assistanceDetails || { resistance: '', loopType: 'single', placement: ['both feet'], legTarget: 'primary' };
+      const updatedDetails = { ...currentDetails, [field]: val };
+      
+      // Special override for dip bar support defaults
+      if (field === 'dipBarFootSupport' && val) {
+        updatedDetails.placement = ['waist'];
+        updatedDetails.loopType = 'double';
+        updatedDetails.dipBarFootSupport = true;
+      }
+      
+      if (loadType === 'weighted' && field === 'resistance') {
+        const numericWeight = parseFloat(val) || 0;
+        updateSet(safeActiveSetIndex, 'weight', numericWeight);
+        updateSet(safeActiveSetIndex, 'assistanceDetails', undefined);
+      } else {
+        updateSet(safeActiveSetIndex, 'assistanceDetails', updatedDetails);
+      }
+    }
+  }, [activeSetId, activeSet, safeActiveSetIndex, loadType, legProgression, oneLegPrimaryPosition, updateSet]);
 
   // Sync global form-state ONLY when the selected set index changes
   // This prevents the lag caused by syncing on every individual keystroke (sets array update)
   React.useEffect(() => {
-    if (localEditingSetIndex === null) return;
-    const active = sets[localEditingSetIndex];
+    if (!activeSetId) return;
+    const active = activeSet;
     if (active) {
       setGrip(active.grip || 'pronated');
       setGripWidth(active.gripWidth || 'shoulder-width');
@@ -784,7 +787,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
         setDipBarFootSupport(false);
       }
     }
-  }, [localEditingSetIndex]); // ONLY depend on the index change
+  }, [activeSetId]); // ONLY depend on the id change
 
   // Sync band placements based on leg progression and leg positions
   React.useEffect(() => {
@@ -796,7 +799,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     if (isOneLegNormal || legProgression === 'straddle' || isOneLegAustralian) {
       if (bandPlacements.includes('both feet')) {
         const next = bandPlacements.map(p => p === 'both feet' ? 'one foot' as BandPlacement : p);
-        handleUpdateAssistance('placement', next);
+        updateActiveAssistance('placement', next);
         return;
       }
     }
@@ -821,7 +824,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
         
         // Remove duplicates and ensure fallback is clean
         const uniqueNext = Array.from(new Set(next));
-        handleUpdateAssistance('placement', uniqueNext);
+        updateActiveAssistance('placement', uniqueNext);
         return;
       }
     }
@@ -833,13 +836,13 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       const next = bandPlacements.filter(p => p !== 'buttocks' && p !== 'waist');
       const fallback: BandPlacement = (legProgression === 'one leg' || legProgression === 'straddle') ? 'one foot' : 'both feet';
       const finalNext = next.length === 0 ? [fallback] : next;
-      handleUpdateAssistance('placement', finalNext);
+      updateActiveAssistance('placement', finalNext);
       return;
     }
   }, [
     legProgression, 
     bandPlacements, 
-    handleUpdateAssistance, 
+    updateActiveAssistance, 
     oneLegPrimaryPosition, 
     oneLegSecondaryPosition, 
     isOneLeg, 
@@ -849,8 +852,8 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
   ]);
 
   const updateActiveValue = (setField: keyof WorkoutSet, globalSetter: (val: any) => void, val: any) => {
-    if (localEditingSetIndex !== null) {
-      updateSet(localEditingSetIndex, setField, val);
+    if (activeSetId) {
+      updateSet(safeActiveSetIndex, setField, val);
     }
     globalSetter(val);
   };
@@ -859,9 +862,9 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     setLoadType(newType);
     
     // ONLY clean the currently active set, not all sets
-    if (localEditingSetIndex !== null) {
-      setSets(prev => prev.map((s, i) => {
-        if (i !== localEditingSetIndex) return s;
+    if (activeSetId) {
+      setSets(prev => prev.map((s) => {
+        if (s.id !== activeSetId) return s;
         const updated = { ...s, loadType: newType };
         if (newType === 'bodyweight') {
           updated.weight = 0;
@@ -945,7 +948,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     setExerciseMedia([]);
     setSearchQuery('');
     setShared(false);
-    setLocalEditingSetIndex(0);
+    setActiveSetId(null);
     if (!initialExerciseId) {
       setExerciseId(EXERCISE_LIBRARY[0].id);
     } else {
@@ -974,9 +977,11 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       setSets(initialData.sets);
       
       if (highlightedSetIndex !== undefined && highlightedSetIndex !== null) {
-        setLocalEditingSetIndex(highlightedSetIndex);
+        if (initialData.sets[highlightedSetIndex]) {
+          setActiveSetId(initialData.sets[highlightedSetIndex].id);
+        }
       } else {
-        setLocalEditingSetIndex(0);
+        setActiveSetId(initialData.sets[0]?.id || null);
       }
 
       setNotes(initialData.notes || '');
@@ -1013,34 +1018,29 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
   [exerciseId]);
 
   const addSet = useCallback(() => {
-    const safeUUID = () => {
-      if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-        return crypto.randomUUID();
-      }
-      return Math.random().toString(36).substring(2, 15);
-    };
-
     const lastSet = sets[sets.length - 1];
+    const newId = generateId();
     const newSet = { 
       ...lastSet, 
-      id: safeUUID(),
+      id: newId,
+      notes: '', // Don't copy notes
+      media: [], // Don't copy media
       assistanceDetails: lastSet.assistanceDetails ? { 
         ...lastSet.assistanceDetails,
         placement: lastSet.assistanceDetails.placement ? [...(Array.isArray(lastSet.assistanceDetails.placement) ? lastSet.assistanceDetails.placement : [lastSet.assistanceDetails.placement])] : undefined
       } : undefined
     };
     setSets(prev => [...prev, newSet]);
-    setLocalEditingSetIndex(sets.length);
+    setActiveSetId(newId);
   }, [sets]);
 
   const removeSet = useCallback((index: number) => {
+    const idToRemove = sets[index]?.id;
     setSets(prev => prev.filter((_, i) => i !== index));
-    setLocalEditingSetIndex(prev => {
-      if (prev === index) return null;
-      if (prev !== null && prev > index) return prev - 1;
-      return prev;
-    });
-  }, []);
+    if (idToRemove === activeSetId) {
+      setActiveSetId(sets[index === 0 ? 1 : index - 1]?.id || null);
+    }
+  }, [activeSetId, sets]);
 
   const generateVideoThumbnail = (file: File): Promise<string | null> => {
     return new Promise((resolve) => {
@@ -1261,12 +1261,12 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
   }, [equipment, executionStyle, position, legProgression, grip, gripWidth, currentExercise, isOneLeg, loadType, isHoldExercise]);
 
   const handleStyleChange = (style: ExecutionStyle) => {
-    const newGrip = style === 'commando' ? 'neutral' : (localEditingSetIndex !== null && sets[localEditingSetIndex]?.grip ? sets[localEditingSetIndex].grip : grip);
+    const newGrip = style === 'commando' ? 'neutral' : (activeSetId && activeSet?.grip ? activeSet.grip : grip);
     const isWideStyle = ['archer', 'typewriter', 'korean archer', 'korean typewriter'].includes(style);
-    const newWidth = isWideStyle ? 'wide' : (style === 'commando' ? 'narrow' : (localEditingSetIndex !== null && sets[localEditingSetIndex]?.gripWidth ? sets[localEditingSetIndex].gripWidth : gripWidth));
+    const newWidth = isWideStyle ? 'wide' : (style === 'commando' ? 'narrow' : (activeSetId && activeSet?.gripWidth ? activeSet.gripWidth : gripWidth));
 
-    if (localEditingSetIndex !== null) {
-      const active = sets[localEditingSetIndex];
+    if (activeSetId) {
+      const active = activeSet;
       const newSetValues = {
         ...active,
         executionStyle: style,
@@ -1275,7 +1275,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       };
       setSets(prev => {
         const next = [...prev];
-        next[localEditingSetIndex] = newSetValues as any;
+        next[safeActiveSetIndex] = newSetValues as any;
         return next;
       });
     } 
@@ -1286,29 +1286,6 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     setGripWidth(newWidth);
   };
 
-  const updateActiveAssistance = (field: string, val: any) => {
-    if (field === 'resistance') setAssistanceValue(val.toString());
-    if (field === 'loopType') setBandLoopType(val);
-    if (field === 'placement') setBandPlacements(val);
-
-    if (localEditingSetIndex !== null) {
-      if (field === 'unit') {
-        updateSet(localEditingSetIndex, 'weightUnit', val);
-        setWeightUnit(val);
-        return;
-      }
-
-      const currentDetails = sets[localEditingSetIndex]?.assistanceDetails || { resistance: '', loopType: 'single', placement: ['both feet'] };
-      const updatedDetails = { ...currentDetails, [field]: val };
-      
-      // If we are in weighted mode, we actually update 'weight' instead of assistanceDetails.resistance
-      if (loadType === 'weighted' && field === 'resistance') {
-        updateSet(localEditingSetIndex, 'weight', parseFloat(val) || 0);
-      } else if (loadType === 'assisted') {
-        updateSet(localEditingSetIndex, 'assistanceDetails', updatedDetails);
-      }
-    }
-  };
 
     const onSaveClick = () => {
     const validSets = sets.filter(s => (s.reps && s.reps > 0) || (s.time && s.time > 0));
@@ -1971,14 +1948,14 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                               key={p}
                               type="button"
                               onClick={() => {
-                                if (localEditingSetIndex !== null) {
+                                if (activeSetId) {
                                   const newPrimary = p;
                                   let newSecondary = activeSet?.oneLegSecondaryPosition || oneLegSecondaryPosition;
                                   if (p === newSecondary && legProgression === 'one leg') {
                                      newSecondary = SINGLE_LEG_POSITIONS.find(lp => lp !== p) || 'tuck';
                                   }
-                                  updateSet(localEditingSetIndex, 'oneLegPrimaryPosition', newPrimary);
-                                  updateSet(localEditingSetIndex, 'oneLegSecondaryPosition', newSecondary);
+                                  updateSet(safeActiveSetIndex, 'oneLegPrimaryPosition', newPrimary);
+                                  updateSet(safeActiveSetIndex, 'oneLegSecondaryPosition', newSecondary);
                                 }
                                 setOneLegPrimaryPosition(p);
                                 if (p === oneLegSecondaryPosition && legProgression === 'one leg') {
@@ -2035,7 +2012,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                      </div>
                      <button
                        type="button"
-                       onClick={() => handleUpdateAssistance('dipBarFootSupport', !dipBarFootSupport)}
+                       onClick={() => updateActiveAssistance('dipBarFootSupport', !dipBarFootSupport)}
                        className={cn(
                          "w-14 h-7 rounded-full transition-all relative border shrink-0",
                          dipBarFootSupport ? "bg-orange-500 border-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.3)]" : "bg-black/40 border-white/10"
@@ -2198,7 +2175,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                                <button
                                  key={side}
                                  type="button"
-                                 onClick={() => handleUpdateAssistance('legTarget', side)}
+                                 onClick={() => updateActiveAssistance('legTarget', side)}
                                  className={cn(
                                    "px-4 py-2 rounded-xl text-[7px] font-black uppercase tracking-widest border transition-all flex-1 text-center",
                                    legTarget === side ? "bg-orange-500/20 text-orange-400 border-orange-400/30" : "bg-black/40 text-slate-600 border-white/5"
@@ -2219,39 +2196,149 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
 
         {/* SETS CONFIGURATION */}
         <div className="space-y-8">
-           <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-cyan-500 flex items-center gap-2 px-2">
-              <Zap size={14} className="text-cyan-500" /> Performance Block Configuration
-           </h3>
-           <div className="space-y-4">
+           <div className="flex items-center justify-between px-2 mb-6">
+             <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-cyan-500 flex items-center gap-2">
+                <Zap size={14} className="text-cyan-500" /> Performance Block Configuration
+             </h3>
+             <div className="flex items-center gap-2">
+               <button 
+                 type="button"
+                 onClick={addSet}
+                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/10 text-cyan-500 text-[8px] font-black uppercase tracking-widest hover:bg-cyan-500/20 transition-all"
+               >
+                 <Plus size={10} /> Set
+               </button>
+               <button 
+                 type="button"
+                 onClick={() => {
+                   for(let i=0; i<3; i++) addSet();
+                 }}
+                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/10 text-cyan-500 text-[8px] font-black uppercase tracking-widest hover:bg-cyan-500/20 transition-all border border-cyan-500/20"
+               >
+                 <Plus size={10} /> 3 Sets
+               </button>
+             </div>
+           </div>
+
+           {/* Bulk Reps Input */}
+           <div className="px-2 mb-8">
+             <div className="bg-cyan-500/5 border border-cyan-500/10 rounded-[28px] p-4 flex flex-col sm:flex-row items-center gap-4">
+                <div className="flex items-center gap-3 shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-cyan-500/10 flex items-center justify-center text-cyan-500">
+                    <Zap size={14} />
+                  </div>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-cyan-500/70 italic">Bulk Pattern</span>
+                </div>
+                <div className="flex-1 w-full flex items-center gap-2">
+                  <input 
+                    type="text"
+                    placeholder="Enter pattern e.g. 10, 8, 8, 7..."
+                    className="flex-1 bg-black/40 border border-white/5 rounded-xl px-4 py-2 text-[11px] font-bold text-white placeholder:text-slate-700 focus:outline-none focus:border-cyan-500/30"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const target = e.currentTarget;
+                        const pattern = target.value;
+                        const vals = pattern.split(/[,;\s]+/).map(v => parseInt(v.trim())).filter(v => !isNaN(v));
+                        if (vals.length > 0) {
+                          const lastSet = sets[sets.length - 1];
+                          const newSetsToAdd = vals.map(v => ({
+                            ...(lastSet || {}),
+                            id: generateId(),
+                            [isHoldExercise(exerciseId) ? 'time' : 'reps']: v,
+                            notes: '',
+                            media: [],
+                            loadType: lastSet?.loadType || loadType,
+                          }));
+                          setSets(prev => [...prev, ...newSetsToAdd]);
+                          setActiveSetId(newSetsToAdd[newSetsToAdd.length - 1].id);
+                          target.value = '';
+                          target.blur(); 
+                        }
+                      }
+                    }}
+                  />
+                  <div className="text-[7px] font-black text-slate-600 uppercase tracking-widest">Press Enter</div>
+                </div>
+             </div>
+           </div>
+
+           {/* Sets Quick Strip (Draggable) */}
+           <div className="mb-6">
               <Reorder.Group 
-                axis="y"
+                axis="x"
                 values={sets}
                 onReorder={setSets}
-                className="space-y-3"
+                className="flex gap-2 overflow-x-auto py-3 px-2 no-scrollbar"
               >
-                {sets.map((set, index) => (
-                  <WorkoutSetItem
-                    key={set.id}
-                    set={set}
-                    index={index}
-                    highlightedSetIndex={highlightedSetIndex || null}
-                    localEditingSetIndex={localEditingSetIndex}
-                    exerciseId={exerciseId}
-                    loadType={loadType}
-                    executionStyle={executionStyle}
-                    legProgression={legProgression}
-                    oneArmSide={oneArmSide}
-                    legTarget={legTarget}
-                    setLocalEditingSetIndex={setLocalEditingSetIndex}
-                    updateSet={updateSet}
-                    removeSet={removeSet}
-                    isHoldExercise={isHoldExercise}
-                    onFileUpload={handleFileUpload}
-                    onMediaClick={handleMediaClick}
-                    onEditThumbnail={onEditThumbnailClick}
-                  />
+                {sets.map((s, i) => (
+                  <Reorder.Item
+                    key={s.id}
+                    value={s}
+                    className="shrink-0"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setActiveSetId(s.id)}
+                      className={cn(
+                        "flex flex-col items-center gap-1 min-w-[50px] p-2 rounded-2xl border transition-all cursor-pointer",
+                        activeSetId === s.id 
+                          ? "bg-cyan-500/20 border-cyan-500/50 shadow-[0_0_15px_rgba(34,211,238,0.1)]" 
+                          : "bg-black/20 border-white/5 opacity-60 hover:opacity-100 hover:border-white/10"
+                      )}
+                    >
+                        <span className={cn(
+                          "text-[8px] font-black uppercase tracking-tighter",
+                          activeSetId === s.id ? "text-cyan-400" : "text-slate-500"
+                        )}>Set {i+1}</span>
+                        <div className="flex items-baseline gap-1">
+                          <span className={cn(
+                            "text-sm font-black",
+                            activeSetId === s.id ? "text-white" : "text-slate-400"
+                          )}>{isHoldExercise(exerciseId) ? (s.time || 0) : (s.reps || 0)}</span>
+                          <span className="text-[7px] font-black text-slate-600 uppercase italic">
+                            {isHoldExercise(exerciseId) ? 's' : 'r'}
+                          </span>
+                        </div>
+                    </button>
+                  </Reorder.Item>
                 ))}
+                <button
+                  type="button"
+                  onClick={addSet}
+                  className="flex items-center justify-center min-w-[50px] h-[58px] rounded-2xl border-2 border-dashed border-white/10 text-slate-600 hover:border-cyan-500/30 hover:text-cyan-500 transition-all group shrink-0"
+                >
+                  <Plus className="group-hover:rotate-90 transition-transform" />
+                </button>
               </Reorder.Group>
+           </div>
+
+           {/* ACTIVE SET DETAIL VIEW */}
+           <div className="space-y-4">
+              {activeSet && (
+                <WorkoutSetDetail
+                  key={activeSet.id}
+                  set={activeSet}
+                  index={safeActiveSetIndex}
+                  highlightedSetIndex={highlightedSetIndex || null}
+                  activeSetId={activeSetId}
+                  exerciseId={exerciseId}
+                  loadType={loadType}
+                  executionStyle={executionStyle}
+                  legProgression={legProgression}
+                  oneArmSide={oneArmSide}
+                  legTarget={legTarget}
+                  setActiveSetId={setActiveSetId}
+                  updateSet={updateSet}
+                  removeSet={removeSet}
+                  setSets={setSets}
+                  isHoldExercise={isHoldExercise}
+                  onFileUpload={handleFileUpload}
+                  onMediaClick={handleMediaClick}
+                  onEditThumbnail={onEditThumbnailClick}
+                />
+              )}
            </div>
            
            <button
@@ -2259,7 +2346,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
              onClick={addSet}
              className="w-full py-6 border-2 border-dashed border-white/5 rounded-[32px] text-slate-600 hover:text-cyan-500 hover:border-cyan-500/20 hover:bg-cyan-500/5 transition-all text-xs font-black uppercase tracking-[0.4em] flex items-center justify-center gap-3 active:scale-[0.99] group shadow-inner"
            >
-             <PlusCircle size={20} className="group-hover:rotate-90 transition-transform" /> Duplicate Sequence
+             <Plus size={20} className="group-hover:rotate-90 transition-transform" /> Add Performance Set
            </button>
         </div>
 
