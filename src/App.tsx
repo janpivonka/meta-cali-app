@@ -10,7 +10,7 @@ import { ExerciseLog, UserProfile, Workout, ExerciseDefinition, BandPlacement, E
 import { motion, AnimatePresence, Reorder, useDragControls } from 'framer-motion';
 import { Activity, Github, Twitter, Instagram, Sun, Moon, Share2, Edit3, MessageSquare, GripVertical, Video, Camera, ArrowUp } from 'lucide-react';
 import { EXERCISE_LIBRARY } from './data/exerciseLibrary';
-import { cn, getMediaUrl } from './lib/utils';
+import { cn, getMediaUrl, isHoldExercise } from './lib/utils';
 import { MediaRenderer } from './components/MediaRenderer';
 import { getWorkoutsFromDB, saveWorkoutsToDB, getCurrentWorkoutFromDB, saveCurrentWorkoutToDB } from './lib/db';
 
@@ -163,15 +163,44 @@ interface SetReorderItemProps {
   editingIndex: number | null;
   editingSetIndex: number | null;
   handleEditSet: (exIndex: number, setIndex: number, e: React.MouseEvent) => void;
+  onMediaClick: (media: ExerciseMedia[], index: number) => void;
+  allSets?: any[];
   key?: React.Key;
 }
 
-function SetReorderItem({ s, si, i, ex, editingIndex, editingSetIndex, handleEditSet, onMediaClick }: any) {
+function SetReorderItem({ 
+  s, 
+  si, 
+  i, 
+  ex, 
+  editingIndex, 
+  editingSetIndex, 
+  handleEditSet, 
+  onMediaClick,
+  allSets = []
+}: SetReorderItemProps) {
   const controls = useDragControls();
   const isHighlighted = editingIndex === i && editingSetIndex === si;
   const exName = EXERCISE_LIBRARY.find(e => e.id === ex.exerciseId)?.name || ex.type;
                                     
-  const { currentLoadLabel, orangeLine, gripLine, equipLine, armLine, coreLine, legLine } = getSetMetadata(s, ex);
+  const { currentLoadLabel, orangeLine, gripLine, armLine, coreLine, legLine } = getSetMetadata(s, ex);
+
+  const unit = isHoldExercise(ex.exerciseId) ? 's' : 'R';
+  const setsToUse = allSets.length > 0 ? allSets : [s];
+  
+  const subGroups: { v: number; c: number }[] = [];
+  setsToUse.forEach(item => {
+    const v = item.reps || item.time || 0;
+    if (subGroups.length > 0 && subGroups[subGroups.length - 1].v === v) {
+      subGroups[subGroups.length - 1].c++;
+    } else {
+      subGroups.push({ v, c: 1 });
+    }
+  });
+  
+  const volSummary = subGroups.map(sg => 
+    sg.c > 1 ? `${sg.c}Sx${sg.v}${unit}` : `${sg.v}${unit}`
+  ).join(', ');
 
   return (
     <Reorder.Item 
@@ -308,7 +337,7 @@ function SetReorderItem({ s, si, i, ex, editingIndex, editingSetIndex, handleEdi
             )}
             {s.media && s.media.length > 0 && (
               <div className="flex gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
-                {s.media.map((m, midx) => (
+                {s.media.map((m: any, midx: number) => (
                     <div 
                       key={midx} 
                       className="w-8 h-8 rounded-lg overflow-hidden border border-white/5 bg-black/40 shrink-0 cursor-pointer pointer-events-auto hover:border-cyan-500/50 transition-all relative"
@@ -342,7 +371,7 @@ function SetReorderItem({ s, si, i, ex, editingIndex, editingSetIndex, handleEdi
           </div>
         )}
 
-        {/* Reps Badge - Shifted slightly for handle */}
+        {/* Reps Badge - Modified for volume summary */}
         <div className={cn(
           "absolute top-2 right-2 px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-md border border-white/5 flex items-baseline gap-1 shadow-sm",
           isHighlighted && "bg-black/20 border-black/10"
@@ -351,13 +380,7 @@ function SetReorderItem({ s, si, i, ex, editingIndex, editingSetIndex, handleEdi
             "text-[10px] font-black font-mono",
             isHighlighted ? "text-black" : "text-white"
           )}>
-            {s.reps || s.time}
-          </span>
-          <span className={cn(
-            "text-[7px] font-black uppercase",
-            isHighlighted ? "text-black/60" : "text-slate-500"
-          )}>
-            {s.reps ? 'r' : 's'}
+            {volSummary}
           </span>
         </div>
       </button>
@@ -498,19 +521,41 @@ function ExerciseReorderItem({
               onReorder={(newSets) => handleReorderSets(ex.id, newSets)}
               className="flex flex-col gap-3 w-full"
             >
-                {ex.sets.map((s, si) => (
-                  <SetReorderItem 
-                    key={s.id}
-                    s={s}
-                    si={si}
-                    i={i}
-                    ex={ex}
-                    editingIndex={editingIndex}
-                    editingSetIndex={editingSetIndex}
-                    handleEditSet={handleEditSet}
-                    onMediaClick={onMediaClick}
-                  />
-                ))}
+                {(() => {
+                  const groups: { metadataKey: string; sets: any[]; firstIndex: number }[] = [];
+                  ex.sets.forEach((s: any, si: number) => {
+                    const meta = getSetMetadata(s, ex);
+                    const metaKey = JSON.stringify({
+                      l: meta.currentLoadLabel,
+                      o: meta.orangeLine,
+                      g: meta.gripLine,
+                      a: meta.armLine,
+                      c: meta.coreLine,
+                      le: meta.legLine
+                    });
+                    const existing = groups.find(g => g.metadataKey === metaKey);
+                    if (existing) {
+                      existing.sets.push(s);
+                    } else {
+                      groups.push({ metadataKey: metaKey, sets: [s], firstIndex: si });
+                    }
+                  });
+
+                  return groups.map((group, gi) => (
+                    <SetReorderItem 
+                      key={group.sets[0].id}
+                      s={group.sets[0]}
+                      allSets={group.sets}
+                      si={group.firstIndex}
+                      i={i}
+                      ex={ex}
+                      editingIndex={editingIndex}
+                      editingSetIndex={editingSetIndex}
+                      handleEditSet={handleEditSet}
+                      onMediaClick={onMediaClick}
+                    />
+                  ));
+                })()}
             </Reorder.Group>
           </div>
 
@@ -922,137 +967,159 @@ export default function App() {
                                </span>
 
                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                                {(log.sets || []).map((s, si) => {
-                                  // Categories for set-specific display
-                                  const exName = EXERCISE_LIBRARY.find(e => e.id === log.exerciseId)?.name || log.type;
-                                  const { currentLoadLabel, orangeLine, gripLine, equipLine, armLine, coreLine, legLine } = getSetMetadata(s, log);
+                                 {(() => {
+                                   const sets = log.sets || [];
+                                   const groups: any[] = [];
+                                   sets.forEach(s => {
+                                     const meta = getSetMetadata(s, log);
+                                     const metaKey = JSON.stringify({
+                                       l: meta.currentLoadLabel,
+                                       o: meta.orangeLine,
+                                       g: meta.gripLine,
+                                       a: meta.armLine,
+                                       c: meta.coreLine,
+                                       le: meta.legLine
+                                     });
+                                     const existing = groups.find(g => g.key === metaKey);
+                                     if (existing) {
+                                       existing.items.push(s);
+                                       if (s.media) existing.media.push(...s.media);
+                                     } else {
+                                       groups.push({ key: metaKey, metadata: meta, items: [s], media: s.media ? [...s.media] : [] });
+                                     }
+                                   });
 
-                                  return (
-                                    <div 
-                                      key={si} 
-                                      className="p-4 rounded-2xl border bg-black/40 border-white/5 text-white flex flex-col gap-2 relative overflow-hidden shadow-lg"
-                                    >
-                                      {/* Header */}
-                                      <div className="flex items-center gap-2 mb-0.5 pr-12">
-                                        <span className="text-[10px] font-black italic uppercase tracking-tighter text-white truncate">
-                                          {exName}
-                                        </span>
-                                        <span className="text-[9px] font-black text-slate-800/30">/</span>
-                                        <div className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md border bg-cyan-500/5 border-cyan-500/10 text-cyan-400 shrink-0">
-                                          {currentLoadLabel}
-                                        </div>
-                                      </div>
+                                   return groups.map((group, gi) => {
+                                     const { metadata, items, media } = group;
+                                     const { currentLoadLabel, orangeLine, gripLine, armLine, coreLine, legLine } = metadata;
+                                     const unit = isHoldExercise(log.exerciseId) ? 's' : 'R';
+                                     
+                                     const subGroups: { v: number; c: number }[] = [];
+                                     items.forEach((s: any) => {
+                                       const v = s.reps || s.time || 0;
+                                       if (subGroups.length > 0 && subGroups[subGroups.length - 1].v === v) {
+                                         subGroups[subGroups.length - 1].c++;
+                                       } else {
+                                         subGroups.push({ v, c: 1 });
+                                       }
+                                     });
+                                     
+                                     const volSummary = subGroups.map(sg => 
+                                       sg.c > 1 ? `${sg.c}Sx${sg.v}${unit}` : `${sg.v}${unit}`
+                                     ).join(', ');
 
-                                      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 select-none">
-                                        {/* Orange Line */}
-                                        {orangeLine.length > 0 && (
-                                          <div className="flex items-baseline gap-x-1">
-                                            <span className="text-[7px] font-black uppercase tracking-tighter text-orange-400/40 shrink-0">ASSIST:</span>
-                                            <div className="flex flex-wrap items-baseline gap-x-1">
-                                              {orangeLine.map((p, pidx) => (
-                                                <span key={pidx} className="text-[7px] font-black uppercase italic text-orange-400 whitespace-nowrap">
-                                                  {pidx > 0 && "• "}{p}
-                                                </span>
-                                              ))}
-                                            </div>
-                                          </div>
-                                        )}
+                                     const exName = EXERCISE_LIBRARY.find(e => e.id === log.exerciseId)?.name || log.type;
 
-                                        {/* Gray Line: Grip */}
-                                        {gripLine.length > 0 && (
-                                          <div className="flex items-baseline gap-x-1">
-                                            <span className="text-[7px] font-black uppercase tracking-tighter text-slate-500/40 shrink-0">GRIP:</span>
-                                            <div className="flex flex-wrap items-baseline gap-x-1">
-                                              {gripLine.map((p, pidx) => (
-                                                <span key={pidx} className="text-[7px] font-bold uppercase text-slate-500 whitespace-nowrap">
-                                                  {pidx > 0 && "• "}{p}
-                                                </span>
-                                              ))}
-                                            </div>
-                                          </div>
-                                        )}
+                                     return (
+                                       <div 
+                                         key={gi} 
+                                         className="p-4 rounded-2xl border bg-black/40 border-white/5 text-white flex flex-col gap-2 relative overflow-hidden shadow-lg"
+                                       >
+                                         <div className="flex items-center gap-2 mb-0.5 pr-12">
+                                           <span className="text-[10px] font-black italic uppercase tracking-tighter text-white truncate">
+                                             {exName}
+                                           </span>
+                                           <span className="text-[9px] font-black text-slate-800/30">/</span>
+                                           <div className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md border bg-cyan-500/5 border-cyan-500/10 text-cyan-400 shrink-0">
+                                             {currentLoadLabel}
+                                           </div>
+                                         </div>
 
-                                        {/* Purple Line: Arm */}
-                                        {armLine.length > 0 && (
-                                          <div className="flex items-baseline gap-x-1">
-                                            <span className="text-[7px] font-black uppercase tracking-tighter text-purple-400/40 shrink-0">ARMS:</span>
-                                            <div className="flex flex-wrap items-baseline gap-x-1">
-                                              {armLine.map((p, pidx) => (
-                                                <span key={pidx} className="text-[7px] font-black uppercase italic text-purple-400 whitespace-nowrap">
-                                                  {pidx > 0 && "• "}{p}
-                                                </span>
-                                              ))}
-                                            </div>
-                                          </div>
-                                        )}
+                                         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 select-none">
+                                           {orangeLine.length > 0 && (
+                                             <div className="flex items-baseline gap-x-1">
+                                               <span className="text-[7px] font-black uppercase tracking-tighter text-orange-400/40 shrink-0">ASSIST:</span>
+                                               <div className="flex flex-wrap items-baseline gap-x-1">
+                                                 {orangeLine.map((p: any, pidx: number) => (
+                                                   <span key={pidx} className="text-[7px] font-black uppercase italic text-orange-400 whitespace-nowrap">
+                                                     {pidx > 0 && "• "}{p}
+                                                   </span>
+                                                 ))}
+                                               </div>
+                                             </div>
+                                           )}
+                                           {gripLine.length > 0 && (
+                                             <div className="flex items-baseline gap-x-1">
+                                               <span className="text-[7px] font-black uppercase tracking-tighter text-slate-500/40 shrink-0">GRIP:</span>
+                                               <div className="flex flex-wrap items-baseline gap-x-1">
+                                                 {gripLine.map((p: any, pidx: number) => (
+                                                   <span key={pidx} className="text-[7px] font-bold uppercase text-slate-500 whitespace-nowrap">
+                                                     {pidx > 0 && "• "}{p}
+                                                   </span>
+                                                 ))}
+                                               </div>
+                                             </div>
+                                           )}
+                                           {armLine.length > 0 && (
+                                             <div className="flex items-baseline gap-x-1">
+                                               <span className="text-[7px] font-black uppercase tracking-tighter text-purple-400/40 shrink-0">ARMS:</span>
+                                               <div className="flex flex-wrap items-baseline gap-x-1">
+                                                 {armLine.map((p: any, pidx: number) => (
+                                                   <span key={pidx} className="text-[7px] font-black uppercase italic text-purple-400 whitespace-nowrap">
+                                                     {pidx > 0 && "• "}{p}
+                                                   </span>
+                                                 ))}
+                                               </div>
+                                             </div>
+                                           )}
+                                           {coreLine.length > 0 && (
+                                             <div className="flex items-baseline gap-x-1">
+                                               <span className="text-[7px] font-black uppercase tracking-tighter text-purple-400/40 shrink-0">CORE:</span>
+                                               <div className="flex flex-wrap items-baseline gap-x-1">
+                                                 {coreLine.map((p: any, pidx: number) => (
+                                                   <span key={pidx} className="text-[7px] font-black uppercase italic text-purple-400 whitespace-nowrap">
+                                                     {pidx > 0 && "• "}{p}
+                                                   </span>
+                                                 ))}
+                                               </div>
+                                             </div>
+                                           )}
+                                           {legLine.length > 0 && (
+                                             <div className="flex items-baseline gap-x-1">
+                                               <span className="text-[7px] font-black uppercase tracking-tighter text-purple-400/40 shrink-0">LEGS:</span>
+                                               <div className="flex flex-wrap items-baseline gap-x-1">
+                                                 {legLine.map((p: any, pidx: number) => (
+                                                   <span key={pidx} className="text-[7px] font-black uppercase italic text-purple-400 whitespace-nowrap">
+                                                     {pidx > 0 && "• "}{p}
+                                                   </span>
+                                                 ))}
+                                               </div>
+                                             </div>
+                                           )}
+                                         </div>
 
-                                        {/* Purple Line: Core */}
-                                        {coreLine.length > 0 && (
-                                          <div className="flex items-baseline gap-x-1">
-                                            <span className="text-[7px] font-black uppercase tracking-tighter text-purple-400/40 shrink-0">CORE:</span>
-                                            <div className="flex flex-wrap items-baseline gap-x-1">
-                                              {coreLine.map((p, pidx) => (
-                                                <span key={pidx} className="text-[7px] font-black uppercase italic text-purple-400 whitespace-nowrap">
-                                                  {pidx > 0 && "• "}{p}
-                                                </span>
-                                              ))}
-                                            </div>
-                                          </div>
-                                        )}
+                                         {media.length > 0 && (
+                                             <div className="flex gap-1 overflow-x-auto no-scrollbar mt-1">
+                                               {media.map((m: any, midx: number) => (
+                                                 <div key={midx} className="w-6 h-6 rounded-md overflow-hidden bg-black/40 border border-white/5 shrink-0">
+                                                   {m?.type === 'image' ? (
+                                                     <MediaRenderer url={m.url} type="image" className="w-full h-full object-cover opacity-60" referrerPolicy="no-referrer" />
+                                                   ) : (
+                                                     <div className="w-full h-full relative">
+                                                       {m?.thumbnail ? (
+                                                         <img src={m.thumbnail} className="w-full h-full object-cover opacity-60" referrerPolicy="no-referrer" alt="" />
+                                                       ) : (
+                                                         <div className="w-full h-full flex items-center justify-center text-cyan-500/40 transform scale-75"><Video size={8} /></div>
+                                                       )}
+                                                       <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                                         <Video size={8} className="text-cyan-500/60" />
+                                                       </div>
+                                                     </div>
+                                                   )}
+                                                 </div>
+                                               ))}
+                                             </div>
+                                           )}
 
-                                        {/* Purple Line: Legs */}
-                                        {legLine.length > 0 && (
-                                          <div className="flex items-baseline gap-x-1">
-                                            <span className="text-[7px] font-black uppercase tracking-tighter text-purple-400/40 shrink-0">LEGS:</span>
-                                            <div className="flex flex-wrap items-baseline gap-x-1">
-                                              {legLine.map((p, pidx) => (
-                                                <span key={pidx} className="text-[7px] font-black uppercase italic text-purple-400 whitespace-nowrap">
-                                                  {pidx > 0 && "• "}{p}
-                                                </span>
-                                              ))}
-                                            </div>
-                                          </div>
-                                        )}
-                                      </div>
-                                      {/* Set Media */}
-                                      {s.media && s.media.length > 0 && (
-                                          <div className="flex gap-1 overflow-x-auto no-scrollbar mt-1">
-                                            {s.media.map((m: any, midx: number) => (
-                                              <div 
-                                                key={midx} 
-                                                className="w-6 h-6 rounded-md overflow-hidden bg-black/40 border border-white/5 shrink-0 cursor-pointer hover:border-cyan-500/50 transition-all"
-                                                onClick={() => handleMediaClick(s.media, midx)}
-                                              >
-                                                {m?.type === 'image' ? (
-                                                  <MediaRenderer url={m.url} type="image" className="w-full h-full object-cover opacity-60" referrerPolicy="no-referrer" />
-                                                ) : (
-                                                  <div className="w-full h-full relative">
-                                                    {m?.thumbnail ? (
-                                                      <img src={m.thumbnail} className="w-full h-full object-cover opacity-60" referrerPolicy="no-referrer" alt="" />
-                                                    ) : (
-                                                      <div className="w-full h-full flex items-center justify-center text-cyan-500/40 transform scale-75"><Video size={8} /></div>
-                                                    )}
-                                                    <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                                                      <Video size={8} className="text-cyan-500/60" />
-                                                    </div>
-                                                  </div>
-                                                )}
-                                              </div>
-                                            ))}
-                                          </div>
-                                        )}
-                                      {/* Bottom Right Badge */}
-                                      <div className="absolute top-4 right-2 px-1.5 py-0.5 rounded bg-black/40 border border-white/5 flex items-baseline gap-0.5">
-                                        <span className="text-[10px] font-black font-mono text-white">
-                                          {s.reps || s.time}
-                                        </span>
-                                        <span className="text-[7px] font-black uppercase text-slate-500">
-                                          {s.reps ? 'r' : 's'}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
+                                         <div className="absolute top-4 right-2 px-1.5 py-0.5 rounded bg-black/40 border border-white/5 flex items-baseline gap-0.5">
+                                           <span className="text-[10px] font-black font-mono text-white whitespace-nowrap">
+                                             {volSummary}
+                                           </span>
+                                         </div>
+                                       </div>
+                                     );
+                                   });
+                                 })()}
                               </div>
 
                               {/* Exercise Level notes and media */}

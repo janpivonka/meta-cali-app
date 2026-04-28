@@ -42,7 +42,7 @@ import {
   MixedGripDetails,
   ExerciseMedia
 } from '../types';
-import { cn, getMediaUrl } from '../lib/utils';
+import { cn, getMediaUrl, isHoldExercise } from '../lib/utils';
 import { motion, AnimatePresence, Reorder, useDragControls } from 'framer-motion';
 import { EXERCISE_LIBRARY } from '../data/exerciseLibrary';
 import { MediaPreviewModal } from './MediaPreviewModal';
@@ -419,9 +419,7 @@ const generateId = () => {
   return Math.random().toString(36).substring(2, 11) + Date.now().toString(36);
 };
 
-const isHoldExercise = (id: string) => {
-  return ['planche', 'frontlever', 'statics'].some(k => id.toLowerCase().includes(k));
-};
+
 
 export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, initialExerciseId, initialData, highlightedSetIndex }) => {
   const [exerciseId, setExerciseId] = useState<string>(initialData?.exerciseId || initialExerciseId || EXERCISE_LIBRARY[0].id);

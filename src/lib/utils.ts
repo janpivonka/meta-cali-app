@@ -17,3 +17,7 @@ export function getMediaUrl(url: any): string | undefined {
   if (typeof url === 'string') return url || undefined;
   return undefined;
 }
+
+export const isHoldExercise = (id: string) => {
+  return ['planche', 'frontlever', 'statics', 'isometric', 'hold', 'human flag', 'iron cross'].some(k => id?.toLowerCase().includes(k));
+};
