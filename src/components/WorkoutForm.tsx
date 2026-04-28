@@ -703,6 +703,10 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
         if (loadType === 'assisted') {
           setBandPlacements(['waist']);
           setBandLoopType('double');
+        } else {
+          // Even in bodyweight, we might want to pre-set these for when they switch to assisted
+          setBandPlacements(['waist']);
+          setBandLoopType('double');
         }
         
         // Sync leg progression with oneLegPrimaryPosition if it was "one leg" or Australian
@@ -716,11 +720,15 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
         if (localEditingSetIndex !== null) {
           const currentDetails = sets[localEditingSetIndex]?.assistanceDetails || {};
           const updateObj: any = { ...currentDetails, dipBarFootSupport: true };
-          if (loadType === 'assisted') {
-             updateObj.placement = ['waist'];
-             updateObj.loopType = 'double';
-          }
+          // If enabled, always default to waist/double for better UX
+          updateObj.placement = ['waist'];
+          updateObj.loopType = 'double';
           updateSet(localEditingSetIndex, 'assistanceDetails', updateObj);
+        }
+      } else {
+        if (localEditingSetIndex !== null) {
+          const currentDetails = sets[localEditingSetIndex]?.assistanceDetails || {};
+          updateSet(localEditingSetIndex, 'assistanceDetails', { ...currentDetails, dipBarFootSupport: false });
         }
       }
     }
@@ -864,8 +872,17 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
         } else if (newType === 'assisted') {
           updated.weight = 0;
           const support = updated.assistanceDetails?.dipBarFootSupport;
-          // Default to double waist if no assistance details yet
-          if (!updated.assistanceDetails) {
+          // If support is active, ALWAYS force waist/double defaults
+          if (support) {
+            updated.assistanceDetails = { 
+              resistance: updated.assistanceDetails?.resistance || '', 
+              loopType: 'double', 
+              placement: ['waist'], 
+              dipBarFootSupport: true 
+            };
+            setBandLoopType('double');
+            setBandPlacements(['waist']);
+          } else if (!updated.assistanceDetails) {
             updated.assistanceDetails = { resistance: '', loopType: 'double', placement: ['waist'], dipBarFootSupport: support };
             setBandLoopType('double');
             setBandPlacements(['waist']);
@@ -954,6 +971,13 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       setPosition(initialData.position || 'neutral');
       setLegProgression(initialData.legProgression || 'full');
       setSets(initialData.sets);
+      
+      if (highlightedSetIndex !== undefined && highlightedSetIndex !== null) {
+        setLocalEditingSetIndex(highlightedSetIndex);
+      } else {
+        setLocalEditingSetIndex(0);
+      }
+
       setNotes(initialData.notes || '');
       setExerciseMedia(initialData.media || []);
       setShared(initialData.shared || false);
@@ -963,15 +987,18 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       setMixedGripLeft(initialData.mixedGripDetails?.left || 'supinated');
       setMixedGripRight(initialData.mixedGripDetails?.right || 'pronated');
       setMixedGripIsAlternating(initialData.mixedGripDetails?.isAlternating || false);
+
       if (initialData.assistanceDetails) {
         setBandPlacements(initialData.assistanceDetails.placement as BandPlacement[] || ['both feet']);
         setBandLoopType(initialData.assistanceDetails.loopType || 'single');
+        setLegTarget(initialData.assistanceDetails.legTarget || 'primary');
+        setDipBarFootSupport(initialData.assistanceDetails.dipBarFootSupport || false);
       }
     } else {
       // If we are no longer editing, reset to defaults or initialExerciseId
       resetForm();
     }
-  }, [initialData, initialExerciseId]);
+  }, [initialData, initialExerciseId, highlightedSetIndex]);
 
   const filteredExercises = React.useMemo(() => 
     EXERCISE_LIBRARY.filter(ex => 
@@ -1343,6 +1370,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     const consensusAssistanceValue = getConsensusAssistanceField('resistance') as string | undefined;
     const consensusLoopType = getConsensusAssistanceField('loopType') as BandLoopType | undefined;
     const consensusPlacement = getConsensusAssistanceField('placement') as BandPlacement[] | undefined;
+    const consensusDipBarSupport = getConsensusAssistanceField('dipBarFootSupport') as boolean | undefined;
 
     onSave({
       id: initialData?.id || safeUUID(),
@@ -1366,11 +1394,12 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       loadType: finalLoadType, 
       weightUnit: weightUnit,
       assistanceValue: assistanceValue, 
-      assistanceDetails: (finalLoadType === 'assisted') ? {
+      assistanceDetails: (finalLoadType === 'assisted' || consensusDipBarSupport || dipBarFootSupport) ? {
          resistance: assistanceValue || '',
          loopType: bandLoopType || 'single',
          placement: (bandPlacements && bandPlacements.length > 0) ? bandPlacements : ['both feet'],
-         legTarget: legTarget || 'primary'
+         legTarget: legTarget || 'primary',
+         dipBarFootSupport: consensusDipBarSupport ?? dipBarFootSupport
       } : undefined,
       sets: validSets.map(s => ({
         ...s,
@@ -1882,7 +1911,10 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                             legProgression === prog ? "bg-purple-500 text-white border-purple-400 shadow-lg shadow-purple-500/20" : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20"
                           )}
                         >
-                          {prog === 'full' ? 'Full' : prog}
+                          {prog === 'full' ? 'Full' : 
+                           prog === 'australian (bent legs)' ? 'Australian (Bent)' : 
+                           prog === 'australian (straight legs)' ? 'Australian (Straight)' : 
+                           prog}
                         </button>
                       ))}
                    </div>
@@ -2131,8 +2163,9 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
 
                            // Dip bar foot support logic
                            const isKorean = executionStyle.toString().startsWith('korean');
-                           if (p === 'dip bar foot support' && !(equipment === 'dip bars' && isKorean)) return false;
-
+                           // This comparison was invalid as it's not a BandPlacement value. 
+                           // Dip Bar Support has its own toggle.
+                           
                            return true;
                          }).map(p => (
                            <button
@@ -2148,7 +2181,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                               p === 'both feet' ? 'Both Feet' : 
                               p === 'knees' ? 'Knee/s' :
                               p === 'waist' ? 'Waist (Lumbar)' : 
-                              p === 'buttocks' ? 'Buttocks' : p === 'dip bar foot support' ? 'Dip Bar Support' : 'Chest'}
+                              p === 'buttocks' ? 'Buttocks' : 'Chest'}
                            </button>
                          ))}
                       </div>

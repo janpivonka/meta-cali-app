@@ -52,29 +52,27 @@ const getSetMetadata = (s: any, ex: any) => {
   const orangeLine = [];
   const hasDipBarSupport = s.assistanceDetails?.dipBarFootSupport || ex.assistanceDetails?.dipBarFootSupport;
   
-  if (hasDipBarSupport) {
-    orangeLine.push('DIP BAR SUPPORT');
-  }
-
   if (effectiveLoadType === 'assisted' && res) {
+    if (hasDipBarSupport) orangeLine.push('DIP BAR SUPPORT');
     orangeLine.push(`${res}${effectiveUnit.toUpperCase()} BAND`);
-    const p = s.assistanceDetails?.placement || ex.assistanceDetails?.placement;
     
+    const p = s.assistanceDetails?.placement || ex.assistanceDetails?.placement;
     const loopType = s.assistanceDetails?.loopType || ex.assistanceDetails?.loopType;
+    
     if (loopType === 'double') {
       orangeLine.push('DOUBLE');
     }
 
     if (p) {
-      const placementLabel = Array.isArray(p) ? p.join('/') : p;
-      orangeLine.push(placementLabel.toUpperCase());
-    }
-    
-    // Add leg target info - Critical fix for user request
-    const legTarget = s.assistanceDetails?.legTarget || ex.assistanceDetails?.legTarget;
-    if (legTarget) {
-      const targetLabel = legTarget.toUpperCase();
-      orangeLine.push(`ASSIST: ${targetLabel}`);
+      // If dip bar support is on, usually it's just waist. 
+      // We filter out 'one foot' if dip bar support is on to satisfy user's "just waist" request
+      const placements = Array.isArray(p) ? p : [p];
+      const filteredPlacements = hasDipBarSupport ? placements.filter(item => item === 'waist') : placements;
+      if (filteredPlacements.length > 0) {
+        orangeLine.push(filteredPlacements.join('/').toUpperCase());
+      } else if (hasDipBarSupport) {
+        orangeLine.push('WAIST'); // Default fallback if filtered out but support is on
+      }
     }
   }
   if (s.weight && s.weight > 0 && effectiveLoadType !== 'weighted') orangeLine.push(`+${s.weight}${effectiveUnit.toUpperCase()}`);
@@ -143,7 +141,13 @@ const getSetMetadata = (s: any, ex: any) => {
     const sideLabel = eSide ? ` - ${eSide.toUpperCase()}` : '';
     legLine.push(`FLOATING LEG: ${supportLabel}${sideLabel}`);
   } else {
-    legLine.push(eLeg.toUpperCase());
+    const upperLeg = eLeg.toUpperCase();
+    if (upperLeg.includes('AUSTRALIAN')) {
+      // Ensure specific Australian labels in summary
+      legLine.push(upperLeg.includes('BENT') ? 'AUSTRALIAN (BENT)' : 'AUSTRALIAN (STRAIGHT)');
+    } else {
+      legLine.push(upperLeg);
+    }
   }
 
   return { currentLoadLabel, orangeLine, gripLine, equipLine, armLine, coreLine, legLine };
