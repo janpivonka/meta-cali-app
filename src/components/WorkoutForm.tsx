@@ -20,7 +20,9 @@ import {
   Boxes,
   Waves,
   GripVertical,
-  Share2
+  Share2,
+  ArrowLeft,
+  ArrowRight
 } from 'lucide-react';
 import { 
   WorkoutSet, 
@@ -42,7 +44,7 @@ import {
   MixedGripDetails,
   ExerciseMedia
 } from '../types';
-import { cn, getMediaUrl, isHoldExercise } from '../lib/utils';
+import { cn, getMediaUrl, isHoldExercise, getSetMetadata, getColorFromMeta } from '../lib/utils';
 import { motion, AnimatePresence, Reorder, useDragControls } from 'framer-motion';
 import { EXERCISE_LIBRARY } from '../data/exerciseLibrary';
 import { MediaPreviewModal } from './MediaPreviewModal';
@@ -134,13 +136,29 @@ const WorkoutSetDetail = memo<WorkoutSetItemProps>(({
   const bandLoopType = set.assistanceDetails?.loopType || 'single';
   const weightUnit = set.weightUnit || 'kg';
 
+  const meta = getSetMetadata(set, { exerciseId, loadType, executionStyle, legProgression });
+  const metaKey = JSON.stringify({
+    l: meta.currentLoadLabel,
+    o: meta.orangeLine,
+    g: meta.gripLine,
+    e: meta.equipLine,
+    a: meta.armLine,
+    c: meta.coreLine,
+    le: meta.legLine
+  });
+  const groupColor = getColorFromMeta(metaKey);
+
   return (
     <div
       id={`set-item-${index}`}
       className={cn(
         "glass-card flex flex-col p-4 md:p-6 border-white/5 bg-white/5 rounded-[32px] group transition-all shadow-lg relative",
-        (highlightedSetIndex === index || activeSetId === set.id) ? "border-cyan-500/50 bg-cyan-500/5 ring-1 ring-cyan-500/20" : "hover:border-white/10"
+        (highlightedSetIndex === index || activeSetId === set.id) ? "bg-cyan-500/5 ring-1 ring-cyan-500/20" : "hover:border-white/10"
       )}
+      style={{ 
+        borderColor: (highlightedSetIndex === index || activeSetId === set.id) ? '#22d3ee80' : groupColor + '60',
+        boxShadow: (highlightedSetIndex === index || activeSetId === set.id) ? undefined : `0 10px 15px -3px ${groupColor}20`
+      }}
     >
       <input 
         type="file" 
@@ -487,6 +505,17 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
 
   const sharedActionRef = useRef<HTMLButtonElement>(null);
   const bulkInputRef = useRef<HTMLInputElement>(null);
+  const setsScrollRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll active set into view
+  useEffect(() => {
+    if (activeSetId && setsScrollRef.current) {
+      const activeEl = document.getElementById(`nav-set-${activeSetId}`);
+      if (activeEl) {
+        activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
+    }
+  }, [activeSetId]);
 
   const activeSet = sets.find(s => s.id === activeSetId) || sets[0];
   const activeSetIndex = sets.findIndex(s => s.id === activeSetId);
@@ -2277,45 +2306,65 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
            {/* Sets Quick Strip (Draggable) */}
            <div className="mb-6">
               <Reorder.Group 
+                ref={setsScrollRef}
                 axis="x"
                 values={sets}
                 onReorder={setSets}
-                className="flex gap-2 overflow-x-auto py-3 px-2 no-scrollbar"
+                className="flex gap-2 overflow-x-auto py-3 px-2 scrollbar-thin scrollbar-thumb-white/20 snap-x snap-mandatory"
               >
-                {sets.map((s, i) => (
-                  <Reorder.Item
-                    key={s.id}
-                    value={s}
-                    className="shrink-0"
-                    whileDrag={{ scale: 1.1, zIndex: 50 }}
-                  >
-                    <motion.div
-                      role="button"
-                      tabIndex={0}
-                      onTap={() => setActiveSetId(s.id)}
-                      className={cn(
-                        "flex flex-col items-center gap-1 min-w-[50px] p-2 rounded-2xl border cursor-grab active:cursor-grabbing transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50",
-                        activeSetId === s.id 
-                          ? "bg-cyan-500/20 border-cyan-500/50 shadow-[0_0_15px_rgba(34,211,238,0.1)]" 
-                          : "bg-black/20 border-white/5 opacity-60 hover:opacity-100 hover:border-white/10"
-                      )}
+                {sets.map((s, i) => {
+                  const meta = getSetMetadata(s, { exerciseId, loadType, executionStyle, legProgression });
+                  const metaKey = JSON.stringify({
+                    l: meta.currentLoadLabel,
+                    o: meta.orangeLine,
+                    g: meta.gripLine,
+                    e: meta.equipLine,
+                    a: meta.armLine,
+                    c: meta.coreLine,
+                    le: meta.legLine
+                  });
+                  const groupColor = getColorFromMeta(metaKey);
+
+                  return (
+                    <Reorder.Item
+                      key={s.id}
+                      id={`nav-set-${s.id}`}
+                      value={s}
+                      className="shrink-0 snap-center"
+                      whileDrag={{ scale: 1.1, zIndex: 50 }}
                     >
-                        <span className={cn(
-                          "text-[8px] font-black uppercase tracking-tighter pointer-events-none",
-                          activeSetId === s.id ? "text-cyan-400" : "text-slate-500"
-                        )}>Set {i+1}</span>
-                        <div className="flex items-baseline gap-1 pointer-events-none">
-                          <span className={cn(
-                            "text-sm font-black",
-                            activeSetId === s.id ? "text-white" : "text-slate-400"
-                          )}>{isHoldExercise(exerciseId) ? (s.time || 0) : (s.reps || 0)}</span>
-                          <span className="text-[7px] font-black text-slate-600 uppercase italic">
-                            {isHoldExercise(exerciseId) ? 's' : 'r'}
-                          </span>
-                        </div>
-                    </motion.div>
-                  </Reorder.Item>
-                ))}
+                      <motion.div
+                        role="button"
+                        tabIndex={0}
+                        onTap={() => setActiveSetId(s.id)}
+                        className={cn(
+                          "flex flex-col items-center gap-1 min-w-[50px] p-2 rounded-2xl border cursor-grab active:cursor-grabbing transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50",
+                          activeSetId === s.id 
+                            ? "bg-cyan-500/20 border-cyan-500/50 shadow-[0_0_15px_rgba(34,211,238,0.1)]" 
+                            : "bg-black/20 border-white/5 opacity-60 hover:opacity-100 hover:border-white/10"
+                        )}
+                        style={{ borderColor: activeSetId === s.id ? undefined : groupColor + '40' }}
+                      >
+                          <span 
+                            className={cn(
+                              "text-[8px] font-black uppercase tracking-tighter pointer-events-none",
+                              activeSetId === s.id ? "text-cyan-400" : "opacity-60"
+                            )}
+                            style={{ color: activeSetId === s.id ? undefined : groupColor }}
+                          >Set {i+1}</span>
+                          <div className="flex items-baseline gap-1 pointer-events-none">
+                            <span className={cn(
+                              "text-sm font-black text-white",
+                              activeSetId === s.id ? "text-white" : "opacity-80"
+                            )}>{isHoldExercise(exerciseId) ? (s.time || 0) : (s.reps || 0)}</span>
+                            <span className="text-[7px] font-black text-slate-600 uppercase italic">
+                              {isHoldExercise(exerciseId) ? 's' : 'r'}
+                            </span>
+                          </div>
+                      </motion.div>
+                    </Reorder.Item>
+                  );
+                })}
                 <button
                   type="button"
                   onClick={addSet}
@@ -2326,31 +2375,87 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
               </Reorder.Group>
            </div>
 
-           {/* ACTIVE SET DETAIL VIEW */}
-           <div className="space-y-4">
-              {activeSet && (
-                <WorkoutSetDetail
-                  key={activeSet.id}
-                  set={activeSet}
-                  index={safeActiveSetIndex}
-                  highlightedSetIndex={highlightedSetIndex || null}
-                  activeSetId={activeSetId}
-                  exerciseId={exerciseId}
-                  loadType={loadType}
-                  executionStyle={executionStyle}
-                  legProgression={legProgression}
-                  oneArmSide={oneArmSide}
-                  legTarget={legTarget}
-                  setActiveSetId={setActiveSetId}
-                  updateActiveAssistance={updateActiveAssistance}
-                  updateSet={updateSet}
-                  removeSet={removeSet}
-                  setSets={setSets}
-                  isHoldExercise={isHoldExercise}
-                  onFileUpload={handleFileUpload}
-                  onMediaClick={handleMediaClick}
-                  onEditThumbnail={onEditThumbnailClick}
-                />
+           {/* ACTIVE SET DETAIL VIEW with Swipe Navigation */}
+           <div className="relative overflow-hidden -mx-4 px-4 pb-4">
+              <AnimatePresence mode="wait">
+                {activeSet && (
+                  <motion.div
+                    key={activeSet.id}
+                    initial={{ x: 20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    exit={{ x: -20, opacity: 0 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    drag="x"
+                    dragConstraints={{ left: 0, right: 0 }}
+                    dragElastic={0.2}
+                    onDragEnd={(e, { offset, velocity }) => {
+                      const swipe = Math.abs(offset.x) > 50 || Math.abs(velocity.x) > 500;
+                      if (swipe) {
+                        const idx = sets.findIndex(s => s.id === activeSetId);
+                        if (offset.x > 0 && idx > 0) {
+                          setActiveSetId(sets[idx - 1].id);
+                        } else if (offset.x < 0 && idx < sets.length - 1) {
+                          setActiveSetId(sets[idx + 1].id);
+                        }
+                      }
+                    }}
+                    className="w-full cursor-grab active:cursor-grabbing"
+                  >
+                    <WorkoutSetDetail
+                      set={activeSet}
+                      index={safeActiveSetIndex}
+                      highlightedSetIndex={highlightedSetIndex || null}
+                      activeSetId={activeSetId}
+                      exerciseId={exerciseId}
+                      loadType={loadType}
+                      executionStyle={executionStyle}
+                      legProgression={legProgression}
+                      oneArmSide={oneArmSide}
+                      legTarget={legTarget}
+                      setActiveSetId={setActiveSetId}
+                      updateActiveAssistance={updateActiveAssistance}
+                      updateSet={updateSet}
+                      removeSet={removeSet}
+                      setSets={setSets}
+                      isHoldExercise={isHoldExercise}
+                      onFileUpload={handleFileUpload}
+                      onMediaClick={handleMediaClick}
+                      onEditThumbnail={onEditThumbnailClick}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              
+              {/* Swipe Hints for Desktop */}
+              {sets.length > 1 && (
+                <div className="hidden md:flex absolute top-1/2 -translate-y-1/2 inset-x-0 justify-between pointer-events-none px-2">
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      const idx = sets.findIndex(s => s.id === activeSetId);
+                      if (idx > 0) setActiveSetId(sets[idx - 1].id);
+                    }}
+                    className={cn(
+                      "w-10 h-20 rounded-full bg-white/5 border border-white/5 backdrop-blur-sm flex items-center justify-center text-slate-600 hover:text-white hover:bg-white/10 transition-all pointer-events-auto",
+                      safeActiveSetIndex === 0 && "opacity-0 pointer-events-none"
+                    )}
+                  >
+                    <ArrowLeft size={16} />
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      const idx = sets.findIndex(s => s.id === activeSetId);
+                      if (idx < sets.length - 1) setActiveSetId(sets[idx + 1].id);
+                    }}
+                    className={cn(
+                      "w-10 h-20 rounded-full bg-white/5 border border-white/5 backdrop-blur-sm flex items-center justify-center text-slate-600 hover:text-white hover:bg-white/10 transition-all pointer-events-auto",
+                      safeActiveSetIndex === sets.length - 1 && "opacity-0 pointer-events-none"
+                    )}
+                  >
+                    <ArrowRight size={16} />
+                  </button>
+                </div>
               )}
            </div>
            
