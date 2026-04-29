@@ -684,31 +684,20 @@ export default function App() {
     } else {
       setEditingIndex(index);
       setEditingSetIndex(null);
-      // Scroll to grip section
-      setTimeout(() => {
-        document.getElementById('grip-width-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 400);
     }
   };
 
   const handleEditSet = (exerciseIndex: number, setIndex: number, e: React.MouseEvent) => {
     e.stopPropagation();
     setActiveTab('log');
-    setEditingIndex(exerciseIndex);
-    setEditingSetIndex(setIndex);
     
-    // Scroll to the specific set in the form
-    setTimeout(() => {
-      const el = document.getElementById(`set-item-${setIndex}`);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        el.classList.add('animate-pulse-cyan');
-        setTimeout(() => el.classList.remove('animate-pulse-cyan'), 2000);
-      } else {
-        // Fallback to grip section if set element not found (maybe form not fully rendered)
-        document.getElementById('grip-width-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }, 500);
+    if (editingIndex === exerciseIndex && editingSetIndex === setIndex) {
+      setEditingIndex(null);
+      setEditingSetIndex(null);
+    } else {
+      setEditingIndex(exerciseIndex);
+      setEditingSetIndex(setIndex);
+    }
   };
 
   const handleUpdateProfile = (newProfile: UserProfile) => {

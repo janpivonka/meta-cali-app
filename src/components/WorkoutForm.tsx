@@ -507,8 +507,9 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
   const bulkInputRef = useRef<HTMLInputElement>(null);
   const setsScrollRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll active set into view
+  // Auto-scroll active set into view - Disabled per user request
   useEffect(() => {
+    /*
     if (activeSetId && setsScrollRef.current) {
       const container = setsScrollRef.current;
       const activeEl = document.getElementById(`nav-set-${activeSetId}`);
@@ -524,9 +525,10 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
         });
       }
     }
+    */
   }, [activeSetId]);
 
-  const activeSet = sets.find(s => s.id === activeSetId) || sets[0];
+  const activeSet = sets.find(s => s.id === activeSetId);
   const activeSetIndex = sets.findIndex(s => s.id === activeSetId);
   const safeActiveSetIndex = activeSetIndex === -1 ? 0 : activeSetIndex;
 
@@ -1708,7 +1710,13 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                       <motion.div
                         role="button"
                         tabIndex={0}
-                        onTap={() => setActiveSetId(s.id)}
+                        onTap={() => {
+                          if (activeSetId === s.id) {
+                            setActiveSetId(null);
+                          } else {
+                            setActiveSetId(s.id);
+                          }
+                        }}
                         className={cn(
                           "flex flex-col items-center gap-1 min-w-[50px] p-2 rounded-2xl border cursor-grab active:cursor-grabbing transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50",
                           activeSetId === s.id 
