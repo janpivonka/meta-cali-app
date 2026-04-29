@@ -62,7 +62,7 @@ function SetReorderItem({
   const controls = useDragControls();
   const { sets, meta } = group;
   const firstSet = sets[0];
-  const firstSi = group.originalIndices[0];
+  const lastIndex = group.originalIndices[group.originalIndices.length - 1];
   
   const isHighlighted = editingIndex === i && editingSetIndex !== null && group.originalIndices.includes(editingSetIndex);
   const exName = EXERCISE_LIBRARY.find(e => e.id === ex.exerciseId)?.name || ex.type;
@@ -97,7 +97,7 @@ function SetReorderItem({
     >
       <div className="flex items-stretch gap-2">
         <button 
-          onClick={(e) => handleEditSet(i, firstSi, e)}
+          onClick={(e) => handleEditSet(i, lastIndex, e)}
           className={cn(
             "flex-1 p-4 pb-3 border transition-all text-left flex flex-col gap-1.5 relative group/set overflow-hidden rounded-2xl",
             isHighlighted
@@ -137,11 +137,11 @@ function SetReorderItem({
 
           <div className={cn(
             "absolute top-3 right-8 sm:right-12 px-2 py-1 rounded-lg border flex items-center gap-1 shadow-2xl transition-colors",
-            isHighlighted ? "bg-white/30 border-black/10" : "bg-black/90 border-white/10"
+            isHighlighted ? "bg-white/20 border-white/20" : "bg-black/90 border-white/10"
           )}>
             <span className={cn(
               "text-[11px] font-black italic tracking-tighter whitespace-nowrap",
-              isHighlighted ? "text-black" : "text-white"
+              isHighlighted ? "text-white" : "text-white"
             )}>
               {volSummary}
             </span>
@@ -695,7 +695,6 @@ export default function App() {
     setActiveTab('log');
     
     if (editingIndex === exerciseIndex && editingSetIndex === setIndex) {
-      setEditingIndex(null);
       setEditingSetIndex(null);
     } else {
       setEditingIndex(exerciseIndex);

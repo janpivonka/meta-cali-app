@@ -467,6 +467,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
   const [falseGrip, setFalseGrip] = useState(false);
   const [dipBarFootSupport, setDipBarFootSupport] = useState(false);
   const [sets, setSets] = useState<WorkoutSet[]>(() => {
+    if (initialData) return initialData.sets;
     return [
       { 
         id: generateId(), 
@@ -490,7 +491,22 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
   const [notes, setNotes] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [shared, setShared] = useState(false);
-  const [activeSetId, setActiveSetId] = useState<string | null>(null);
+  const [activeSetId, setActiveSetId] = useState<string | null>(() => {
+    if (initialData) {
+      if (highlightedSetIndex !== null && highlightedSetIndex !== undefined && initialData.sets[highlightedSetIndex]) {
+        return initialData.sets[highlightedSetIndex].id;
+      }
+      return initialData.sets[initialData.sets.length - 1]?.id || null;
+    }
+    return null; 
+  });
+
+  // Sync activeSetId if it's null but sets exist (for new fragment case)
+  useEffect(() => {
+    if (!activeSetId && sets.length > 0) {
+      setActiveSetId(sets[sets.length - 1].id);
+    }
+  }, [activeSetId, sets]);
   const [exerciseMedia, setExerciseMedia] = useState<ExerciseMedia[]>(initialData?.media || []);
 
   const [previewMedia, setPreviewMedia] = useState<ExerciseMedia[]>([]);
@@ -507,26 +523,49 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
   const bulkInputRef = useRef<HTMLInputElement>(null);
   const setsScrollRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll active set into view - Disabled per user request
+  // Auto-scroll active set into view
   useEffect(() => {
-    /*
     if (activeSetId && setsScrollRef.current) {
       const container = setsScrollRef.current;
-      const activeEl = document.getElementById(`nav-set-${activeSetId}`);
-      if (activeEl && container) {
-        const containerWidth = container.offsetWidth;
-        const itemWidth = activeEl.offsetWidth;
-        const itemLeft = activeEl.offsetLeft;
-        const targetScroll = itemLeft - (containerWidth / 2) + (itemWidth / 2);
-        
-        container.scrollTo({
-          left: targetScroll,
-          behavior: 'smooth'
-        });
-      }
+      const timeoutId = setTimeout(() => {
+        const activeEl = document.getElementById(`nav-set-${activeSetId}`);
+        if (activeEl && container) {
+          const isLastSet = activeSetId === sets[sets.length - 1]?.id;
+          
+          if (isLastSet) {
+            container.scrollTo({
+              left: container.scrollWidth,
+              behavior: 'smooth'
+            });
+          } else {
+            const containerWidth = container.offsetWidth;
+            const itemWidth = activeEl.offsetWidth;
+            const itemLeft = activeEl.offsetLeft;
+            const targetScroll = itemLeft - (containerWidth / 2) + (itemWidth / 2);
+            
+            container.scrollTo({
+              left: targetScroll,
+              behavior: 'smooth'
+            });
+          }
+        }
+      }, 50);
+      return () => clearTimeout(timeoutId);
     }
-    */
-  }, [activeSetId]);
+  }, [activeSetId, sets]);
+
+  // Sync activeSetId with external highlightedSetIndex (e.g. from Log)
+  const lastHighlightedRef = useRef(highlightedSetIndex);
+  useEffect(() => {
+    if (highlightedSetIndex !== lastHighlightedRef.current) {
+      if (highlightedSetIndex !== null && highlightedSetIndex !== undefined && sets[highlightedSetIndex]) {
+        setActiveSetId(sets[highlightedSetIndex].id);
+      } else if (highlightedSetIndex === null && initialData) {
+        setActiveSetId(sets[sets.length - 1]?.id || null);
+      }
+      lastHighlightedRef.current = highlightedSetIndex;
+    }
+  }, [highlightedSetIndex, sets, initialData]);
 
   const activeSet = sets.find(s => s.id === activeSetId);
   const activeSetIndex = sets.findIndex(s => s.id === activeSetId);
@@ -1039,7 +1078,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
           setActiveSetId(initialData.sets[highlightedSetIndex].id);
         }
       } else {
-        setActiveSetId(initialData.sets[0]?.id || null);
+        setActiveSetId(initialData.sets[initialData.sets.length - 1]?.id || null);
       }
 
       setNotes(initialData.notes || '');
