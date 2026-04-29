@@ -40,8 +40,14 @@
 }
 
 @layer base {
+  html {
+    @apply selection:bg-cyan-500/30;
+    background-color: var(--bg-app);
+    scroll-behavior: smooth;
+    scrollbar-gutter: stable;
+  }
   body {
-    @apply transition-colors duration-500 antialiased min-h-screen overflow-x-hidden;
+    @apply transition-colors duration-500 antialiased min-h-screen overflow-x-hidden overscroll-x-none;
     background-color: var(--bg-app);
     color: var(--text-main);
     background-image: 
@@ -97,8 +103,8 @@ input[type=number] {
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -106,9 +112,9 @@ input[type=number] {
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-slate-300 dark:bg-slate-800 rounded-full;
+  @apply bg-white/20 rounded-full border-[1.5px] border-transparent bg-clip-padding;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-cyan-500/50;
+  @apply bg-white/40;
 }

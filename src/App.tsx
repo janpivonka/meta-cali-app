@@ -113,7 +113,7 @@ function SetReorderItem({
             <div className="absolute inset-0 bg-cyan-500 opacity-10 animate-pulse pointer-events-none" />
           )}
 
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1 pr-24">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1 pr-20 sm:pr-24">
             <span className={cn(
               "text-[10px] font-black italic uppercase tracking-tighter shrink-0",
               isHighlighted ? "text-black" : "text-white"
@@ -135,7 +135,7 @@ function SetReorderItem({
             </div>
           </div>
 
-          <div className="absolute top-3 right-12 px-2 py-1 bg-black/90 rounded-lg border border-white/10 flex items-center gap-1 shadow-2xl">
+          <div className="absolute top-3 right-8 sm:right-12 px-2 py-1 bg-black/90 rounded-lg border border-white/10 flex items-center gap-1 shadow-2xl">
             <span className={cn(
               "text-[11px] font-black italic tracking-tighter whitespace-nowrap",
               isHighlighted ? "text-black mix-blend-difference" : "text-white"
@@ -791,6 +791,7 @@ export default function App() {
                  </div>
                )}
                <WorkoutForm 
+                 key={editingIndex !== null ? `edit-${editingIndex}` : `new-${preSelectedExerciseId}`}
                  onSave={(log) => {
                    handleAddExerciseToWorkout(log);
                    setPreSelectedExerciseId(null);
@@ -832,7 +833,7 @@ export default function App() {
                                  Mission Execution Fragment
                                </span>
 
-                               <div className="flex overflow-x-auto gap-4 pb-6 snap-x scrollbar-thin scrollbar-thumb-white/20">
+                               <div className="flex overflow-x-auto gap-4 pb-6 snap-x no-scrollbar">
                                  {(() => {
                                    const sets = log.sets || [];
                                    const groups: any[] = [];
@@ -1062,10 +1063,10 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-transparent flex flex-col lg:flex-row font-sans overflow-x-hidden">
+    <div className="min-h-screen bg-app flex flex-col lg:flex-row font-sans overflow-x-hidden selection:bg-cyan-500/30">
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
       
-      <main className="flex-1 lg:ml-64 p-4 md:p-8 lg:p-12 max-w-7xl mx-auto w-full flex flex-col min-h-screen pb-32 lg:pb-12 relative overflow-x-hidden">
+      <main className="flex-1 lg:ml-64 p-4 md:p-8 lg:p-12 max-w-7xl mx-auto w-full flex flex-col min-h-screen pb-32 lg:pb-12 relative overflow-x-hidden bg-app">
         {/* Decorative Grid Overlay */}
         <div className="fixed inset-0 pointer-events-none opacity-[0.03] dark:opacity-[0.05] z-0">
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px]"></div>
