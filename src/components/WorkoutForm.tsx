@@ -1153,31 +1153,53 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
         video.currentTime = Math.min(video.duration / 2, 1);
       };
 
-      video.onseeked = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        
-        // Resize thumbnail to something reasonable
-        const MAX_THUMB = 300;
-        if (canvas.width > canvas.height) {
-          if (canvas.width > MAX_THUMB) {
-            canvas.height *= MAX_THUMB / canvas.width;
-            canvas.width = MAX_THUMB;
+      video.onseeked = async () => {
+        try {
+          const canvas = document.createElement('canvas');
+          
+          // Resize thumbnail to something reasonable
+          const MAX_THUMB = 400;
+          let width = video.videoWidth;
+          let height = video.videoHeight;
+  
+          if (width <= 0 || height <= 0) {
+            URL.revokeObjectURL(url);
+            resolve(null);
+            return;
           }
-        } else {
-          if (canvas.height > MAX_THUMB) {
-            canvas.width *= MAX_THUMB / canvas.height;
-            canvas.height = MAX_THUMB;
+  
+          if (width > height) {
+            if (width > MAX_THUMB) {
+              height *= MAX_THUMB / width;
+              width = MAX_THUMB;
+            }
+          } else {
+            if (height > MAX_THUMB) {
+              width *= MAX_THUMB / height;
+              height = MAX_THUMB;
+            }
           }
+  
+          canvas.width = Math.max(1, width);
+          canvas.height = Math.max(1, height);
+  
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            URL.revokeObjectURL(url);
+            resolve(null);
+            return;
+          }
+  
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          
+          const thumbnail = canvas.toDataURL('image/jpeg', 0.7);
+          URL.revokeObjectURL(url);
+          resolve(thumbnail);
+        } catch (e) {
+          console.error('Error generating video thumbnail:', e);
+          URL.revokeObjectURL(url);
+          resolve(null);
         }
-
-        const ctx = canvas.getContext('2d');
-        ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
-        const thumbnail = canvas.toDataURL('image/jpeg', 0.6);
-        URL.revokeObjectURL(url);
-        resolve(thumbnail);
       };
 
       video.onerror = () => {
@@ -1206,15 +1228,32 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
         // IndexedDB handles this much better than a massive base64 string
         resolve({ type: 'video', url: file as any, thumbnail });
       } else {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const img = new Image();
-          img.onload = () => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          resolve(null);
+        };
+
+        img.onload = async () => {
+          try {
+            // Ensure image is fully decoded before drawing to canvas
+            if ('decode' in img) {
+              await img.decode();
+            }
+
             const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 800;
-            const MAX_HEIGHT = 800;
+            const MAX_WIDTH = 1000; 
+            const MAX_HEIGHT = 1000;
             let width = img.width;
             let height = img.height;
+
+            if (width <= 0 || height <= 0) {
+              URL.revokeObjectURL(url);
+              resolve(null);
+              return;
+            }
 
             if (width > height) {
               if (width > MAX_WIDTH) {
@@ -1228,18 +1267,31 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
               }
             }
 
-            canvas.width = width;
-            canvas.height = height;
+            canvas.width = Math.floor(width);
+            canvas.height = Math.floor(height);
+            
             const ctx = canvas.getContext('2d');
-            ctx?.drawImage(img, 0, 0, width, height);
+            if (!ctx) {
+              URL.revokeObjectURL(url);
+              resolve(null);
+              return;
+            }
+
+            // Normal drawing - no background fill that might mask failures
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
             
             // Compress to JPEG for smaller storage
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+            URL.revokeObjectURL(url);
             resolve({ type: 'image', url: dataUrl });
-          };
-          img.src = e.target?.result as string;
+          } catch (e) {
+            console.error('Error processing image:', e);
+            URL.revokeObjectURL(url);
+            resolve(null);
+          }
         };
-        reader.readAsDataURL(file);
+
+        img.src = url;
       }
     });
   };

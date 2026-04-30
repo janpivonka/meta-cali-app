@@ -66,10 +66,10 @@ function VolumeBadge({ subSummaries, unit, isHighlighted }: { subSummaries: {v: 
     <div className="flex flex-wrap items-center justify-start gap-x-1 gap-y-1">
       {subSummaries.map((ss, idx) => (
         <div key={idx} className={cn(
-          "flex items-center gap-0.5 px-1 py-0.5 rounded-[3px] border shadow-sm",
+          "flex items-center gap-0.5 px-2 py-0.5 rounded-[4px] border shadow-sm transition-all",
           isHighlighted 
-            ? "bg-black/10 border-black/10" 
-            : "bg-zinc-950 border-white/5"
+            ? "bg-black/20 border-black/10" 
+            : "bg-[#121212] border-white/10"
         )}>
           {ss.c > 1 && (
             <div className="flex items-center gap-0.5">
@@ -179,8 +179,8 @@ function SetReorderItem({
             </div>
 
             <div className={cn(
-              "px-1.5 py-1 rounded-lg border flex items-center shadow-md transition-all duration-300 shrink-0 max-w-[60%] mr-[26px]",
-              isHighlighted ? "bg-white/10 border-white/20 shadow-none text-black" : "bg-white/5 border-white/5 text-white"
+              "px-2 py-1 rounded-xl border flex items-center shadow-lg transition-all duration-300 shrink-0 max-w-[60%] mr-10",
+              isHighlighted ? "bg-white/10 border-white/20 shadow-none text-black" : "bg-white/10 border-white/10 text-white"
             )}>
               <VolumeBadge subSummaries={subSummaries} unit={unit} isHighlighted={isHighlighted} />
             </div>
@@ -286,7 +286,7 @@ function SetReorderItem({
                     onMediaClick([m], 0);
                   }}
                 >
-                  <MediaRenderer url={m.url || m.thumbnail} type={m.type || 'image'} className="w-full h-full object-cover opacity-60 hover:opacity-100" />
+                  <MediaRenderer url={m.url || m.thumbnail} type={m.type || 'image'} className="w-full h-full object-cover hover:scale-105 transition-transform" />
                 </div>
               ))}
             </div>
@@ -1007,11 +1007,11 @@ export default function App() {
                                                {media.map((m: any, midx: number) => (
                                                  <div key={midx} className="w-6 h-6 rounded-md overflow-hidden bg-black/40 border border-white/5 shrink-0">
                                                    {m?.type === 'image' ? (
-                                                     <MediaRenderer url={m.url} type="image" className="w-full h-full object-cover opacity-60" referrerPolicy="no-referrer" />
+                                                     <MediaRenderer url={m.url} type="image" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                                                    ) : (
                                                      <div className="w-full h-full relative">
                                                        {m?.thumbnail ? (
-                                                         <img src={m.thumbnail} className="w-full h-full object-cover opacity-60" referrerPolicy="no-referrer" alt="" />
+                                                         <img src={m.thumbnail} className="w-full h-full object-cover" referrerPolicy="no-referrer" alt="" />
                                                        ) : (
                                                          <div className="w-full h-full flex items-center justify-center text-cyan-500/40 transform scale-75"><Video size={8} /></div>
                                                        )}
@@ -1049,7 +1049,7 @@ export default function App() {
                                           ) : (
                                             <div className="w-full h-full relative">
                                               {m?.thumbnail ? (
-                                                <img src={m.thumbnail} className="w-full h-full object-cover opacity-80" referrerPolicy="no-referrer" alt="" />
+                                                <img src={m.thumbnail} className="w-full h-full object-cover" referrerPolicy="no-referrer" alt="" />
                                               ) : (
                                                 <div className="w-full h-full flex items-center justify-center text-cyan-500"><Video size={20} /></div>
                                               )}
