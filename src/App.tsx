@@ -50,6 +50,52 @@ interface SetReorderItemProps {
   key?: React.Key;
 }
 
+function VolumeBadge({ subSummaries, unit, isHighlighted }: { subSummaries: {v: number, c: number}[], unit: string, isHighlighted: boolean }) {
+  const UnitBox = ({ children }: { children: React.ReactNode }) => (
+    <span className={cn(
+      "inline-flex items-center justify-center w-3.5 h-3.5 rounded-[2px] text-[7px] font-bold leading-none border transition-all duration-300",
+      isHighlighted 
+        ? "bg-black/10 border-black/10 text-black/80" 
+        : "bg-white/10 border-white/20 text-white shadow-sm"
+    )}>
+      {children}
+    </span>
+  );
+
+  return (
+    <div className="flex flex-wrap items-center justify-end gap-x-1 gap-y-1">
+      {subSummaries.map((ss, idx) => (
+        <div key={idx} className="flex items-center gap-0.5 whitespace-nowrap">
+          {ss.c > 1 && (
+            <div className="flex items-center gap-0.5">
+              <span className={cn(
+                "font-mono text-[11px] font-bold tracking-tighter",
+                isHighlighted ? "text-black" : "text-white"
+              )}>{ss.c}</span>
+              <UnitBox>S</UnitBox>
+              <span className={cn(
+                "text-[7px] font-bold opacity-30 mx-0.5",
+                isHighlighted ? "text-black" : "text-white"
+              )}>×</span>
+            </div>
+          )}
+          <span className={cn(
+            "font-mono text-[11px] font-bold tracking-tighter",
+            isHighlighted ? "text-black" : "text-white"
+          )}>{ss.v}</span>
+          <UnitBox>{unit.charAt(0).toUpperCase()}</UnitBox>
+          {idx < subSummaries.length - 1 && (
+            <span className={cn(
+              "text-[9px] font-bold opacity-20 mx-0.5",
+              isHighlighted ? "text-black" : "text-white"
+            )}>,</span>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function SetReorderItem({ 
   group, 
   i, 
@@ -82,9 +128,6 @@ function SetReorderItem({
       subSummaries.push({ v, c: 1 });
     }
   });
-  const volSummary = subSummaries.map(ss => 
-    ss.c > 1 ? `${ss.c}Sx${ss.v}${unit}` : `${ss.v}${unit}`
-  ).join(', ');
 
   return (
     <Reorder.Item 
@@ -113,38 +156,35 @@ function SetReorderItem({
             <div className="absolute inset-0 bg-cyan-500 opacity-10 animate-pulse pointer-events-none" />
           )}
 
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1 pr-20 sm:pr-24">
-            <span className={cn(
-              "text-[10px] font-black italic uppercase tracking-tighter shrink-0",
-              isHighlighted ? "text-black" : "text-white"
-            )}>
-              {exName}
-            </span>
-            <span className={cn(
-              "text-[9px] font-black shrink-0",
-              isHighlighted ? "text-black/20" : "text-slate-800/30"
-            )}>/</span>
-            <div 
-              className={cn(
-                "text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded border shrink-0",
-                isHighlighted ? "bg-black/10 border-black/10 text-black/60" : "bg-cyan-500/10 border-cyan-500/20 text-cyan-400"
-              )}
-              style={{ color: isHighlighted ? undefined : groupColor, borderColor: isHighlighted ? undefined : groupColor + '30' }}
-            >
-              {currentLoadLabel}
+          <div className="flex flex-col sm:flex-row items-start justify-between gap-3 mb-2">
+            <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+              <span className={cn(
+                "text-[10px] font-black italic uppercase tracking-tighter shrink-0",
+                isHighlighted ? "text-black" : "text-white"
+              )}>
+                {exName}
+              </span>
+              <span className={cn(
+                "text-[8px] font-bold opacity-10 shrink-0",
+                isHighlighted ? "text-black" : "text-white"
+              )}>/</span>
+              <div 
+                className={cn(
+                  "text-[7px] font-bold uppercase tracking-tight px-1.5 py-0.5 rounded-[4px] border shrink-0",
+                  isHighlighted ? "bg-black/10 border-black/10 text-black/60" : "bg-cyan-500/10 border-cyan-500/20 text-cyan-400"
+                )}
+                style={{ color: isHighlighted ? undefined : groupColor, borderColor: isHighlighted ? undefined : groupColor + '40' }}
+              >
+                {currentLoadLabel}
+              </div>
             </div>
-          </div>
 
-          <div className={cn(
-            "absolute top-3 right-8 sm:right-12 px-2 py-1 rounded-lg border flex items-center gap-1 shadow-2xl transition-colors",
-            isHighlighted ? "bg-white/20 border-white/20" : "bg-black/90 border-white/10"
-          )}>
-            <span className={cn(
-              "text-[11px] font-black italic tracking-tighter whitespace-nowrap",
-              isHighlighted ? "text-white" : "text-white"
+            <div className={cn(
+              "px-2 py-1.5 rounded-xl border flex items-center shadow-xl transition-all duration-300 grow-0 shrink",
+              isHighlighted ? "bg-white/20 border-white/20 shadow-none text-black" : "bg-black/90 border-white/10 text-white"
             )}>
-              {volSummary}
-            </span>
+              <VolumeBadge subSummaries={subSummaries} unit={unit} isHighlighted={isHighlighted} />
+            </div>
           </div>
 
           <div className="flex flex-col gap-y-0.5 pr-2 select-none">
@@ -863,10 +903,6 @@ export default function App() {
                                        }
                                      });
                                      
-                                     const volSummary = subGroups.map(sg => 
-                                       `${sg.c}Sx${sg.v}${unit}`
-                                     ).join(', ');
-
                                      const exName = EXERCISE_LIBRARY.find(e => e.id === log.exerciseId)?.name || log.type;
                                      const groupColor = getColorFromMeta(group.key);
 
@@ -879,23 +915,23 @@ export default function App() {
                                            boxShadow: `0 10px 15px -3px ${groupColor}20`
                                          }}
                                        >
-                                         <div className="flex items-center gap-2 mb-0.5 pr-20">
-                                           <span className="text-[10px] font-black italic uppercase tracking-tighter text-white truncate">
-                                             {exName}
-                                           </span>
-                                           <span className="text-[9px] font-black text-slate-800/30">/</span>
-                                           <div 
-                                             className="text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded border bg-cyan-500/10 border-cyan-500/20 text-cyan-400 shrink-0"
-                                             style={{ color: groupColor, borderColor: groupColor + '30' }}
-                                           >
-                                              {currentLoadLabel}
+                                         <div className="flex flex-col sm:flex-row items-start justify-between gap-3 mb-2">
+                                           <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                                             <span className="text-[10px] font-black italic uppercase tracking-tighter text-white shrink-0">
+                                               {exName}
+                                             </span>
+                                             <span className="text-[8px] font-bold text-white/10 shrink-0">/</span>
+                                             <div 
+                                               className="text-[7px] font-bold uppercase tracking-tight px-1.5 py-0.5 rounded-[4px] border bg-black/40 border-white/5 text-white/40 shrink-0 shadow-sm"
+                                               style={{ color: groupColor, borderColor: groupColor + '40' }}
+                                             >
+                                                {currentLoadLabel}
+                                             </div>
                                            </div>
-                                         </div>
 
-                                         <div className="absolute top-3 right-3 px-2 py-1 bg-black/90 rounded-lg border border-white/10 flex items-center shadow-2xl">
-                                           <span className="text-[11px] font-black italic tracking-tighter text-white whitespace-nowrap">
-                                             {volSummary}
-                                           </span>
+                                           <div className="px-2 py-1.5 bg-black/90 rounded-xl border border-white/10 flex items-center shadow-2xl grow-0 shrink">
+                                             <VolumeBadge subSummaries={subGroups} unit={unit} isHighlighted={false} />
+                                           </div>
                                          </div>
 
                                          <div className="flex flex-col gap-y-0.5 pr-2 select-none">
