@@ -50,7 +50,9 @@ export interface WorkoutSet {
   assistanceDetails?: AssistanceDetails;
   loadType?: LoadType;
   notes?: string;
+  groupNotes?: string;
   media?: ExerciseMedia[];
+  groupMedia?: ExerciseMedia[];
 }
 
 export type LoadType = 'bodyweight' | 'weighted' | 'assisted';

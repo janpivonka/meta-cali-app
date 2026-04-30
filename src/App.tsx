@@ -275,43 +275,123 @@ function SetReorderItem({
               )}
             </div>
 
-            {sets.some(s => s.notes) && (
+            {(sets.some((s) => s.notes) || sets.some((s) => s.groupNotes)) && (
               <div className="mt-1 flex flex-col gap-0.5">
-                {sets.map((s, idx) => s.notes && (
-                  <p key={idx} className={cn(
-                    "text-[9px] italic font-medium leading-tight line-clamp-1",
-                    isHighlighted ? "text-black/70" : "text-slate-400"
-                  )}>
-                    {sets.length > 1 && (
-                      <span 
-                        className="font-black mr-1 opacity-80" 
-                        style={{ color: isHighlighted ? undefined : getSetColor(group.originalIndices[idx]) }}
+                {/* Group level notes (if any) - only show once per group */}
+                {sets[0]?.groupNotes && (
+                  <div className="flex items-start gap-2 bg-cyan-400/[0.03] p-2 rounded-xl border border-cyan-400/10 mb-1">
+                    <MessageSquare
+                      size={10}
+                      className="text-cyan-400 shrink-0 mt-0.5"
+                    />
+                    <p
+                      className={cn(
+                        "text-[9px] italic font-black leading-tight",
+                        isHighlighted ? "text-black" : "text-cyan-400/80",
+                      )}
+                    >
+                      "{sets[0].groupNotes}"
+                    </p>
+                  </div>
+                )}
+                {/* Individual set notes */}
+                {sets.map(
+                  (s, idx) =>
+                    s.notes && (
+                      <p
+                        key={idx}
+                        className={cn(
+                          "text-[9px] italic font-medium leading-tight line-clamp-1",
+                          isHighlighted ? "text-black/70" : "text-slate-400",
+                        )}
                       >
-                        #{group.originalIndices[idx]+1}
-                      </span>
-                    )}
-                    "{s.notes}"
-                  </p>
-                ))}
+                        {sets.length > 1 && (
+                          <span
+                            className="font-black mr-1 opacity-80"
+                            style={{
+                              color: isHighlighted
+                                ? undefined
+                                : getSetColor(group.originalIndices[idx]),
+                            }}
+                          >
+                            #{group.originalIndices[idx] + 1}
+                          </span>
+                        )}
+                        "{s.notes}"
+                      </p>
+                    ),
+                )}
               </div>
             )}
           </div>
 
-          {sets.some(s => s.media && s.media.length > 0) && (
-            <div className="flex gap-1.5 overflow-x-auto mt-2">
-              {sets.flatMap((s, sIdx) => (s.media || []).map((m: any, mIdx: number) => ({ ...m, parentSetIdx: group.originalIndices[sIdx] }))).map((m: any, midx: number) => (
-                <div 
-                  key={midx} 
-                  className="w-8 h-8 rounded-lg overflow-hidden border bg-black shrink-0 cursor-pointer pointer-events-auto transition-all"
-                  style={{ borderColor: isHighlighted ? 'rgba(0,0,0,0.1)' : getSetColor(m.parentSetIdx) }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onMediaClick([m], 0);
-                  }}
-                >
-                  <MediaRenderer url={m.url || m.thumbnail} type={m.type || 'image'} className="w-full h-full object-cover hover:scale-105 transition-transform" />
+          {(sets.some((s) => (s.media && s.media.length > 0) || (s.groupMedia && s.groupMedia.length > 0))) && (
+            <div className="flex flex-col gap-2 mt-2">
+              {/* Group Media */}
+              {sets[0]?.groupMedia && sets[0].groupMedia.length > 0 && (
+                <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                  {sets[0].groupMedia.map((m: any, midx: number) => (
+                    <div
+                      key={`group-${midx}`}
+                      className="w-10 h-10 rounded-xl overflow-hidden border bg-black shrink-0 cursor-pointer pointer-events-auto transition-all relative group/media-item"
+                      style={{
+                        borderColor: isHighlighted
+                          ? "rgba(0,0,0,0.1)"
+                          : "rgba(34,211,238,0.3)",
+                        boxShadow: `0 0 10px rgba(34,211,238,0.05)`,
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onMediaClick(sets[0].groupMedia, midx);
+                      }}
+                    >
+                      <MediaRenderer
+                        url={m.url || m.thumbnail}
+                        type={m.type || "image"}
+                        className="w-full h-full object-cover hover:scale-105 transition-transform"
+                      />
+                      <div className="absolute top-0 right-0 bg-cyan-400 text-black text-[6px] font-black px-1 rounded-bl-md">
+                        GROUP
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
+              {/* Individual Media */}
+              {sets.some((s) => s.media && s.media.length > 0) && (
+                <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+                  {sets
+                    .flatMap((s, sIdx) =>
+                      (s.media || []).map((m: any, mIdx: number) => ({
+                        ...m,
+                        parentSetIdx: group.originalIndices[sIdx],
+                        allMediaInSet: s.media,
+                        itemIdxInSet: mIdx
+                      })),
+                    )
+                    .map((m: any, midx: number) => (
+                      <div
+                        key={`set-${midx}`}
+                        className="w-8 h-8 rounded-lg overflow-hidden border bg-black shrink-0 cursor-pointer pointer-events-auto transition-all"
+                        style={{
+                          borderColor: isHighlighted
+                            ? "rgba(0,0,0,0.1)"
+                            : getSetColor(m.parentSetIdx),
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onMediaClick(m.allMediaInSet, m.itemIdxInSet);
+                        }}
+                      >
+                        <MediaRenderer
+                          url={m.url || m.thumbnail}
+                          type={m.type || "image"}
+                          className="w-full h-full object-cover hover:scale-105 transition-transform"
+                        />
+                      </div>
+                    ))}
+                </div>
+              )}
             </div>
           )}
           
@@ -912,29 +992,53 @@ export default function App() {
 
                                    return groups.map((group, gi) => {
                                      const { metadata, items, media } = group;
-                                     const { currentLoadLabel, orangeLine, gripLine, equipLine, armLine, coreLine, legLine } = metadata;
-                                     const unit = isHoldExercise(log.exerciseId) ? 's' : 'R';
-                                     
-                                     const subGroups: { v: number; c: number }[] = [];
+                                     const {
+                                       currentLoadLabel,
+                                       orangeLine,
+                                       gripLine,
+                                       equipLine,
+                                       armLine,
+                                       coreLine,
+                                       legLine,
+                                     } = metadata;
+                                     const unit =
+                                       isHoldExercise(log.exerciseId)
+                                         ? "s"
+                                         : "R";
+
+                                     const subGroups: { v: number; c: number }[] =
+                                       [];
                                      items.forEach((s: any) => {
                                        const v = s.reps || s.time || 0;
-                                       if (subGroups.length > 0 && subGroups[subGroups.length - 1].v === v) {
+                                       if (
+                                         subGroups.length > 0 &&
+                                         subGroups[subGroups.length - 1].v === v
+                                       ) {
                                          subGroups[subGroups.length - 1].c++;
                                        } else {
                                          subGroups.push({ v, c: 1 });
                                        }
                                      });
-                                     
-                                     const exName = EXERCISE_LIBRARY.find(e => e.id === log.exerciseId)?.name || log.type;
-                                     const groupColor = getColorFromMeta(group.key);
+
+                                     const exName =
+                                       EXERCISE_LIBRARY.find(
+                                         (e) => e.id === log.exerciseId,
+                                       )?.name || log.type;
+                                     const groupColor = getColorFromMeta(
+                                       group.key,
+                                     );
+
+                                     // Group content across items (for indicators)
+                                     const hasGroupNotes = items[0]?.groupNotes;
+                                     const groupMedia = items[0]?.groupMedia || [];
 
                                      return (
-                                       <div 
-                                         key={gi} 
+                                       <div
+                                         key={gi}
                                          className="min-w-[240px] sm:min-w-[280px] p-4 rounded-2xl border bg-black/40 border-white/10 text-white flex flex-col gap-1.5 relative overflow-hidden shadow-lg snap-center"
-                                         style={{ 
-                                           borderColor: groupColor + '60',
-                                           boxShadow: `0 10px 15px -3px ${groupColor}20`
+                                         style={{
+                                           borderColor: groupColor + "60",
+                                           boxShadow: `0 10px 15px -3px ${groupColor}20`,
                                          }}
                                        >
                                          <div className="flex flex-row justify-between items-start gap-2 mb-2">
@@ -942,17 +1046,26 @@ export default function App() {
                                              <span className="text-[10px] font-black italic uppercase tracking-tighter text-white shrink-0">
                                                {exName}
                                              </span>
-                                             <span className="text-[8px] font-bold text-white/10 shrink-0">/</span>
-                                             <div 
+                                             <span className="text-[8px] font-bold text-white/10 shrink-0">
+                                               /
+                                             </span>
+                                             <div
                                                className="text-[7px] font-bold uppercase tracking-tight px-1 py-0.5 rounded-[3px] border bg-black/40 border-white/5 text-white/40 shrink-0 shadow-sm"
-                                               style={{ color: groupColor, borderColor: groupColor + '40' }}
+                                               style={{
+                                                 color: groupColor,
+                                                 borderColor: groupColor + "40",
+                                               }}
                                              >
-                                                {currentLoadLabel}
+                                               {currentLoadLabel}
                                              </div>
                                            </div>
 
                                            <div className="px-1.5 py-1 bg-white/[0.03] rounded-lg border border-white/5 flex items-center shadow-2xl shrink-0 max-w-[60%] mr-[26px]">
-                                             <VolumeBadge subSummaries={subGroups} unit={unit} isHighlighted={false} />
+                                             <VolumeBadge
+                                               subSummaries={subGroups}
+                                               unit={unit}
+                                               isHighlighted={false}
+                                             />
                                            </div>
                                          </div>
 
@@ -960,90 +1073,193 @@ export default function App() {
                                            <div className="flex flex-col gap-0.5 mb-1">
                                              {orangeLine.length > 0 && (
                                                <div className="flex items-baseline gap-x-1">
-                                                 <span className="text-[7px] font-black uppercase tracking-tighter text-orange-400 opacity-40 shrink-0">ASSIST:</span>
+                                                 <span className="text-[7px] font-black uppercase tracking-tighter text-orange-400 opacity-40 shrink-0">
+                                                   ASSIST:
+                                                 </span>
                                                  <div className="flex flex-wrap items-baseline gap-x-1">
-                                                   {orangeLine.map((p: any, pidx: number) => (
-                                                     <span key={pidx} className="text-[7px] font-black uppercase italic text-orange-400 whitespace-nowrap">
-                                                       {pidx > 0 && "• "}{p}
-                                                     </span>
-                                                   ))}
+                                                   {orangeLine.map(
+                                                     (p: any, pidx: number) => (
+                                                       <span
+                                                         key={pidx}
+                                                         className="text-[7px] font-black uppercase italic text-orange-400 whitespace-nowrap"
+                                                       >
+                                                         {pidx > 0 && "• "}
+                                                         {p}
+                                                       </span>
+                                                     ),
+                                                   )}
                                                  </div>
                                                </div>
                                              )}
 
                                              {gripLine.length > 0 && (
                                                <div className="flex items-baseline gap-x-1">
-                                                 <span className="text-[7px] font-black uppercase tracking-tighter text-slate-500 opacity-40 shrink-0">GRIP:</span>
+                                                 <span className="text-[7px] font-black uppercase tracking-tighter text-slate-500 opacity-40 shrink-0">
+                                                   GRIP:
+                                                 </span>
                                                  <div className="flex flex-wrap items-baseline gap-x-1">
-                                                   {gripLine.map((p: any, pidx: number) => (
-                                                     <span key={pidx} className="text-[7px] font-bold uppercase text-slate-500 whitespace-nowrap">
-                                                       {pidx > 0 && "• "}{p}
-                                                     </span>
-                                                   ))}
+                                                   {gripLine.map(
+                                                     (p: any, pidx: number) => (
+                                                       <span
+                                                         key={pidx}
+                                                         className="text-[7px] font-bold uppercase text-slate-500 whitespace-nowrap"
+                                                       >
+                                                         {pidx > 0 && "• "}
+                                                         {p}
+                                                       </span>
+                                                     ),
+                                                   )}
                                                  </div>
                                                </div>
                                              )}
 
                                              {armLine.length > 0 && (
                                                <div className="flex items-baseline gap-x-1">
-                                                 <span className="text-[7px] font-black uppercase tracking-tighter text-[#a855f7] opacity-40 shrink-0">ARMS:</span>
+                                                 <span className="text-[7px] font-black uppercase tracking-tighter text-[#a855f7] opacity-40 shrink-0">
+                                                   ARMS:
+                                                 </span>
                                                  <div className="flex flex-wrap items-baseline gap-x-1">
-                                                   {armLine.map((p: any, pidx: number) => (
-                                                     <span key={pidx} className="text-[7px] font-black uppercase italic text-[#a855f7] whitespace-nowrap">
-                                                       {pidx > 0 && "• "}{p}
-                                                     </span>
-                                                   ))}
+                                                   {armLine.map(
+                                                     (p: any, pidx: number) => (
+                                                       <span
+                                                         key={pidx}
+                                                         className="text-[7px] font-black uppercase italic text-[#a855f7] whitespace-nowrap"
+                                                       >
+                                                         {pidx > 0 && "• "}
+                                                         {p}
+                                                       </span>
+                                                     ),
+                                                   )}
                                                  </div>
                                                </div>
                                              )}
 
                                              {coreLine.length > 0 && (
                                                <div className="flex items-baseline gap-x-1">
-                                                 <span className="text-[7px] font-black uppercase tracking-tighter text-[#a855f7] opacity-40 shrink-0">CORE:</span>
+                                                 <span className="text-[7px] font-black uppercase tracking-tighter text-[#a855f7] opacity-40 shrink-0">
+                                                   CORE:
+                                                 </span>
                                                  <div className="flex flex-wrap items-baseline gap-x-1">
-                                                   {coreLine.map((p: any, pidx: number) => (
-                                                     <span key={pidx} className="text-[7px] font-black uppercase italic text-[#a855f7] whitespace-nowrap">
-                                                       {pidx > 0 && "• "}{p}
-                                                     </span>
-                                                   ))}
+                                                   {coreLine.map(
+                                                     (p: any, pidx: number) => (
+                                                       <span
+                                                         key={pidx}
+                                                         className="text-[7px] font-black uppercase italic text-[#a855f7] whitespace-nowrap"
+                                                       >
+                                                         {pidx > 0 && "• "}
+                                                         {p}
+                                                       </span>
+                                                     ),
+                                                   )}
                                                  </div>
                                                </div>
                                              )}
 
                                              {legLine.length > 0 && (
                                                <div className="flex items-baseline gap-x-1">
-                                                 <span className="text-[7px] font-black uppercase tracking-tighter text-[#a855f7] opacity-40 shrink-0">LEGS:</span>
+                                                 <span className="text-[7px] font-black uppercase tracking-tighter text-[#a855f7] opacity-40 shrink-0">
+                                                   LEGS:
+                                                 </span>
                                                  <div className="flex flex-wrap items-baseline gap-x-1">
-                                                   {legLine.map((p: any, pidx: number) => (
-                                                     <span key={pidx} className="text-[7px] font-black uppercase italic text-[#a855f7] whitespace-nowrap">
-                                                       {pidx > 0 && "• "}{p}
-                                                     </span>
-                                                   ))}
+                                                   {legLine.map(
+                                                     (p: any, pidx: number) => (
+                                                       <span
+                                                         key={pidx}
+                                                         className="text-[7px] font-black uppercase italic text-[#a855f7] whitespace-nowrap"
+                                                       >
+                                                         {pidx > 0 && "• "}
+                                                         {p}
+                                                       </span>
+                                                     ),
+                                                   )}
                                                  </div>
                                                </div>
                                              )}
                                            </div>
-                                         </div>
 
-                                         {media.length > 0 && (
-                                             <div className="flex gap-1 overflow-x-auto mt-1">
-                                               {media.map((m: any, midx: number) => (
-                                                 <div key={midx} className="w-6 h-6 rounded-md overflow-hidden bg-black/40 border border-white/5 shrink-0">
-                                                   {m?.type === 'image' ? (
-                                                     <MediaRenderer url={m.url} type="image" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                                                   ) : (
-                                                     <div className="w-full h-full relative">
-                                                       {m?.thumbnail ? (
-                                                         <img src={m.thumbnail} className="w-full h-full object-cover" referrerPolicy="no-referrer" alt="" />
-                                                       ) : (
-                                                         <div className="w-full h-full flex items-center justify-center text-cyan-500/40 transform scale-75"><Video size={8} /></div>
-                                                       )}
-                                                     </div>
-                                                   )}
-                                                 </div>
-                                               ))}
+                                           {/* Notes display */}
+                                           {(hasGroupNotes ||
+                                             items.some((s: any) => s.notes)) && (
+                                             <div className="mt-1 flex flex-col gap-1">
+                                               {hasGroupNotes && (
+                                                 <p className="text-[9px] italic font-black text-cyan-400 border-l border-cyan-400/30 pl-2">
+                                                   "{hasGroupNotes}"
+                                                 </p>
+                                               )}
+                                               {items.map(
+                                                 (s: any, idx: number) =>
+                                                   s.notes && (
+                                                     <p
+                                                       key={idx}
+                                                       className="text-[8px] italic font-medium text-slate-500 pl-2"
+                                                     >
+                                                       Series #{gi + 1}.
+                                                       {idx + 1}: "{s.notes}"
+                                                     </p>
+                                                   ),
+                                               )}
                                              </div>
                                            )}
+                                         </div>
+
+                                         {/* Media display (Both group and individual) */}
+                                         {(groupMedia.length > 0 ||
+                                           media.length > 0) && (
+                                           <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-white/5">
+                                             {groupMedia.length > 0 && (
+                                               <div className="flex gap-1 overflow-x-auto no-scrollbar">
+                                                 {groupMedia.map(
+                                                   (m: any, midx: number) => (
+                                                     <div
+                                                       key={`gm-${midx}`}
+                                                       className="w-8 h-8 rounded-lg overflow-hidden bg-black/40 border border-cyan-500/30 shrink-0 relative"
+                                                       onClick={() =>
+                                                         handleMediaClick(
+                                                           groupMedia,
+                                                           midx,
+                                                         )
+                                                       }
+                                                     >
+                                                       <MediaRenderer
+                                                         url={m.url}
+                                                         type={
+                                                           m.type || "image"
+                                                         }
+                                                         className="w-full h-full object-cover"
+                                                       />
+                                                     </div>
+                                                   ),
+                                                 )}
+                                               </div>
+                                             )}
+                                             {media.length > 0 && (
+                                               <div className="flex gap-1 overflow-x-auto no-scrollbar">
+                                                 {media.map(
+                                                   (m: any, midx: number) => (
+                                                     <div
+                                                       key={midx}
+                                                       className="w-6 h-6 rounded-md overflow-hidden bg-black/40 border border-white/5 shrink-0"
+                                                       onClick={() =>
+                                                         handleMediaClick(
+                                                           media,
+                                                           midx,
+                                                         )
+                                                       }
+                                                     >
+                                                       <MediaRenderer
+                                                         url={m.url}
+                                                         type={
+                                                           m.type || "image"
+                                                         }
+                                                         className="w-full h-full object-cover"
+                                                       />
+                                                     </div>
+                                                   ),
+                                                 )}
+                                               </div>
+                                             )}
+                                           </div>
+                                         )}
                                        </div>
                                      );
                                    });

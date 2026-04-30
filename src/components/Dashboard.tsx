@@ -321,6 +321,66 @@ export const Dashboard: React.FC<DashboardProps> = ({ workouts }) => {
         </div>
       </div>
 
+      {/* Recent Operations Section */}
+      {workouts.length > 0 && (
+        <section className="space-y-6">
+          <div className="flex items-center justify-between px-2">
+            <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-[0.25em]">
+              Recent Operations
+            </h3>
+            <button
+               onClick={() => {
+                 // We need to trigger tab change in App.tsx somehow. 
+                 // But Dashboard.tsx doesn't have setActiveTab.
+                 // However, history is usually in Stats.
+               }}
+               className="text-[10px] text-slate-400 hover:text-cyan-500 font-black uppercase tracking-widest flex items-center gap-2"
+            >
+              View All <ArrowRight size={12} />
+            </button>
+          </div>
+          <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar -mx-2 px-2 snap-x">
+            {workouts.slice(0, 5).map((workout) => (
+              <motion.div
+                key={workout.id}
+                whileHover={{ y: -5 }}
+                className="glass-card min-w-[200px] p-6 border-white/5 bg-white/5 flex flex-col gap-4 snap-center relative overflow-hidden group"
+              >
+                <div className="absolute top-0 right-0 w-16 h-16 bg-cyan-500/5 blur-2xl rounded-full group-hover:bg-cyan-500/10 transition-colors" />
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center text-cyan-500">
+                    <Activity size={16} />
+                  </div>
+                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest leading-none">
+                    {new Date(workout.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                  </span>
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-white uppercase italic tracking-tight truncate">
+                    {workout.exercises?.[0]?.type || "Unknown Mission"}
+                  </h4>
+                  <p className="text-[8px] font-black text-cyan-500/60 uppercase tracking-widest mt-1">
+                    {workout.exercises?.length || 0} Fragments • {workout.exercises?.reduce((acc, ex) => acc + (ex.sets?.length || 0), 0)} Units
+                  </p>
+                </div>
+                <div className="flex -space-x-2 mt-2">
+                   {(workout.exercises || []).slice(0, 3).map((ex, idx) => (
+                     <div key={idx} className="w-6 h-6 rounded-md bg-white/5 border border-white/10 flex items-center justify-center shadow-lg">
+                        <Activity size={10} className="text-slate-600" />
+                     </div>
+                   ))}
+                   {workout.exercises && workout.exercises.length > 3 && (
+                     <div className="w-6 h-6 rounded-md bg-white/5 border border-white/10 flex items-center justify-center text-[8px] font-black text-slate-500">
+                       +{workout.exercises.length - 3}
+                     </div>
+                   )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Weekly Calendar View */}
       <div className="space-y-4">
         <div className="flex items-center justify-between px-2">

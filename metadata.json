@@ -1,6 +1,6 @@
 {
   "name": "Meta-Cali",
   "description": "Komplexní kalisthenická aplikace s AI analýzou, interaktivním dashboardem a logováním cviků.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": ["camera", "microphone"],
   "majorCapabilities": []
 }
