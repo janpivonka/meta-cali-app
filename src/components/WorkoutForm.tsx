@@ -1093,21 +1093,27 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({
       .map((v) => parseInt(v.trim()))
       .filter((v) => !isNaN(v));
     if (vals.length > 0) {
-      const lastSet = sets[sets.length - 1];
+      const baseSet = activeSet || sets[sets.length - 1];
       const newSetsToAdd = vals.map((v) => ({
-        ...(lastSet || {}),
+        ...(baseSet || {}),
         id: generateId(),
         [isHoldExercise(exerciseId) ? "time" : "reps"]: v,
         notes: "",
         media: [],
-        loadType: lastSet?.loadType || loadType,
+        loadType: baseSet?.loadType || loadType,
       }));
-      setSets((prev) => [...prev, ...newSetsToAdd]);
+      setSets((prev) => {
+        const next = [...prev];
+        const insertIndex =
+          activeSetIndex !== -1 ? activeSetIndex + 1 : prev.length;
+        next.splice(insertIndex, 0, ...newSetsToAdd);
+        return next;
+      });
       setActiveSetId(newSetsToAdd[newSetsToAdd.length - 1].id);
       bulkInputRef.current.value = "";
       bulkInputRef.current.blur();
     }
-  }, [sets, exerciseId, loadType]);
+  }, [sets, exerciseId, loadType, activeSet, activeSetIndex]);
 
   const handleMediaClick = useCallback(
     (media: ExerciseMedia[], index: number) => {
@@ -1794,30 +1800,50 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({
     [exerciseId],
   );
 
+  const addSets = useCallback(
+    (count: number) => {
+      const baseSet = activeSet || sets[sets.length - 1];
+      const newSetsToAdd: WorkoutSet[] = [];
+      let lastId = "";
+
+      for (let i = 0; i < count; i++) {
+        const newId = generateId();
+        lastId = newId;
+        newSetsToAdd.push({
+          ...baseSet,
+          id: newId,
+          notes: "", // Don't copy notes
+          media: [], // Don't copy media
+          assistanceDetails: baseSet.assistanceDetails
+            ? {
+                ...baseSet.assistanceDetails,
+                placement: baseSet.assistanceDetails.placement
+                  ? [
+                      ...(Array.isArray(baseSet.assistanceDetails.placement)
+                        ? baseSet.assistanceDetails.placement
+                        : [baseSet.assistanceDetails.placement]),
+                    ]
+                  : undefined,
+              }
+            : undefined,
+        });
+      }
+
+      setSets((prev) => {
+        const next = [...prev];
+        const insertIndex =
+          activeSetIndex !== -1 ? activeSetIndex + 1 : prev.length;
+        next.splice(insertIndex, 0, ...newSetsToAdd);
+        return next;
+      });
+      setActiveSetId(lastId);
+    },
+    [sets, activeSet, activeSetIndex],
+  );
+
   const addSet = useCallback(() => {
-    const lastSet = sets[sets.length - 1];
-    const newId = generateId();
-    const newSet = {
-      ...lastSet,
-      id: newId,
-      notes: "", // Don't copy notes
-      media: [], // Don't copy media
-      assistanceDetails: lastSet.assistanceDetails
-        ? {
-            ...lastSet.assistanceDetails,
-            placement: lastSet.assistanceDetails.placement
-              ? [
-                  ...(Array.isArray(lastSet.assistanceDetails.placement)
-                    ? lastSet.assistanceDetails.placement
-                    : [lastSet.assistanceDetails.placement]),
-                ]
-              : undefined,
-          }
-        : undefined,
-    };
-    setSets((prev) => [...prev, newSet]);
-    setActiveSetId(newId);
-  }, [sets]);
+    addSets(1);
+  }, [addSets]);
 
   const removeSet = useCallback(
     (index: number) => {
@@ -2359,9 +2385,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    for (let i = 0; i < 3; i++) addSet();
-                  }}
+                  onClick={() => addSets(3)}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/10 text-cyan-500 text-[8px] font-black uppercase tracking-widest hover:bg-cyan-500/20 transition-all border border-cyan-500/20"
                 >
                   <Plus size={10} /> 3 Sets
