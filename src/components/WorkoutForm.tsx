@@ -104,9 +104,18 @@ interface WorkoutSetItemProps {
   removeSet: (index: number) => void;
   setSets: React.Dispatch<React.SetStateAction<WorkoutSet[]>>;
   isHoldExercise: (id: string) => boolean;
-  onFileUpload: (e: React.ChangeEvent<HTMLInputElement>, index?: number) => void;
+  onFileUpload: (e: React.ChangeEvent<HTMLInputElement>, index?: number, scope?: 'series' | 'group' | 'fragment') => void;
   onMediaClick: (media: ExerciseMedia[], index: number) => void;
   onEditThumbnail: (media: ExerciseMedia, mIdx: number, setIdx: number) => void;
+  // Scope props
+  noteScope: 'series' | 'group' | 'fragment';
+  setNoteScope: (s: 'series' | 'group' | 'fragment') => void;
+  mediaScope: 'series' | 'group' | 'fragment';
+  setMediaScope: (s: 'series' | 'group' | 'fragment') => void;
+  fragmentNotes: string;
+  setFragmentNotes: (val: string) => void;
+  fragmentMedia: ExerciseMedia[];
+  onNoteChange: (val: string, scope: 'series' | 'group' | 'fragment') => void;
 }
 
 const WorkoutSetDetail = memo<WorkoutSetItemProps>(({ 
@@ -128,7 +137,14 @@ const WorkoutSetDetail = memo<WorkoutSetItemProps>(({
   isHoldExercise,
   onFileUpload,
   onMediaClick,
-  onEditThumbnail
+  onEditThumbnail,
+  noteScope,
+  setNoteScope,
+  mediaScope,
+  setMediaScope,
+  fragmentNotes,
+  fragmentMedia,
+  onNoteChange
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -148,6 +164,32 @@ const WorkoutSetDetail = memo<WorkoutSetItemProps>(({
   });
   const groupColor = getColorFromMeta(metaKey);
 
+  const currentDisplayNotes = noteScope === 'fragment' ? fragmentNotes : set.notes || '';
+  const currentDisplayMedia = mediaScope === 'fragment' ? fragmentMedia : set.media || [];
+
+  const ScopeSelector = ({ current, onSelect, type }: { current: string, onSelect: (v: any) => void, type: 'note' | 'media' }) => (
+    <div className="flex gap-1 bg-black/40 p-1 rounded-xl border border-white/5 ml-auto">
+      {(['series', 'group', 'fragment'] as const).map(s => (
+        <button
+          key={s}
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelect(s);
+          }}
+          className={cn(
+            "px-2 py-1 rounded-lg text-[6px] font-black uppercase tracking-widest transition-all",
+            current === s 
+              ? "bg-cyan-500 text-black shadow-lg shadow-cyan-500/20" 
+              : "text-slate-500 hover:text-slate-300"
+          )}
+        >
+          {s}
+        </button>
+      ))}
+    </div>
+  );
+
   return (
     <div
       id={`set-item-${index}`}
@@ -166,7 +208,7 @@ const WorkoutSetDetail = memo<WorkoutSetItemProps>(({
         multiple
         ref={fileInputRef}
         className="hidden"
-        onChange={(e) => onFileUpload(e, index)}
+        onChange={(e) => onFileUpload(e, index, mediaScope)}
       />
 
       <div className="w-full flex flex-col md:flex-row items-center gap-6 overflow-hidden">
@@ -176,9 +218,14 @@ const WorkoutSetDetail = memo<WorkoutSetItemProps>(({
             (highlightedSetIndex === index || activeSetId === set.id) ? "border-cyan-400 text-cyan-400 scale-105 shadow-[0_0_10px_rgba(34,211,238,0.1)]" : "border-white/10 text-white italic"
           )}>
             <span className="text-lg font-black">{index + 1}</span>
-            {(set.notes || (set.media && set.media.length > 0)) && (
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full border border-black shadow-[0_0_5px_rgba(249,115,22,0.5)]" />
-            )}
+            <div className="absolute -top-1 -right-1 flex gap-0.5">
+              {(set.notes || (set.media && set.media.length > 0)) && (
+                <div className="w-2.5 h-2.5 bg-orange-500 rounded-full border border-black shadow-[0_0_3px_rgba(249,115,22,0.5)]" />
+              )}
+              {(fragmentNotes || fragmentMedia.length > 0) && (
+                <div className="w-2.5 h-2.5 bg-cyan-500 rounded-full border border-black shadow-[0_0_3px_rgba(34,211,238,0.5)]" />
+              )}
+            </div>
           </div>
         </div>
 
@@ -329,24 +376,37 @@ const WorkoutSetDetail = memo<WorkoutSetItemProps>(({
       {/* Detail view contents */}
       <div className="w-full flex flex-col gap-5 mt-6 pt-6 border-t border-white/5 px-2 md:px-10 overflow-hidden text-left">
           <div className="flex flex-col gap-2">
-            <label className="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-400/60 flex items-center gap-2">
-              <MessageSquare size={12} className="text-cyan-500" /> Commentary / Internal Cues
-            </label>
+            <div className="flex items-center">
+              <label className="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-400/60 flex items-center gap-2">
+                <MessageSquare size={12} className="text-cyan-500" /> Commentary
+              </label>
+              <ScopeSelector current={noteScope} onSelect={setNoteScope} type="note" />
+            </div>
             <textarea 
-              value={set.notes || ''}
-              onChange={(e) => updateSet(index, 'notes', e.target.value)}
-              placeholder="How did it feel? Technical cues to remember..."
-              className="w-full bg-black/30 border border-white/5 rounded-2xl p-4 text-xs font-medium text-slate-300 focus:outline-none focus:border-cyan-500/30 transition-all min-h-[80px] leading-relaxed placeholder:text-slate-700"
+              value={currentDisplayNotes}
+              onChange={(e) => onNoteChange(e.target.value, noteScope)}
+              placeholder={
+                noteScope === 'fragment' ? "Global insights for this whole exercise block..." :
+                noteScope === 'group' ? "Cues for this set group..." :
+                "Specific feel for this series..."
+              }
+              className={cn(
+                "w-full bg-black/30 border rounded-2xl p-4 text-xs font-medium focus:outline-none transition-all min-h-[80px] leading-relaxed placeholder:text-slate-700",
+                noteScope === 'fragment' ? "border-cyan-500/30 text-cyan-100" : "border-white/5 text-slate-300 focus:border-cyan-500/30"
+              )}
             />
           </div>
 
           <div className="flex flex-col gap-2 text-left">
-            <label className="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-400/60 flex items-center gap-2">
-              <Camera size={12} className="text-cyan-500" /> Session Media
-            </label>
+            <div className="flex items-center">
+              <label className="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-400/60 flex items-center gap-2">
+                <Camera size={12} className="text-cyan-500" /> Media Attachments
+              </label>
+              <ScopeSelector current={mediaScope} onSelect={setMediaScope} type="media" />
+            </div>
             <div className="flex flex-wrap gap-3">
               <AnimatePresence mode="popLayout">
-                {set.media?.map((m, mIdx) => (
+                {currentDisplayMedia.map((m, mIdx) => (
                   <motion.div 
                     key={mIdx}
                     initial={{ opacity: 0, scale: 0.8 }}
@@ -355,11 +415,14 @@ const WorkoutSetDetail = memo<WorkoutSetItemProps>(({
                     className="relative group/media"
                   >
                       <div 
-                        className="w-20 h-20 rounded-2xl overflow-hidden border border-white/10 bg-black/40 cursor-pointer hover:border-cyan-500/50 transition-all relative group/media-container"
+                        className={cn(
+                          "w-20 h-20 rounded-2xl overflow-hidden border bg-black/40 cursor-pointer hover:border-cyan-500/50 transition-all relative group/media-container",
+                          mediaScope === 'fragment' ? "border-cyan-500/30 shadow-[0_0_10px_rgba(34,211,238,0.1)]" : "border-white/10"
+                        )}
                         onClick={(e) => {
                           e.stopPropagation();
                           if (m.isProcessing) return;
-                          onMediaClick(set.media!, mIdx);
+                          onMediaClick(currentDisplayMedia, mIdx);
                         }}
                       >
                         <div className={cn("w-full h-full pointer-events-none", m.isProcessing && "animate-pulse")}>
@@ -508,6 +571,9 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
     }
   }, [activeSetId, sets]);
   const [exerciseMedia, setExerciseMedia] = useState<ExerciseMedia[]>(initialData?.media || []);
+
+  const [noteScope, setNoteScope] = useState<'series' | 'group' | 'fragment'>('series');
+  const [mediaScope, setMediaScope] = useState<'series' | 'group' | 'fragment'>('series');
 
   const [previewMedia, setPreviewMedia] = useState<ExerciseMedia[]>([]);
   const [previewIndex, setPreviewIndex] = useState(0);
@@ -678,7 +744,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const exerciseFileInputRef = React.useRef<HTMLInputElement>(null);
 
-  const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>, setIndex?: number) => {
+  const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>, setIndex?: number, groupIndices?: number[]) => {
     const files = Array.from(e.target.files || []) as File[];
     if (files.length === 0) return;
 
@@ -690,7 +756,12 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       id: Math.random().toString(36).substring(2, 11)
     }));
 
-    if (setIndex !== undefined) {
+    if (groupIndices && groupIndices.length > 0) {
+      setSets(prev => prev.map((s, i) => {
+        if (!groupIndices.includes(i)) return s;
+        return { ...s, media: [...(s.media || []), ...placeholders] };
+      }));
+    } else if (setIndex !== undefined) {
       setSets(prev => prev.map((s, i) => {
         if (i !== setIndex) return s;
         return { ...s, media: [...(s.media || []), ...placeholders] };
@@ -1109,6 +1180,18 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
       ex.id.toLowerCase().includes(searchQuery.toLowerCase())
     ),
   [searchQuery]);
+
+  const getSetGroupIndices = useCallback((idx: number) => {
+    const targetSet = sets[idx];
+    if (!targetSet) return [idx];
+    const targetMeta = getSetMetadata(targetSet, { exerciseId, loadType, executionStyle, legProgression });
+    const targetKey = JSON.stringify(targetMeta);
+    
+    return sets.map((s, i) => {
+      const m = getSetMetadata(s, { exerciseId, loadType, executionStyle, legProgression });
+      return JSON.stringify(m) === targetKey ? i : -1;
+    }).filter(i => i !== -1);
+  }, [sets, exerciseId, loadType, executionStyle, legProgression]);
 
   const currentExercise = React.useMemo(() => 
     EXERCISE_LIBRARY.find(e => e.id === exerciseId),
@@ -1893,9 +1976,35 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSave, onDelete, init
                    removeSet={removeSet}
                    setSets={setSets}
                    isHoldExercise={isHoldExercise}
-                   onFileUpload={handleFileUpload}
+                   onFileUpload={(e, idx) => {
+                     if (mediaScope === 'series') {
+                       handleFileUpload(e, idx);
+                     } else if (mediaScope === 'group') {
+                       const indices = getSetGroupIndices(idx !== undefined ? idx : safeActiveSetIndex);
+                       handleFileUpload(e, undefined, indices);
+                     } else {
+                       handleFileUpload(e); // Fragment
+                     }
+                   }}
                    onMediaClick={handleMediaClick}
                    onEditThumbnail={onEditThumbnailClick}
+                   noteScope={noteScope}
+                   setNoteScope={setNoteScope}
+                   mediaScope={mediaScope}
+                   setMediaScope={setMediaScope}
+                   fragmentNotes={notes}
+                   setFragmentNotes={setNotes}
+                   fragmentMedia={exerciseMedia}
+                   onNoteChange={(val, scope) => {
+                     if (scope === 'series') {
+                       updateSet(safeActiveSetIndex, 'notes', val);
+                     } else if (scope === 'group') {
+                       const indices = getSetGroupIndices(safeActiveSetIndex);
+                       setSets(prev => prev.map((s, i) => indices.includes(i) ? { ...s, notes: val } : s));
+                     } else {
+                       setNotes(val);
+                     }
+                   }}
                  />
                </motion.div>
              )}

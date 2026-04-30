@@ -208,3 +208,18 @@ export const getColorFromMeta = (metaKey: string) => {
   const index = Math.abs(hash) % SHADED_COLORS.length;
   return SHADED_COLORS[index];
 };
+
+export const getSetColor = (index: number) => {
+  // Use a subset of colors that are very distinct for the first sets
+  const palette = [
+    '#22d3ee', // cyan
+    '#a855f7', // purple
+    '#f97316', // orange
+    '#10b981', // emerald
+    '#ec4899', // pink
+    '#f59e0b', // amber
+    '#3b82f6', // blue
+    '#ef4444', // red
+  ];
+  return palette[index % palette.length];
+};

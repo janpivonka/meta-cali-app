@@ -10,7 +10,7 @@ import { ExerciseLog, UserProfile, Workout, ExerciseDefinition, BandPlacement, E
 import { motion, AnimatePresence, Reorder, useDragControls } from 'framer-motion';
 import { Activity, Github, Twitter, Instagram, Sun, Moon, Share2, Edit3, MessageSquare, GripVertical, Video, Camera, ArrowUp } from 'lucide-react';
 import { EXERCISE_LIBRARY } from './data/exerciseLibrary';
-import { cn, getMediaUrl, isHoldExercise, getSetMetadata, getColorFromMeta } from './lib/utils';
+import { cn, getMediaUrl, isHoldExercise, getSetMetadata, getColorFromMeta, getSetColor } from './lib/utils';
 import { MediaRenderer } from './components/MediaRenderer';
 import { getWorkoutsFromDB, saveWorkoutsToDB, getCurrentWorkoutFromDB, saveCurrentWorkoutToDB } from './lib/db';
 
@@ -50,14 +50,16 @@ interface SetReorderItemProps {
   key?: React.Key;
 }
 
-function VolumeBadge({ subSummaries, unit, isHighlighted }: { subSummaries: {v: number, c: number}[], unit: string, isHighlighted: boolean }) {
-  const UnitBox = ({ children }: { children: React.ReactNode }) => (
+function VolumeBadge({ subSummaries, unit, isHighlighted }: { subSummaries: {v: number, c: number, color?: string}[], unit: string, isHighlighted: boolean }) {
+  const UnitBox = ({ children, color }: { children: React.ReactNode, color?: string }) => (
     <span className={cn(
       "inline-flex items-center justify-center w-2.5 h-2.5 rounded-[1px] text-[5px] font-black leading-none border transition-all duration-300 font-sans select-none",
       isHighlighted 
         ? "bg-black/20 border-black/10 text-black" 
         : "bg-white/20 border-white/10 text-white/90 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]"
-    )}>
+    )}
+    style={!isHighlighted && color ? { borderColor: color, color: color } : {}}
+    >
       {children}
     </span>
   );
@@ -65,19 +67,25 @@ function VolumeBadge({ subSummaries, unit, isHighlighted }: { subSummaries: {v: 
   return (
     <div className="flex flex-wrap items-center justify-start gap-x-1 gap-y-1">
       {subSummaries.map((ss, idx) => (
-        <div key={idx} className={cn(
-          "flex items-center gap-0.5 px-2 py-0.5 rounded-[4px] border shadow-sm transition-all",
-          isHighlighted 
-            ? "bg-black/20 border-black/10" 
-            : "bg-[#121212] border-white/10"
-        )}>
+        <div 
+          key={idx} 
+          className={cn(
+            "flex items-center gap-0.5 px-2 py-0.5 rounded-[4px] border shadow-sm transition-all",
+            isHighlighted 
+              ? "bg-black/20 border-black/10" 
+              : "bg-[#121212] border-white/10"
+          )}
+          style={!isHighlighted && ss.color ? { borderColor: ss.color, boxShadow: `0 0 10px ${ss.color}20` } : {}}
+        >
           {ss.c > 1 && (
             <div className="flex items-center gap-0.5">
               <span className={cn(
                 "font-mono text-[9px] font-bold tracking-tight",
-                isHighlighted ? "text-black" : "text-white"
-              )}>{ss.c}</span>
-              <UnitBox>S</UnitBox>
+                isHighlighted ? "text-black" : (ss.color || "text-white")
+              )}
+              style={!isHighlighted && ss.color ? { color: ss.color } : {}}
+              >{ss.c}</span>
+              <UnitBox color={ss.color}>S</UnitBox>
               <span className={cn(
                 "text-[6px] font-bold opacity-30 mx-px",
                 isHighlighted ? "text-black" : "text-white"
@@ -86,9 +94,11 @@ function VolumeBadge({ subSummaries, unit, isHighlighted }: { subSummaries: {v: 
           )}
           <span className={cn(
             "font-mono text-[9px] font-bold tracking-tight",
-            isHighlighted ? "text-black" : "text-white"
-          )}>{ss.v}</span>
-          <UnitBox>{unit.charAt(0).toUpperCase()}</UnitBox>
+            isHighlighted ? "text-black" : (ss.color || "text-white")
+          )}
+          style={!isHighlighted && ss.color ? { color: ss.color } : {}}
+          >{ss.v}</span>
+          <UnitBox color={ss.color}>{unit.charAt(0).toUpperCase()}</UnitBox>
         </div>
       ))}
     </div>
@@ -117,14 +127,19 @@ function SetReorderItem({
   
   const groupColor = getColorFromMeta(group.metaKey);
 
-  // Group by reps/time for the summary
-  const subSummaries: {v: number, c: number}[] = [];
-  sets.forEach(s => {
+  // Group by reps/time for the summary, breaking alignment for sets with notes/media to show individual colors
+  const subSummaries: {v: number, c: number, color?: string}[] = [];
+  sets.forEach((s, idx) => {
     const v = s.reps || s.time || 0;
-    if (subSummaries.length > 0 && subSummaries[subSummaries.length - 1].v === v) {
+    const hasNoteOrMedia = s.notes || (s.media && s.media.length > 0);
+    const absIdx = group.originalIndices[idx];
+    const color = hasNoteOrMedia ? getSetColor(absIdx) : undefined;
+
+    // Only aggregate if neither has a note/media, or if they have exactly same reps and both lack special highlighting
+    if (subSummaries.length > 0 && !hasNoteOrMedia && !subSummaries[subSummaries.length - 1].color && subSummaries[subSummaries.length - 1].v === v) {
       subSummaries[subSummaries.length - 1].c++;
     } else {
-      subSummaries.push({ v, c: 1 });
+      subSummaries.push({ v, c: 1, color });
     }
   });
 
@@ -267,7 +282,14 @@ function SetReorderItem({
                     "text-[9px] italic font-medium leading-tight line-clamp-1",
                     isHighlighted ? "text-black/70" : "text-slate-400"
                   )}>
-                    {sets.length > 1 && <span className="opacity-40 mr-1">#{group.originalIndices[idx]+1}</span>}
+                    {sets.length > 1 && (
+                      <span 
+                        className="font-black mr-1 opacity-80" 
+                        style={{ color: isHighlighted ? undefined : getSetColor(group.originalIndices[idx]) }}
+                      >
+                        #{group.originalIndices[idx]+1}
+                      </span>
+                    )}
                     "{s.notes}"
                   </p>
                 ))}
@@ -277,10 +299,11 @@ function SetReorderItem({
 
           {sets.some(s => s.media && s.media.length > 0) && (
             <div className="flex gap-1.5 overflow-x-auto mt-2">
-              {sets.flatMap(s => s.media || []).map((m: any, midx: number) => (
+              {sets.flatMap((s, sIdx) => (s.media || []).map((m: any, mIdx: number) => ({ ...m, parentSetIdx: group.originalIndices[sIdx] }))).map((m: any, midx: number) => (
                 <div 
                   key={midx} 
-                  className="w-8 h-8 rounded-lg overflow-hidden border border-white/5 bg-black shrink-0 cursor-pointer pointer-events-auto transition-all"
+                  className="w-8 h-8 rounded-lg overflow-hidden border bg-black shrink-0 cursor-pointer pointer-events-auto transition-all"
+                  style={{ borderColor: isHighlighted ? 'rgba(0,0,0,0.1)' : getSetColor(m.parentSetIdx) }}
                   onClick={(e) => {
                     e.stopPropagation();
                     onMediaClick([m], 0);
