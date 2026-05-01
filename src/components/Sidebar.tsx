@@ -1,7 +1,7 @@
 import React from 'react';
 import { LayoutDashboard, PlusCircle, TrendingUp, BrainCircuit, User, Search, Plus, Compass, Zap, Activity } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 
 interface SidebarProps {
   activeTab: string;

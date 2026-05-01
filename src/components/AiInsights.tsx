@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Workout } from '../types';
 import { getWorkoutAdvice } from '../services/geminiService';
 import { BrainCircuit, Loader2, Sparkles, RefreshCcw } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface AiInsightsProps {
   workouts: Workout[];

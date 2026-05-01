@@ -3233,52 +3233,42 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({
                     ))}
                   </div>
                 </div>
-                <div>
-                  <label className="text-[8px] font-black uppercase tracking-[0.3em] text-purple-500/60 block mb-3">
-                    {dipBarFootSupport
-                      ? "Floating Leg Position"
-                      : "Leg Progression"}
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {LEG_PROGRESSIONS.filter((p) => {
-                      if (dipBarFootSupport) {
-                        // Exclude Australian and complex variants from Floating Leg list
-                        return (
-                          !p.toString().includes("australian") &&
-                          p !== "one leg" &&
-                          p !== "straddle"
-                        );
-                      }
-                      return true;
-                    }).map((prog) => (
-                      <button
-                        key={prog}
-                        type="button"
-                        onClick={() =>
-                          updateActiveValue(
-                            "legProgression",
-                            setLegProgression,
-                            prog,
-                          )
-                        }
-                        className={cn(
-                          "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all",
-                          legProgression === prog
-                            ? "bg-purple-500 text-white border-purple-400 shadow-lg shadow-purple-500/20"
-                            : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20",
-                        )}
-                      >
-                        {prog === "full"
-                          ? "Full"
-                          : prog === "australian (bent legs)"
-                            ? "Australian (Bent)"
-                            : prog === "australian (straight legs)"
-                              ? "Australian (Straight)"
-                              : prog}
-                      </button>
-                    ))}
+                {!dipBarFootSupport && (
+                  <div>
+                    <label className="text-[8px] font-black uppercase tracking-[0.3em] text-purple-500/60 block mb-3">
+                      Leg Progression
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {LEG_PROGRESSIONS.map((prog) => (
+                        <button
+                          key={prog}
+                          type="button"
+                          onClick={() =>
+                            updateActiveValue(
+                              "legProgression",
+                              setLegProgression,
+                              prog,
+                            )
+                          }
+                          className={cn(
+                            "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all",
+                            legProgression === prog
+                              ? "bg-purple-500 text-white border-purple-400 shadow-lg shadow-purple-500/20"
+                              : "bg-black/20 text-slate-500 border-white/5 hover:border-white/20",
+                          )}
+                        >
+                          {prog === "full"
+                            ? "Full"
+                            : prog === "australian (bent legs)"
+                              ? "Australian (Bent)"
+                              : prog === "australian (straight legs)"
+                                ? "Australian (Straight)"
+                                : prog}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
                 {legProgression.toString().includes("australian") && (
                   <div className="flex items-center gap-3 pt-2">
                     <button
@@ -3339,10 +3329,11 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({
 
                     <div className="space-y-2">
                       <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-400 block mb-2">
-                        {legProgression.toString().includes("australian") ||
-                        dipBarFootSupport
+                        {dipBarFootSupport
                           ? "Floating Leg Position"
-                          : "Primary Leg"}
+                          : legProgression.toString().includes("australian")
+                            ? "Assisting Leg Position"
+                            : "Primary Leg"}
                       </label>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         {SINGLE_LEG_POSITIONS.map((p) => (

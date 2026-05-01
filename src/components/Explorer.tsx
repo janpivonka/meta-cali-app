@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, 
   Settings2, 
@@ -42,12 +42,13 @@ export const Explorer: React.FC<ExplorerProps> = ({ profile, onUpdateProfile, on
 
   const toggleFavorite = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const isFavorite = profile.favoriteExercises.includes(id);
+    const currentFavorites = Array.isArray(profile.favoriteExercises) ? profile.favoriteExercises : [];
+    const isFavorite = currentFavorites.includes(id);
     let newFavorites: string[];
     if (isFavorite) {
-      newFavorites = profile.favoriteExercises.filter(favId => favId !== id);
+      newFavorites = currentFavorites.filter(favId => favId !== id);
     } else {
-      newFavorites = [...profile.favoriteExercises, id];
+      newFavorites = [...currentFavorites, id];
     }
     onUpdateProfile({ ...profile, favoriteExercises: newFavorites });
   };

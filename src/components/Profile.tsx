@@ -14,7 +14,7 @@ import {
   Heart
 } from 'lucide-react';
 import { UserProfile } from '../types';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
 import { EXERCISE_LIBRARY } from '../data/exerciseLibrary';
 import { 

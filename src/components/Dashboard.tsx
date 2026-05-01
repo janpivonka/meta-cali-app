@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Workout } from '../types';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Activity, 
   Flame, 
@@ -60,7 +60,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ workouts }) => {
   });
 
   const getStatus = (date: Date) => {
-    const hasLog = workouts.some(w => isSameDay(new Date(w.timestamp), date));
+    const hasLog = Array.isArray(workouts) && workouts.some(w => w && w.timestamp && isSameDay(new Date(w.timestamp), date));
     if (hasLog) return 'trained';
     if (date.getDay() === 0) return 'rest';
     if (date.getTime() > today.getTime()) return 'planned';
@@ -122,17 +122,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ workouts }) => {
     let streak = 0;
  
     // Check if there's a workout from today or yesterday to start
-    const hasLogToday = workouts.some(w => w?.timestamp && isSameDay(new Date(w.timestamp), today));
+    const hasLogToday = workouts.some(w => w && w.timestamp && isSameDay(new Date(w.timestamp), today));
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    const hasLogYesterday = workouts.some(w => w?.timestamp && isSameDay(new Date(w.timestamp), yesterday));
+    const hasLogYesterday = workouts.some(w => w && w.timestamp && isSameDay(new Date(w.timestamp), yesterday));
  
     if (!hasLogToday && !hasLogYesterday) return 0;
  
     // Simplified streak: count consecutive days with at least one workout
     let checkDate = hasLogToday ? today : yesterday;
     while (true) {
-      const dayLogs = workouts.filter(w => w?.timestamp && isSameDay(new Date(w.timestamp), checkDate));
+      const dayLogs = workouts.filter(w => w && w.timestamp && isSameDay(new Date(w.timestamp), checkDate));
       if (dayLogs.length > 0) {
         streak++;
         const prevDay = new Date(checkDate);

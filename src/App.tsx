@@ -656,7 +656,10 @@ export default function App() {
       } catch (e) {
         console.error("Error loading from IDB", e);
         // Fallback to localStorage if IDB fails
-        if (savedWorkouts) setWorkouts(JSON.parse(savedWorkouts));
+        if (savedWorkouts) {
+          const parsed = JSON.parse(savedWorkouts);
+          setWorkouts(Array.isArray(parsed) ? parsed : []);
+        }
         if (savedCurrentWorkout) setCurrentWorkout(JSON.parse(savedCurrentWorkout));
       }
 

@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Workout } from "../types";
 
 export async function getWorkoutAdvice(workouts: Workout[]) {
@@ -13,7 +13,8 @@ export async function getWorkoutAdvice(workouts: Workout[]) {
       return "AI analýza je dočasně nedostupná (chybí API klíč).";
     }
 
-    const ai = new GoogleGenAI({ apiKey });
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const recentSessionsText = workouts.slice(-5).map(w => {
       const sessionDate = new Date(w.timestamp).toLocaleDateString();
@@ -23,16 +24,14 @@ export async function getWorkoutAdvice(workouts: Workout[]) {
       return `${sessionDate}: ${exercisesText}`;
     }).join('\n');
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: `Jsi expertní kalisthenický trenér. Analyzuj tyto nedávné tréninky a dej uživateli krátké, 
+    const result = await model.generateContent(`Jsi expertní kalisthenický trenér. Analyzuj tyto nedávné tréninky a dej uživateli krátké, 
       úderné a motivující rady v češtině (max 150 slov). Zaměř se na progresivní přetížení a techniku.
 
       Nedávná tréninková data:
-      ${recentSessionsText}`,
-    });
+      ${recentSessionsText}`);
 
-    return response.text || "Omlouvám se, ale analýza se nepodařila. Zkus to prosím později.";
+    const response = await result.response;
+    return response.text() || "Omlouvám se, ale analýza se nepodařila. Zkus to prosím později.";
   } catch (error) {
     console.error("Gemini API Error:", error);
     return "Nepodařilo se připojit k AI analýze. Zkontroluj připojení.";
