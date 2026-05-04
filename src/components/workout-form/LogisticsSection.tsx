@@ -46,7 +46,7 @@ export const LogisticsSection: React.FC<LogisticsSectionProps> = ({
         </div>
 
         <div className="flex items-end italic text-[10px] text-slate-600 px-4 leading-relaxed">
-          Uložením potvrdíte provedení celého výkonnostního bloku se všemi zaznamenanými parametry a médii.
+          Saving will confirm the execution of the entire performance block with all recorded parameters and media.
         </div>
       </div>
 
@@ -58,7 +58,7 @@ export const LogisticsSection: React.FC<LogisticsSectionProps> = ({
             onClick={onDelete}
             className="flex-1 py-7 bg-red-500/10 text-red-500 text-sm font-black uppercase tracking-[0.5em] rounded-[32px] border border-red-500/20 hover:bg-red-500 hover:text-white transition-all"
           >
-            Delete this exercise
+            DELETE THIS EXERCISE
           </button>
         )}
         <button
@@ -73,7 +73,7 @@ export const LogisticsSection: React.FC<LogisticsSectionProps> = ({
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
           <div className="flex items-center justify-center gap-4 relative z-10">
             {initialData ? <Edit3 size={24} /> : <Check size={24} />}
-            {initialData ? "Update Block" : "Save to workout"}
+            {initialData ? "UPDATE BLOCK" : "SAVE TO WORKOUT"}
           </div>
         </button>
       </div>

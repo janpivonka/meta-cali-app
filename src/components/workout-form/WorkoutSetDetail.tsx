@@ -67,22 +67,15 @@ export const WorkoutSetDetail = memo<WorkoutSetItemProps>(
     onNoteChange,
   }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const currentSetExId = set.exerciseId || exerciseId;
 
     const meta = getSetMetadata(set, {
-      exerciseId,
+      exerciseId: currentSetExId,
       loadType,
       executionStyle,
       legProgression,
     });
-    const metaKey = JSON.stringify({
-      l: meta.currentLoadLabel,
-      o: meta.orangeLine,
-      g: meta.gripLine,
-      e: meta.equipLine,
-      a: meta.armLine,
-      c: meta.coreLine,
-      le: meta.legLine,
-    });
+    const metaKey = `${currentSetExId}|${meta.currentLoadLabel}|${meta.orangeLine.join(",")}|${meta.gripLine.join(",")}|${meta.equipLine.join(",")}|${meta.armLine.join(",")}|${meta.coreLine.join(",")}|${meta.legLine.join(",")}`;
     const groupColor = getColorFromMeta(metaKey);
 
     return (
@@ -143,10 +136,10 @@ export const WorkoutSetDetail = memo<WorkoutSetItemProps>(
                     e.stopPropagation();
                     updateSet(
                       index,
-                      isHoldExercise(exerciseId) ? "time" : "reps",
+                      isHoldExercise(currentSetExId) ? "time" : "reps",
                       Math.max(
                         0,
-                        (isHoldExercise(exerciseId)
+                        (isHoldExercise(currentSetExId)
                           ? set.time || 0
                           : set.reps || 0) - 1,
                       ),
@@ -159,12 +152,12 @@ export const WorkoutSetDetail = memo<WorkoutSetItemProps>(
                 <input
                   type="number"
                   value={
-                    isHoldExercise(exerciseId) ? set.time || 0 : set.reps || 0
+                    isHoldExercise(currentSetExId) ? set.time || 0 : set.reps || 0
                   }
                   onChange={(e) =>
                     updateSet(
                       index,
-                      isHoldExercise(exerciseId) ? "time" : "reps",
+                      isHoldExercise(currentSetExId) ? "time" : "reps",
                       parseInt(e.target.value) || 0,
                     )
                   }
@@ -177,8 +170,8 @@ export const WorkoutSetDetail = memo<WorkoutSetItemProps>(
                     e.stopPropagation();
                     updateSet(
                       index,
-                      isHoldExercise(exerciseId) ? "time" : "reps",
-                      (isHoldExercise(exerciseId)
+                      isHoldExercise(currentSetExId) ? "time" : "reps",
+                      (isHoldExercise(currentSetExId)
                         ? set.time || 0
                         : set.reps || 0) + 1,
                     );
@@ -189,7 +182,7 @@ export const WorkoutSetDetail = memo<WorkoutSetItemProps>(
                 </button>
               </div>
               <span className="text-[7px] font-black uppercase tracking-widest text-slate-600 italic leading-none">
-                {isHoldExercise(exerciseId) ? "Time" : "Reps"}
+                {isHoldExercise(currentSetExId) ? "Time" : "Reps"}
               </span>
             </div>
 

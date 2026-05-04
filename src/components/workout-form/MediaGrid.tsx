@@ -2,7 +2,7 @@ import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Camera, Video, X } from "lucide-react";
 import { ExerciseMedia } from "../../types";
-import { cn } from "../../lib/utils";
+import { cn, isMediaVideo } from "../../lib/utils";
 import { MediaRenderer } from "../MediaRenderer";
 
 interface MediaGridProps {
@@ -51,14 +51,7 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                 <div className="w-full h-full bg-white/5 flex items-center justify-center">
                   <div className="w-8 h-8 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
                 </div>
-              ) : m?.type === "image" ? (
-                <MediaRenderer
-                  url={m.url}
-                  type="image"
-                  className="w-full h-full object-cover"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
+              ) : isMediaVideo(m) ? (
                 <div className="w-full h-full relative">
                   {m?.thumbnail ? (
                     <img
@@ -75,9 +68,16 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                     <Video size={16} className="text-cyan-500" />
                   </div>
                 </div>
+              ) : (
+                <MediaRenderer
+                  url={m.url}
+                  type={m.type}
+                  className="w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
               )}
             </div>
-            {!m.isProcessing && m?.type === "video" && (
+            {!m.isProcessing && isMediaVideo(m) && (
               <button
                 type="button"
                 className="absolute top-1 right-1 w-7 h-7 rounded-full bg-cyan-500 text-black border border-white/20 flex items-center justify-center shadow-lg transition-all hover:scale-110 active:scale-95 z-20"
@@ -85,7 +85,7 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                   e.stopPropagation();
                   onEditThumbnail(m, mIdx);
                 }}
-                title="Nastavit úvodní fotku"
+                title="Set thumbnail"
               >
                 <Camera size={14} />
               </button>
@@ -99,7 +99,7 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                 onDelete(mIdx);
               }}
               className="absolute -top-2 -right-2 w-7 h-7 bg-red-600 text-white rounded-full flex items-center justify-center shadow-xl hover:bg-red-500 hover:scale-110 active:scale-90 z-[50] transition-all duration-200 cursor-pointer"
-              title="Smazat médium"
+              title="Delete medium"
             >
               <X size={14} strokeWidth={3} />
             </button>

@@ -27,6 +27,7 @@ export interface MixedGripDetails {
 
 export interface WorkoutSet {
   id: string;
+  exerciseId?: string; // Optional override for the main exercise
   reps?: number;
   time?: number; // duration in seconds
   weight?: number; // extra weight

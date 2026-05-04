@@ -22,10 +22,33 @@ export const isHoldExercise = (id: string) => {
   return ['planche', 'frontlever', 'statics', 'isometric', 'hold', 'human flag', 'iron cross'].some(k => id?.toLowerCase().includes(k));
 };
 
+export const isMediaVideo = (m: any) => {
+  if (!m) return false;
+  if (m.type === 'video') return true;
+  if (m.type === 'image') return false;
+  
+  // Check if url property itself is a File/Blob
+  if (m.url && typeof m.url === 'object' && ('type' in m.url)) {
+    if (String(m.url.type).startsWith('video/')) return true;
+    if (String(m.url.type).startsWith('image/')) return false;
+  }
+  
+  const url = typeof m.url === 'string' ? m.url : '';
+  return (
+    url.includes('youtube.com') || 
+    url.includes('youtu.be') || 
+    url.includes('/embed/') || 
+    /\.(mp4|webm|ogg|mov|m4v)($|\?)/i.test(url) ||
+    url.startsWith('blob:') ||
+    url.startsWith('data:video/')
+  );
+};
+
 /**
  * Shared utility to generate descriptive labels for a workout set
  */
 export const getSetMetadata = (s: any, ex: any) => {
+  const effectiveExerciseId = s.exerciseId || ex.exerciseId;
   const effectiveUnit = s.weightUnit || ex.weightUnit || 'kg';
   const effectiveLoadType = s.loadType || ex.loadType;
   const res = s.assistanceDetails?.resistance || ex.assistanceValue || (s.assistanceDetails?.resistance);
@@ -141,7 +164,7 @@ export const getSetMetadata = (s: any, ex: any) => {
     }
   }
 
-  return { currentLoadLabel, orangeLine, gripLine, equipLine, armLine, coreLine, legLine };
+  return { exerciseId: effectiveExerciseId, currentLoadLabel, orangeLine, gripLine, equipLine, armLine, coreLine, legLine };
 };
 
 export const SHADED_COLORS = [

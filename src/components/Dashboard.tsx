@@ -133,7 +133,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ workouts, onViewHistory })
           {[
             { id: 'zaklad', label: 'Monitor' },
             { id: 'osobni', label: 'Operations' },
-            { id: 'verejne', label: 'Newsroom' },
+            { id: 'verejne', label: 'News' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -164,7 +164,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ workouts, onViewHistory })
             <img 
               src="https://picsum.photos/seed/training/1600/900?grayscale" 
               className="w-full h-full object-cover opacity-30 group-hover:opacity-50 transition-all duration-1000 scale-105 group-hover:scale-100" 
-              alt="Motivace"
+              alt="Motivation"
               referrerPolicy="no-referrer"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
@@ -214,7 +214,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ workouts, onViewHistory })
           </div>
           <div>
             <span className="text-4xl font-black text-white italic leading-none">{streak}</span>
-            <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mt-1">Daily Streak</p>
+            <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mt-1">Daily streak</p>
           </div>
         </div>
 
@@ -224,7 +224,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ workouts, onViewHistory })
           </div>
           <div>
             <span className="text-4xl font-black text-white italic leading-none">{totalSets}</span>
-            <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mt-1">Total Sets</p>
+            <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mt-1">Total sets</p>
           </div>
         </div>
 
@@ -254,11 +254,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ workouts, onViewHistory })
            </div>
            <div className="space-y-2">
               <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Current Rank</span>
-              <p className="text-xs font-black text-cyan-500 tracking-widest uppercase italic">Advanced Scout</p>
+              <p className="text-xs font-black text-cyan-500 tracking-widest uppercase italic">Advanced Explorer</p>
            </div>
            <div className="space-y-2">
               <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Next Milestone</span>
-              <p className="text-xs font-black text-white tracking-widest uppercase">100 Sets Logged</p>
+              <p className="text-xs font-black text-white tracking-widest uppercase">100 logged sets</p>
            </div>
            <div className="space-y-2">
               <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Security Clearance</span>
@@ -278,7 +278,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ workouts, onViewHistory })
                onClick={onViewHistory}
                className="text-[10px] text-slate-400 hover:text-cyan-500 font-black uppercase tracking-widest flex items-center gap-2"
             >
-              View All <ArrowRight size={12} />
+              View all <ArrowRight size={12} />
             </button>
           </div>
           <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar -mx-2 px-2 snap-x">
@@ -393,7 +393,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ workouts, onViewHistory })
               </div>
               <div className="flex-1">
                 <h4 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">{item.title}</h4>
-                <p className="text-[10px] text-slate-500 font-medium">Informace: {item.author}</p>
+                <p className="text-[10px] text-slate-500 font-medium">Author Info: {item.author}</p>
                 <div className="flex gap-2 mt-2">
                    <Heart size={12} className="text-white/10" />
                    <Bookmark size={12} className="text-white/10" />

@@ -18,6 +18,8 @@ import { cn } from '../lib/utils';
 import { EXERCISE_LIBRARY } from '../data/exerciseLibrary';
 import { ExerciseDefinition, UserProfile } from '../types';
 
+import { MediaRenderer } from './MediaRenderer';
+
 interface ExplorerProps {
   profile: UserProfile;
   onUpdateProfile: (profile: UserProfile) => void;
@@ -63,7 +65,7 @@ export const Explorer: React.FC<ExplorerProps> = ({ profile, onUpdateProfile, on
           </div>
           <input
             type="text"
-            placeholder="Search in operative database..."
+            placeholder="Search in operational database..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full bg-black/40 border border-white/10 rounded-[30px] py-5 pl-14 pr-6 text-sm font-bold text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 transition-all italic tracking-tight"
@@ -92,7 +94,7 @@ export const Explorer: React.FC<ExplorerProps> = ({ profile, onUpdateProfile, on
       <div className="flex items-center justify-between">
         <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.4em]">Analysis Results</h3>
         <div className="h-px flex-1 mx-6 bg-gradient-to-r from-white/5 to-transparent" />
-        <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">{filteredResults.length} spectral items</span>
+        <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">{filteredResults.length} items</span>
       </div>
 
       {/* Library Grid */}
@@ -164,11 +166,13 @@ export const Explorer: React.FC<ExplorerProps> = ({ profile, onUpdateProfile, on
               {/* Modal Header/Video */}
               <div className="relative aspect-video bg-black overflow-hidden group">
                 {selectedExercise.videoUrl ? (
-                  <iframe 
-                    src={selectedExercise.videoUrl} 
-                    className="w-full h-full border-none opacity-80"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
+                  <MediaRenderer
+                    url={selectedExercise.videoUrl}
+                    type="video"
+                    className="w-full h-full"
+                    autoPlay
+                    controls
+                    playsInline
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-slate-800">
@@ -205,7 +209,7 @@ export const Explorer: React.FC<ExplorerProps> = ({ profile, onUpdateProfile, on
                   </section>
 
                   <section className="space-y-6">
-                    <h5 className="text-[10px] font-black uppercase tracking-[0.4em] text-purple-500">Core Interface Points</h5>
+                    <h5 className="text-[10px] font-black uppercase tracking-[0.4em] text-purple-500">Key Execution Points</h5>
                     <div className="grid gap-4">
                       {selectedExercise.technicalPoints.map((point, i) => (
                         <div key={i} className="flex gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 items-start group hover:border-purple-500/20 transition-all">
@@ -250,7 +254,7 @@ export const Explorer: React.FC<ExplorerProps> = ({ profile, onUpdateProfile, on
                       }}
                       className="w-full py-4 bg-cyan-500 text-black flex items-center justify-center gap-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-xl shadow-cyan-500/10"
                     >
-                       <Plus size={16} /> Add to Workout
+                       <Plus size={16} /> ADD TO WORKOUT
                     </button>
 
                     <div className="flex gap-3">
@@ -258,7 +262,7 @@ export const Explorer: React.FC<ExplorerProps> = ({ profile, onUpdateProfile, on
                          <Share2 size={14} /> Share
                       </button>
                       <button className="flex-1 py-4 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center gap-2 text-slate-400 hover:text-white transition-all text-[9px] font-black uppercase tracking-widest">
-                         <Bookmark size={14} /> Collection
+                         <Bookmark size={14} /> COLLECTION
                       </button>
                     </div>
                   </div>

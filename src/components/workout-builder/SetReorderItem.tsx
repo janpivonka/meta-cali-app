@@ -37,10 +37,10 @@ export const SetReorderItem: React.FC<SetReorderItemProps> = ({
   const lastIndex = group.originalIndices[group.originalIndices.length - 1];
   
   const isHighlighted = editingIndex === i && editingSetIndex !== null && group.originalIndices.includes(editingSetIndex);
-  const exName = EXERCISE_LIBRARY.find(e => e.id === ex.exerciseId)?.name || ex.type;
+  const { exerciseId: groupExId, currentLoadLabel, orangeLine, gripLine, armLine, coreLine, legLine } = meta;
+  const exName = EXERCISE_LIBRARY.find(e => e.id === groupExId)?.name || ex.type;
                                      
-  const { currentLoadLabel, orangeLine, gripLine, armLine, coreLine, legLine } = meta;
-  const unit = isHoldExercise(ex.exerciseId) ? 's' : 'R';
+  const unit = isHoldExercise(groupExId) ? 's' : 'R';
   
   const groupColor = getColorFromMeta(group.metaKey);
 

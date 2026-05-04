@@ -75,7 +75,7 @@ interface TaxonomySectionProps {
   safeActiveSetIndex: number;
 }
 
-export const TaxonomySection: React.FC<TaxonomySectionProps> = ({
+export const TaxonomySection = React.memo(({
   equipment,
   setEquipment,
   availableEquipment,
@@ -119,7 +119,7 @@ export const TaxonomySection: React.FC<TaxonomySectionProps> = ({
   activeSetId,
   activeSet,
   safeActiveSetIndex,
-}) => {
+}: TaxonomySectionProps) => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
       <div className="space-y-8 p-8 bg-white/5 rounded-[32px] border border-white/5">
@@ -147,7 +147,7 @@ export const TaxonomySection: React.FC<TaxonomySectionProps> = ({
                         )}
                       >
                         {w === "shoulder-width"
-                          ? "Shoulder-width"
+                          ? "Shoulder Width"
                           : w === "narrow"
                             ? "Narrow"
                             : w === "wide"
@@ -641,7 +641,7 @@ export const TaxonomySection: React.FC<TaxonomySectionProps> = ({
             >
               <div className="space-y-2">
                 <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-400 block mb-2">
-                  Leg Assist
+                  Leg Assistance
                 </label>
                 <div className="flex bg-black/40 p-1 rounded-2xl border border-white/5 mb-4">
                   {(["left", "right", "alternating"] as const).map((side) => (
@@ -667,7 +667,7 @@ export const TaxonomySection: React.FC<TaxonomySectionProps> = ({
               <div className="space-y-2">
                 <label className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-400 block mb-2">
                   {dipBarFootSupport
-                    ? "Floating Leg Position"
+                    ? "Free Leg Position"
                     : legProgression.toString().includes("australian")
                       ? "Assisting Leg Position"
                       : "Primary Leg"}
@@ -764,4 +764,5 @@ export const TaxonomySection: React.FC<TaxonomySectionProps> = ({
       </div>
     </div>
   );
-};
+},
+);

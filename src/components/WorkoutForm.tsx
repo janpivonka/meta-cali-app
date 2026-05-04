@@ -202,22 +202,23 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({
       const targetSet = sets[idx];
       if (!targetSet) return [idx];
       const targetMeta = getSetMetadata(targetSet, {
-        exerciseId,
+        exerciseId: targetSet.exerciseId || exerciseId,
         loadType,
         executionStyle,
         legProgression,
       });
-      const targetKey = JSON.stringify(targetMeta);
+      const targetKey = `${targetMeta.exerciseId}|${targetMeta.currentLoadLabel}|${targetMeta.orangeLine.join(",")}|${targetMeta.gripLine.join(",")}|${targetMeta.equipLine.join(",")}|${targetMeta.armLine.join(",")}|${targetMeta.coreLine.join(",")}|${targetMeta.legLine.join(",")}`;
 
       return sets
         .map((s, i) => {
           const m = getSetMetadata(s, {
-            exerciseId,
+            exerciseId: s.exerciseId || exerciseId,
             loadType,
             executionStyle,
             legProgression,
           });
-          return JSON.stringify(m) === targetKey ? i : -1;
+          const k = `${m.exerciseId}|${m.currentLoadLabel}|${m.orangeLine.join(",")}|${m.gripLine.join(",")}|${m.equipLine.join(",")}|${m.armLine.join(",")}|${m.coreLine.join(",")}|${m.legLine.join(",")}`;
+          return k === targetKey ? i : -1;
         })
         .filter((i) => i !== -1);
     },
@@ -237,34 +238,42 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({
   const sharedActionRef = useRef<HTMLButtonElement>(null);
   const bulkInputRef = useRef<HTMLInputElement>(null);
   const setsScrollRef = useRef<HTMLDivElement>(null);
+  const isUpdatingRef = useRef(false);
 
   // Auto-scroll active set into view
+  const lastScrollIdRef = useRef<string | null>(null);
   useEffect(() => {
-    if (activeSetId && setsScrollRef.current) {
+    if (activeSetId && setsScrollRef.current && activeSetId !== lastScrollIdRef.current) {
       const container = setsScrollRef.current;
+      lastScrollIdRef.current = activeSetId;
+      
       const timeoutId = setTimeout(() => {
-        const activeEl = document.getElementById(`nav-set-${activeSetId}`);
-        if (activeEl && container) {
-          const isLastSet = activeSetId === sets[sets.length - 1]?.id;
+        try {
+          const activeEl = document.getElementById(`nav-set-${activeSetId}`);
+          if (activeEl && container) {
+            const isLastSet = activeSetId === sets[sets.length - 1]?.id;
 
-          if (isLastSet) {
-            container.scrollTo({
-              left: container.scrollWidth,
-              behavior: "smooth",
-            });
-          } else {
-            const containerWidth = container.offsetWidth;
-            const itemWidth = activeEl.offsetWidth;
-            const itemLeft = activeEl.offsetLeft;
-            const targetScroll = itemLeft - containerWidth / 2 + itemWidth / 2;
+            if (isLastSet) {
+              container.scrollTo({
+                left: container.scrollWidth,
+                behavior: "smooth",
+              });
+            } else {
+              const containerWidth = container.offsetWidth;
+              const itemWidth = activeEl.offsetWidth;
+              const itemLeft = activeEl.offsetLeft;
+              const targetScroll = itemLeft - (containerWidth / 2) + (itemWidth / 2);
 
-            container.scrollTo({
-              left: targetScroll,
-              behavior: "smooth",
-            });
+              container.scrollTo({
+                left: targetScroll,
+                behavior: "smooth",
+              });
+            }
           }
+        } catch (err) {
+          console.error("Auto-scroll failed", err);
         }
-      }, 50);
+      }, 100);
       return () => clearTimeout(timeoutId);
     }
   }, [activeSetId, sets]);
@@ -326,14 +335,31 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({
       .filter((v) => !isNaN(v));
     if (vals.length > 0) {
       const baseSet = activeSet || sets[sets.length - 1];
-      const newSetsToAdd = vals.map((v) => ({
-        ...(baseSet || {}),
-        id: generateId(),
-        [isHoldExercise(exerciseId) ? "time" : "reps"]: v,
-        notes: "",
-        media: [],
-        loadType: baseSet?.loadType || loadType,
-      }));
+      const newSetsToAdd = vals.map((v) => {
+        const currentSetExId = baseSet?.exerciseId || exerciseId;
+        return {
+          ...(baseSet || {}),
+          id: generateId(),
+          exerciseId: currentSetExId,
+          [isHoldExercise(currentSetExId) ? "time" : "reps"]: v,
+          notes: "",
+          media: [],
+          mixedGripDetails: baseSet?.mixedGripDetails ? { ...baseSet.mixedGripDetails } : undefined,
+          assistanceDetails: baseSet?.assistanceDetails
+            ? {
+                ...baseSet.assistanceDetails,
+                placement: baseSet.assistanceDetails.placement
+                  ? [
+                      ...(Array.isArray(baseSet.assistanceDetails.placement)
+                        ? baseSet.assistanceDetails.placement
+                        : [baseSet.assistanceDetails.placement]),
+                    ]
+                  : undefined,
+              }
+            : undefined,
+          loadType: baseSet?.loadType || loadType,
+        };
+      });
       setSets((prev) => {
         const next = [...prev];
         const insertIndex =
@@ -362,8 +388,8 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({
 
       // Ensure video is ready
       if (video.readyState < 2) {
-        alert(
-          "Video se nestihlo načíst pro snímek. Zkuste to prosím znovu za sekundu.",
+        console.warn(
+          "Video not yet loaded for capture. Please try again in a second.",
         );
         return;
       }
@@ -373,7 +399,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({
       canvas.height = video.videoHeight;
 
       if (canvas.width === 0 || canvas.height === 0) {
-        alert("Chyba při čtení rozměrů videa.");
+        console.error("Error reading video dimensions.");
         return;
       }
 
@@ -605,73 +631,73 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({
   // Smart Conflict Resolution Handlers
   const updateActiveAssistance = useCallback(
     (field: string, val: any) => {
-      // 1. First update global/local state for instant UI feedback
+      // 1. First update global state for instant UI feedback
       if (field === "resistance") setAssistanceValue(val.toString());
-      if (field === "loopType") setBandLoopType(val);
-      if (field === "placement") setBandPlacements(val);
-      if (field === "legTarget") setLegTarget(val);
-      if (field === "unit") {
-        setWeightUnit(val);
-        if (activeSetId) updateSet(safeActiveSetIndex, "weightUnit", val);
-        return;
-      }
-      if (field === "dipBarFootSupport") {
+      else if (field === "loopType") setBandLoopType(val);
+      else if (field === "placement") setBandPlacements(val);
+      else if (field === "legTarget") setLegTarget(val);
+      else if (field === "unit") setWeightUnit(val);
+      else if (field === "dipBarFootSupport") {
         setDipBarFootSupport(val);
-        // Pre-set defaults for support
         if (val) {
           setBandPlacements(["waist"]);
           setBandLoopType("double");
-          if (
-            legProgression === "one leg" ||
-            legProgression.toString().includes("australian")
-          ) {
-            setLegProgression(oneLegPrimaryPosition);
-            if (activeSetId) {
-              updateSet(
-                safeActiveSetIndex,
-                "legProgression",
-                oneLegPrimaryPosition,
-              );
+          // Non-reactive update for leg progression if needed
+          setLegProgression(prev => {
+            if (prev === "one leg" || prev.toString().includes("australian")) {
+              return oneLegPrimaryPosition;
             }
-          }
+            return prev;
+          });
         }
       }
 
-      // 2. Then update the active set in the array
-      if (activeSetId && sets[safeActiveSetIndex]) {
-        const currentDetails = sets[safeActiveSetIndex]?.assistanceDetails || {
-          resistance: "",
-          loopType: "single",
-          placement: ["both feet"],
-          legTarget: "primary",
-        };
-        const updatedDetails = { ...currentDetails, [field]: val };
+      // 2. Update sets array using functional update to avoid dependency on 'sets'
+      if (activeSetId) {
+        setSets((prev) => {
+          const idx = prev.findIndex(s => s.id === activeSetId);
+          if (idx === -1) return prev;
+          const newSets = [...prev];
+          
+          if (field === "unit") {
+            newSets[idx] = { ...newSets[idx], weightUnit: val };
+            return newSets;
+          }
 
-        // Special override for dip bar support defaults
-        if (field === "dipBarFootSupport" && val) {
-          updatedDetails.placement = ["waist"];
-          updatedDetails.loopType = "double";
-          updatedDetails.dipBarFootSupport = true;
-        }
+          const currentDetails = newSets[idx].assistanceDetails || {
+            resistance: "",
+            loopType: "single",
+            placement: ["both feet"],
+            legTarget: "primary",
+          };
+          const updatedDetails = { ...currentDetails, [field]: val };
 
-        if (loadType === "weighted" && field === "resistance") {
-          const numericWeight = parseFloat(val) || 0;
-          updateSet(safeActiveSetIndex, "weight", numericWeight);
-          updateSet(safeActiveSetIndex, "assistanceDetails", undefined);
-        } else {
-          updateSet(safeActiveSetIndex, "assistanceDetails", updatedDetails);
-        }
+          if (field === "dipBarFootSupport" && val) {
+            updatedDetails.placement = ["waist"];
+            updatedDetails.loopType = "double";
+            updatedDetails.dipBarFootSupport = true;
+          }
+
+          if (loadType === "weighted" && field === "resistance") {
+            const numericWeight = parseFloat(val) || 0;
+            newSets[idx] = { 
+              ...newSets[idx], 
+              weight: numericWeight, 
+              assistanceDetails: undefined,
+              loadType: 'weighted'
+            };
+          } else {
+            newSets[idx] = { 
+              ...newSets[idx], 
+              assistanceDetails: updatedDetails,
+              loadType: updatedDetails.resistance ? 'assisted' : 'bodyweight'
+            };
+          }
+          return newSets;
+        });
       }
     },
-    [
-      activeSetId,
-      sets,
-      safeActiveSetIndex,
-      loadType,
-      legProgression,
-      oneLegPrimaryPosition,
-      updateSet,
-    ],
+    [activeSetId, loadType, oneLegPrimaryPosition],
   );
 
   // Sync global form-state ONLY when the selected set index changes
@@ -744,94 +770,81 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({
     }
   }, [activeSetId]); // ONLY depend on the id change
 
+  const isAustralian = React.useMemo(() => legProgression.toString().includes("australian"), [legProgression]);
+  const isOneLegAustralian = React.useMemo(() => isAustralian && isOneLeg, [isAustralian, isOneLeg]);
+  const isOneLegNormal = React.useMemo(() => legProgression === "one leg", [legProgression]);
+
   // Sync band placements based on leg progression and leg positions
-  React.useEffect(() => {
-    const isAustralian = legProgression.toString().includes("australian");
-    const isOneLegAustralian = isAustralian && isOneLeg;
-    const isOneLegNormal = legProgression === "one leg";
+  useEffect(() => {
+    if (isUpdatingRef.current) return;
+    
+    let next: BandPlacement[] | null = null;
 
     // 1. One leg / Straddle / One leg Australian -> No "both feet"
     if (isOneLegNormal || legProgression === "straddle" || isOneLegAustralian) {
       if (bandPlacements.includes("both feet")) {
-        const next = bandPlacements.map((p) =>
+        next = bandPlacements.map((p) =>
           p === "both feet" ? ("one foot" as BandPlacement) : p,
         );
-        updateActiveAssistance("placement", next);
-        return;
       }
     }
 
-    // 2. Halflay logic (feet invalid unless floating australian)
-    const isPrimaryHalflay =
-      (isOneLegNormal || isOneLegAustralian) &&
-      oneLegPrimaryPosition === "halflay";
-    const isSecondaryHalflay =
-      (isOneLegNormal || isOneLegAustralian) &&
-      oneLegSecondaryPosition === "halflay";
-    const isFullHalflay = legProgression === "halflay";
+    // 2. Halflay logic
+    if (!next) {
+      const isPrimaryHalflay = (isOneLegNormal || isOneLegAustralian) && oneLegPrimaryPosition === "halflay";
+      const isSecondaryHalflay = (isOneLegNormal || isOneLegAustralian) && oneLegSecondaryPosition === "halflay";
+      const isFullHalflay = legProgression === "halflay";
 
-    const isTargetLegHalflay =
-      isFullHalflay ||
-      (legTarget === "primary" && isPrimaryHalflay) ||
-      (legTarget === "secondary" && isSecondaryHalflay);
+      const isTargetLegHalflay = isFullHalflay || (legTarget === "primary" && isPrimaryHalflay) || (legTarget === "secondary" && isSecondaryHalflay);
+      const isFloatingLegInAustralian = isOneLegAustralian && legTarget === "primary";
 
-    // Exception: Floating leg in Australian version can have band under foot even in halflay
-    const isFloatingLegInAustralian =
-      isOneLegAustralian && legTarget === "primary";
+      if (isTargetLegHalflay && !isFloatingLegInAustralian) {
+        if (bandPlacements.includes("both feet") || bandPlacements.includes("one foot")) {
+          next = bandPlacements
+            .filter((p) => p !== "both feet" && p !== "one foot")
+            .concat(
+              bandPlacements.some((p) => p === "both feet" || p === "one foot")
+                ? ["knees" as BandPlacement]
+                : [],
+            );
+        }
+      }
+    }
 
-    if (isTargetLegHalflay && !isFloatingLegInAustralian) {
-      if (
-        bandPlacements.includes("both feet") ||
-        bandPlacements.includes("one foot")
-      ) {
-        const next = bandPlacements
-          .filter((p) => p !== "both feet" && p !== "one foot")
-          .concat(
-            bandPlacements.some((p) => p === "both feet" || p === "one foot")
-              ? ["knees" as BandPlacement]
-              : [],
-          );
+    // 3. Equipment restrictions
+    if (!next) {
+      const isEquipmentRestricted = ["pull-up bar", "rings", "stall bars"].includes(equipment);
+      const isNotLSit = position === "neutral" || position === "hollow body" || position === "arch back"; 
+      
+      if (isEquipmentRestricted && isNotLSit && position !== "L-sit" && (bandPlacements.includes("buttocks") || bandPlacements.includes("waist"))) {
+        const filtered = bandPlacements.filter((p) => p !== "buttocks" && p !== "waist");
+        const fallback: BandPlacement = isOneLegNormal || legProgression === "straddle" ? "one foot" : "both feet";
+        next = filtered.length === 0 ? [fallback] : filtered;
+      }
+    }
 
-        // Remove duplicates and ensure fallback is clean
-        const uniqueNext = Array.from(new Set(next));
+    if (next) {
+      const uniqueNext = Array.from(new Set(next));
+      // Only update if actually different to prevent loops
+      if (JSON.stringify(uniqueNext) !== JSON.stringify(bandPlacements)) {
+        isUpdatingRef.current = true;
         updateActiveAssistance("placement", uniqueNext);
-        return;
+        setTimeout(() => { isUpdatingRef.current = false; }, 50);
       }
-    }
-
-    // 3. Buttocks/Waist placement logic: Not allowed on High Bar/Rings/Stall Bars unless in L-Sit
-    const isEquipmentRestricted = [
-      "pull-up bar",
-      "rings",
-      "stall bars",
-    ].includes(equipment);
-    const isNotLSit = position !== "L-sit";
-    if (
-      isEquipmentRestricted &&
-      isNotLSit &&
-      (bandPlacements.includes("buttocks") || bandPlacements.includes("waist"))
-    ) {
-      const next = bandPlacements.filter(
-        (p) => p !== "buttocks" && p !== "waist",
-      );
-      const fallback: BandPlacement =
-        legProgression === "one leg" || legProgression === "straddle"
-          ? "one foot"
-          : "both feet";
-      const finalNext = next.length === 0 ? [fallback] : next;
-      updateActiveAssistance("placement", finalNext);
-      return;
     }
   }, [
     legProgression,
-    bandPlacements,
-    updateActiveAssistance,
+    isOneLeg,
     oneLegPrimaryPosition,
     oneLegSecondaryPosition,
-    isOneLeg,
     legTarget,
     equipment,
     position,
+    bandPlacements,
+    isAustralian,
+    isOneLegAustralian,
+    isOneLegNormal,
+    updateActiveAssistance
   ]);
 
   const updateActiveValue = (
@@ -1044,8 +1057,10 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({
         newSetsToAdd.push({
           ...baseSet,
           id: newId,
+          exerciseId: baseSet.exerciseId || exerciseId,
           notes: "", // Don't copy notes
           media: [], // Don't copy media
+          mixedGripDetails: baseSet.mixedGripDetails ? { ...baseSet.mixedGripDetails } : undefined,
           assistanceDetails: baseSet.assistanceDetails
             ? {
                 ...baseSet.assistanceDetails,
@@ -1491,8 +1506,14 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           filteredExercises={filteredExercises}
-          selectedExerciseId={exerciseId}
-          onExerciseSelect={setExerciseId}
+          selectedExerciseId={activeSet?.exerciseId || exerciseId}
+          onExerciseSelect={(id) => {
+            if (activeSetId) {
+              updateSet(safeActiveSetIndex, "exerciseId", id);
+            } else {
+              setExerciseId(id);
+            }
+          }}
         />
 
         {/* FRAGMENT GLOBAL MEDIA GALLERY */}
@@ -1674,10 +1695,10 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({
                 <div className="flex items-center justify-between mb-6 px-2">
                   <div>
                     <h3 className="text-xl font-black text-white italic tracking-tighter">
-                      VÝBĚR ÚVODNÍ FOTKY
+                      SELECT THUMBNAIL
                     </h3>
                     <p className="text-[10px] font-black text-cyan-500 uppercase tracking-widest mt-1">
-                      Pusťte video a uložte aktuální snímek jako úvodní fotku
+                      Play the video and save the current frame as the thumbnail
                     </p>
                   </div>
                   <button
@@ -1716,11 +1737,10 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({
                       size={24}
                       className="group-hover/btn:scale-110 transition-transform"
                     />
-                    VYSKENOVAT AKTUÁLNÍ SNÍMEK
+                    SCAN CURRENT FRAME
                   </button>
                   <p className="text-center text-[9px] font-black text-slate-500 uppercase tracking-widest italic opacity-60">
-                    Zastavte video v momentu, který chcete použít jako úvodní
-                    fotku
+                    Pause the video at the moment you want to use as the thumbnail
                   </p>
                 </div>
               </motion.div>

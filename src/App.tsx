@@ -323,15 +323,15 @@ export default function App() {
               >
                 <div className="flex flex-col sm:flex-row items-center justify-between mb-8 gap-6">
                   <div>
-                    <h3 className="text-[10px] font-black text-cyan-500 uppercase tracking-[0.4em]">Stavba Mise (Session Builder)</h3>
-                    <p className="text-sm font-black text-white italic mt-1 tracking-tight">Aktuálně rozpracováno: {currentWorkout.exercises.length} cviků</p>
+                    <h3 className="text-[10px] font-black text-cyan-500 uppercase tracking-[0.4em]">Mission Builder</h3>
+                    <p className="text-sm font-black text-white italic mt-1 tracking-tight">Currently in progress: {currentWorkout.exercises.length} exercises</p>
                   </div>
                   <div className="flex gap-3 w-full sm:w-auto">
                     <button 
                       onClick={handleCancelWorkout}
                       className="flex-1 sm:flex-none px-6 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all transform active:scale-95 shadow-lg shadow-red-500/5 group/cancel relative overflow-hidden"
                     >
-                      <span className="relative z-10">Zrušit Vše</span>
+                      <span className="relative z-10">Cancel All</span>
                       <div className="absolute inset-0 bg-red-500 translate-y-full group-hover/cancel:translate-y-0 transition-transform duration-300" />
                     </button>
                     {!isEditing && (
@@ -339,7 +339,7 @@ export default function App() {
                         onClick={handleSaveWorkout}
                         className="flex-2 sm:flex-none px-8 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest bg-cyan-500 text-black shadow-lg shadow-cyan-500/20 hover:scale-105 active:scale-95 transition-all"
                       >
-                        Finalizovat & Uložit
+                        Finalize & Save
                       </button>
                     )}
                   </div>
@@ -380,7 +380,7 @@ export default function App() {
                  </div>
                )}
                <WorkoutForm 
-                 key={editingIndex !== null ? `edit-${editingIndex}` : `new-${preSelectedExerciseId}`}
+                 key={editingIndex !== null ? `edit-${editingIndex}` : `new-${currentWorkout?.exercises.length || 0}-${preSelectedExerciseId || 'none'}`}
                  onSave={(log) => {
                    handleAddExerciseToWorkout(log);
                    setPreSelectedExerciseId(null);

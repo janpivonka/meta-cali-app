@@ -34,7 +34,7 @@ interface PerformanceBlockProps {
   onNoteChange: (val: string, scope: "series" | "group" | "fragment") => void;
 }
 
-export const PerformanceBlock: React.FC<PerformanceBlockProps> = ({
+export const PerformanceBlock = React.memo(({
   sets,
   setSets,
   activeSetId,
@@ -60,8 +60,8 @@ export const PerformanceBlock: React.FC<PerformanceBlockProps> = ({
   bulkInputRef,
   handleBulkApply,
   onNoteChange,
-}) => {
-  const safeActiveSetIndex = sets.findIndex((s) => s.id === activeSetId);
+}: PerformanceBlockProps) => {
+  const safeActiveSetIndex = React.useMemo(() => sets.findIndex((s) => s.id === activeSetId), [sets, activeSetId]);
   const activeSet = sets[safeActiveSetIndex];
 
   return (
@@ -136,21 +136,14 @@ export const PerformanceBlock: React.FC<PerformanceBlockProps> = ({
           className="flex gap-2 overflow-x-auto py-3 px-2 no-scrollbar snap-x snap-mandatory"
         >
             {sets.map((s, i) => {
+              const currentSetExId = s.exerciseId || exerciseId;
               const meta = getSetMetadata(s, {
-                exerciseId,
+                exerciseId: currentSetExId,
                 loadType,
                 executionStyle,
                 legProgression,
               });
-              const metaKey = JSON.stringify({
-                l: meta.currentLoadLabel,
-                o: meta.orangeLine,
-                g: meta.gripLine,
-                e: meta.equipLine,
-                a: meta.armLine,
-                c: meta.coreLine,
-                le: meta.legLine,
-              });
+              const metaKey = `${meta.exerciseId}|${meta.currentLoadLabel}|${meta.orangeLine.join(",")}|${meta.gripLine.join(",")}|${meta.equipLine.join(",")}|${meta.armLine.join(",")}|${meta.coreLine.join(",")}|${meta.legLine.join(",")}`;
               const groupColor = getColorFromMeta(metaKey);
 
               return (
@@ -206,12 +199,12 @@ export const PerformanceBlock: React.FC<PerformanceBlockProps> = ({
                           activeSetId === s.id ? "text-white" : "opacity-80",
                         )}
                       >
-                        {isHoldExercise(exerciseId)
+                        {isHoldExercise(currentSetExId)
                           ? s.time || 0
                           : s.reps || 0}
                       </span>
                       <span className="text-[7px] font-black text-slate-600 uppercase italic">
-                        {isHoldExercise(exerciseId) ? "s" : "r"}
+                        {isHoldExercise(currentSetExId) ? "s" : "r"}
                       </span>
                     </div>
 
@@ -274,13 +267,14 @@ export const PerformanceBlock: React.FC<PerformanceBlockProps> = ({
                 const indices = getSetGroupIndices(safeActiveSetIndex);
                 if (indices.length > 1) {
                   const groupMetadata = getSetMetadata(activeSet, {
-                    exerciseId,
+                    exerciseId: activeSet.exerciseId || exerciseId,
                     loadType,
                     executionStyle,
                     legProgression,
                   });
                   const groupColor = getColorFromMeta(
                     JSON.stringify({
+                      x: groupMetadata.exerciseId,
                       l: groupMetadata.currentLoadLabel,
                       o: groupMetadata.orangeLine,
                       g: groupMetadata.gripLine,
@@ -309,7 +303,7 @@ export const PerformanceBlock: React.FC<PerformanceBlockProps> = ({
                             </span>
                           </div>
                           <p className="text-[8px] font-black text-slate-700 uppercase italic tracking-wider">
-                            Tyto prvky jsou společné pro všechny série v této skupině
+                            These elements are shared across all sets in this group
                           </p>
                         </div>
                         <button
@@ -451,4 +445,5 @@ export const PerformanceBlock: React.FC<PerformanceBlockProps> = ({
       </div>
     </div>
   );
-};
+},
+);

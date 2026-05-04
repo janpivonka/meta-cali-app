@@ -27,10 +27,10 @@ export const GlobalMediaGallery: React.FC<GlobalMediaGalleryProps> = ({
       <div className="flex items-center justify-between mb-4">
         <div className="flex flex-col gap-1">
           <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-cyan-400 flex items-center gap-2">
-            <Camera size={14} className="text-cyan-500" /> Fragment Global Gallery
+            <Camera size={14} className="text-cyan-500" /> Global Fragment Gallery
           </h3>
           <p className="text-[8px] font-black text-slate-600 uppercase italic opacity-60">
-            Média platná pro všechny série v tomto cviku
+            Media valid for all sets in this exercise
           </p>
         </div>
         <button
@@ -38,7 +38,7 @@ export const GlobalMediaGallery: React.FC<GlobalMediaGalleryProps> = ({
           onClick={onUploadClick}
           className="flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-[9px] font-black uppercase text-cyan-400 hover:bg-cyan-500/20 transition-all shadow-sm"
         >
-          <Plus size={14} /> Upload
+          <Plus size={14} /> UPLOAD
         </button>
       </div>
 
@@ -69,7 +69,7 @@ export const GlobalMediaGallery: React.FC<GlobalMediaGalleryProps> = ({
               <Camera size={24} />
             </div>
             <span className="text-[9px] font-black text-slate-700 uppercase tracking-[0.2em] italic">
-              No global media attached
+              No global media
             </span>
           </div>
         )}

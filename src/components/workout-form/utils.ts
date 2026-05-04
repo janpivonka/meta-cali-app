@@ -18,6 +18,8 @@ export const generateVideoThumbnail = (file: File): Promise<string | null> => {
     document.body.appendChild(container);
     container.appendChild(video);
 
+    const temporaryUrl = URL.createObjectURL(file);
+    
     video.onloadeddata = () => {
       video.currentTime = 1;
     };
@@ -29,18 +31,21 @@ export const generateVideoThumbnail = (file: File): Promise<string | null> => {
       const ctx = canvas.getContext("2d");
       ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
       const thumbnailData = canvas.toDataURL("image/jpeg", 0.7);
+      
+      URL.revokeObjectURL(temporaryUrl);
       document.body.removeChild(container);
       resolve(thumbnailData);
     };
 
     video.onerror = () => {
+      URL.revokeObjectURL(temporaryUrl);
       document.body.removeChild(container);
       resolve(null);
     };
 
     video.muted = true;
     video.playsInline = true;
-    video.src = URL.createObjectURL(file);
+    video.src = temporaryUrl;
     video.play();
   });
 };
@@ -52,7 +57,7 @@ export const processFile = (file: File): Promise<ExerciseMedia | null> => {
 
     if (file.size > maxSize) {
       alert(
-        `Soubor ${file.name} je příliš velký (max ${isVideo ? "100MB" : "10MB"}).`,
+        `File ${file.name} is too large (max ${isVideo ? "100MB" : "10MB"}).`,
       );
       resolve(null);
       return;

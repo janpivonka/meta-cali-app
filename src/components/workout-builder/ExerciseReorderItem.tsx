@@ -34,6 +34,7 @@ export const ExerciseReorderItem: React.FC<ExerciseReorderItemProps> = ({
   (ex.sets || []).forEach((s: any, si: number) => {
     const meta = getSetMetadata(s, ex);
     const metaKey = JSON.stringify({
+      x: meta.exerciseId,
       l: meta.currentLoadLabel,
       o: meta.orangeLine,
       g: meta.gripLine,

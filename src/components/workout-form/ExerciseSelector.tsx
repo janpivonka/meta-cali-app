@@ -11,33 +11,33 @@ interface ExerciseSelectorProps {
   onExerciseSelect: (id: string) => void;
 }
 
-export const ExerciseSelector: React.FC<ExerciseSelectorProps> = ({
+export const ExerciseSelector = React.memo(({
   searchQuery,
   setSearchQuery,
   filteredExercises,
   selectedExerciseId,
   onExerciseSelect,
-}) => {
+}: ExerciseSelectorProps) => {
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between px-2">
-        <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 flex items-center gap-2">
-          <Boxes size={14} className="text-cyan-500" /> Exercise Identification
-        </h3>
-        <div className="relative w-48">
-          <Search
-            size={14}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600"
-          />
-          <input
-            type="text"
-            placeholder="Search..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-white/5 border border-white/5 rounded-full py-2 pl-9 pr-4 text-[10px] font-bold text-white focus:outline-none focus:border-cyan-500/30"
-          />
+        <div id="grip-width-section">
+          <label className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 flex items-center gap-2">
+            <Boxes size={14} className="text-cyan-500" /> Exercise Identification
+          </label>
+          <div className="relative w-48">
+            <Search
+              size={14}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600"
+            />
+            <input
+              type="text"
+              placeholder="Search exercise..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-white/5 border border-white/5 rounded-full py-2 pl-9 pr-4 text-[10px] font-bold text-white focus:outline-none focus:border-cyan-500/30"
+            />
+          </div>
         </div>
-      </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {filteredExercises.map((ex) => (
@@ -70,4 +70,5 @@ export const ExerciseSelector: React.FC<ExerciseSelectorProps> = ({
       </div>
     </div>
   );
-};
+},
+);
